@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd;cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="src\basic">
+      <UniqueIdentifier>{4263f881-43d4-49fa-a27a-88ebdc8dcbd3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\basic\msvc">
+      <UniqueIdentifier>{0b8f7dce-f7be-4cd5-9eb1-cb552a1a9c16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\type_traits">
+      <UniqueIdentifier>{d115fdbc-9451-47af-9cbe-7725110cec72}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\test">
+      <UniqueIdentifier>{bbd348c4-eba0-444e-9587-81da89c3d8af}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\compiler.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\inttypes.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\platform.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\stddef.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\stdint.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\stdsize.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\msvc\inttypes.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\msvc\stdbool.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\msvc\stdint.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\lib.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\all.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\xutility.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\type_traits.h">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
