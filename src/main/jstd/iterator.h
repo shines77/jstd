@@ -8,6 +8,9 @@
 
 #include "jstd/basic/stdint.h"
 
+#include <cstdint>
+#include <memory>
+
 namespace jstd {
 
 // Iterator stuff (from <iterator>)
@@ -70,25 +73,25 @@ struct iterator_traits_base
 };
 
 // defined if Iter::* types exist
-template <class Iter>
-struct iterator_traits_base< Iter, jstd::void_t<
-    typename Iter::iterator_category,
-    typename Iter::value_type,
-    typename Iter::difference_type,
-    typename Iter::pointer,
-    typename Iter::reference> >
+template <class InputIter>
+struct iterator_traits_base< InputIter, jstd::void_t<
+    typename InputIter::iterator_category,
+    typename InputIter::value_type,
+    typename InputIter::difference_type,
+    typename InputIter::pointer,
+    typename InputIter::reference> >
 {
-    typedef typename Iter::iterator_category    iterator_category;
-    typedef typename Iter::value_type           value_type;
-    typedef typename Iter::difference_type      difference_type;
+    typedef typename InputIter::iterator_category    iterator_category;
+    typedef typename InputIter::value_type           value_type;
+    typedef typename InputIter::difference_type      difference_type;
 
-    typedef typename Iter::pointer              pointer;
-    typedef typename Iter::reference            reference;
+    typedef typename InputIter::pointer              pointer;
+    typedef typename InputIter::reference            reference;
 };
 
 // get traits from iterator Iter, if possible
-template <class Iter>
-struct iterator_traits : iterator_traits_base<Iter>
+template <class InputIter>
+struct iterator_traits : iterator_traits_base<InputIter>
 {
 };
 
@@ -117,16 +120,16 @@ struct iterator_traits<const T *>
 };
 
 // Alias template iter_value_t
-template <class Iter>
-using iter_value_t = typename iterator_traits<Iter>::value_type;
+template <class InputIter>
+using iter_value_t = typename iterator_traits<InputIter>::value_type;
 
 // Alias template iter_diff_t
-template <class Iter>
-using iter_diff_t = typename iterator_traits<Iter>::difference_type;
+template <class InputIter>
+using iter_diff_t = typename iterator_traits<InputIter>::difference_type;
 
 // Alias template iter_cat_t
-template <class Iter>
-using iter_cat_t = typename iterator_traits<Iter>::iterator_category;
+template <class InputIter>
+using iter_cat_t = typename iterator_traits<InputIter>::iterator_category;
 
 // Template class is_iterator
 
@@ -151,62 +154,92 @@ struct iterator_utils {
 
     // increment iterator by offset, input iterators
     template <class InputIter, class Difference>
-    inline
+    static inline
     void advance_impl(InputIter & where, Difference offset, input_iterator_tag) {
-        for (; 0 < offset; --offset)
+        for (; 0 < offset; --offset) {
             ++where;
+        }
     }
 
     // increment iterator by offset, bidirectional iterators
     template <class BidIter, class Difference>
-    inline
+    static inline
     void advance_impl(BidIter & where, Difference offset, bidirectional_iterator_tag) {
-        for (; offset > 0; --offset)
+        for (; offset > 0; --offset) {
             ++where;
-        for (; offset < 0; ++offset)
+        }
+        for (; offset < 0; ++offset) {
             --where;
+        }
     }
 
     // increment iterator by offset, random-access iterators
     template <class RandomIter, class Difference>
-    inline
+    static inline
     void advance_impl(RandomIter & where, Difference offset, random_access_iterator_tag) {
         where += offset;
     }
 
-    template <class Iter, class Difference>
-    inline
-    void advance(Iter & where, Difference offset) {
-        this_type::advance_impl(where, offset, iter_cat_t<std::remove_const<Iter>::type>());
+    template <class InputIter, class Difference>
+    static inline
+    void advance(InputIter & where, Difference offset) {
+        this_type::advance_impl(where, offset, iter_cat_t<std::remove_const<InputIter>::type>());
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
 
     // return distance between iterators; input
     template <class InputIter>
-    inline
+    static inline
     iter_diff_t<InputIter>
     distance_impl(InputIter first, InputIter last, input_iterator_tag) {
         iter_diff_t<InputIter> offset = 0;
-        for (; first != last; ++first)
+        for (; first != last; ++first) {
             ++offset;
+        }
 
         return offset;
     }
 
     // return distance between iterators; random-access
     template <class RandomIter>
-    inline
+    static inline
     iter_diff_t<RandomIter>
     distance_impl(RandomIter first, RandomIter last, random_access_iterator_tag) {
         return (last - first);
     }
 
     // return distance between iterators
-    template <class Iter>
-    inline
-    iter_diff_t<Iter> distance(Iter first, Iter last) {
-        return this_type::distance_impl(first, last, iter_cat_t<Iter>());
+    template <class InputIter>
+    static inline
+    iter_diff_t<InputIter> distance(InputIter first, InputIter last) {
+        return this_type::distance_impl(first, last, iter_cat_t<InputIter>());
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    // Template function next: increment iterator
+    template <class InputIter>
+    static inline
+    InputIter next(InputIter first, iter_diff_t<InputIter> offset = 1) {
+        static_assert(std::is_base_of<input_iterator_tag,
+                      typename iterator_traits<InputIter>::iterator_category>::value,
+                      "next requires input iterator");
+
+        this_type::advance(first, offset);
+        return first;
+    }
+
+    // Template function prev: decrement iterator
+    template <class BidIter>
+    static inline
+    BidIter prev(BidIter first, iter_diff_t<BidIter> offset = 1) {
+        static_assert(std::is_base_of<bidirectional_iterator_tag,
+                      typename iterator_traits<BidIter>::iterator_category>::value,
+                      "prev requires bidirectional iterator");
+
+        this_type::advance(first, -offset);
+        return first;
     }
 
     //////////////////////////////////////////////////////////////////////////////////////

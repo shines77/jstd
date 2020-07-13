@@ -9,6 +9,7 @@
 #include "jstd/basic/stddef.h"
 #include "jstd/xutility.h"
 #include "jstd/type_traits.h"
+#include "jstd/iterator.h"
 #include "jstd/lib.h"
 
 #endif // JSTD_ALL_H
