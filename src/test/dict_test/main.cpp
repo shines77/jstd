@@ -1,6 +1,28 @@
 
+#ifndef __SSE4_2__
+#define __SSE4_2__              1
+#endif // __SSE4_2__
+
 #include <stdlib.h>
 #include <stdio.h>
+
+#if __SSE4_2__
+
+// Support SSE 4.2: _mm_crc32_u32(), _mm_crc32_u64().
+#define SUPPORT_SSE42_CRC32C    1
+
+// Support Intel SMID SHA module: sha1 & sha256, it's higher than SSE 4.2 .
+// _mm_sha1msg1_epu32(), _mm_sha1msg2_epu32() and so on.
+#define SUPPORT_SMID_SHA        0
+
+#endif // __SSE4_2__
+
+// String compare mode
+#define STRING_COMPARE_STDC     0
+#define STRING_COMPARE_U64      1
+#define STRING_COMPARE_SSE42    2
+
+#define STRING_COMPARE_MODE     STRING_COMPARE_SSE42
 
 #include <jstd/all.h>
 
@@ -42,8 +64,7 @@ public:
 
     // assign from compatible base
     template <class Other>
-    ListIterator & operator = (const ListIterator<Other> & right)
-    {
+    ListIterator & operator = (const ListIterator<Other> & right) {
         ptr_ = right.ptr();
         return (*this);
     }
@@ -118,6 +139,9 @@ int main(int argc, char *argv[])
 
     ListIterator<ListDemo> random_iter;
     jstd::iterator_utils::advance(random_iter, std::ptrdiff_t(1));
+
+    jstd::Dictionary_CRC32C<std::string, std::string> dict;
+    dict.insert("1", "100");
 
     printf("dict_test.exe - %d, 0x%p, 0x%p\n\n",
            (int)is_iterator,

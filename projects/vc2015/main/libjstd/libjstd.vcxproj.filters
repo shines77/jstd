@@ -17,6 +17,15 @@
     <Filter Include="src\test">
       <UniqueIdentifier>{bbd348c4-eba0-444e-9587-81da89c3d8af}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\hash">
+      <UniqueIdentifier>{394c5962-33f5-4d83-bb77-7a2fb0a2c5da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\support">
+      <UniqueIdentifier>{98989749-b7c6-4888-b9cf-bf9822813837}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\string">
+      <UniqueIdentifier>{40f152d7-2c96-4b7a-a9b6-82a4f555fd80}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\compiler.h">
@@ -60,6 +69,57 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\iterator.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary.h">
+      <Filter>src\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\nothrow_deleter.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\nothrow_new.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\crc32c.h">
+      <Filter>src\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash.h">
+      <Filter>src\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_helper.h">
+      <Filter>src\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_traits.h">
+      <Filter>src\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_forward.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_reverse.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\popcnt.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\Power2.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\PowerOf2.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\SSEHelper.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\StopWatch.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_utils.h">
+      <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\char_traits.h">
+      <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\strlen.h">
+      <Filter>src\string</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
