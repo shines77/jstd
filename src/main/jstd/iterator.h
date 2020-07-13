@@ -314,26 +314,26 @@ public:
         return (std::pointer_traits<pointer>::pointer_to(**this));
     }
 
-    // preincrement: ++iter;
+    // preincrement: ++iter
     this_type & operator ++ () {
         --(this->iter_);
         return (*this);
     }
 
-    // postincrement: iter++;
+    // postincrement: iter++
     this_type operator ++ (int) {
         this_type tmp = *this;
         --(this->iter_);
         return (tmp);
     }
 
-    // predecrement: --iter;
+    // predecrement: --iter
     this_type & operator -- () {
         ++(this->iter_);
         return (*this);
     }
 
-    // postdecrement: iter--;
+    // postdecrement: iter--
     this_type operator -- (int) {
         this_type tmp = *this;
         ++(this->iter_);
@@ -587,6 +587,8 @@ rend(std::initializer_list<Element> initList)
 {
     return (reverse_iterator<const Element *>(initList.begin()));
 }
+
+/////////////////////////////////////////////////////////////////
 
 // Template functions: crbegin() AND crend()
 
