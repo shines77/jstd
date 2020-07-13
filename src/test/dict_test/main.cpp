@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     printf("dict_test.exe - %d, 0x%p, 0x%p\n\n",
            (int)is_iterator,
            (void *)iter.ptr(),
-           (void *)riter.iter().ptr());
+           (void *)riter.base().ptr());
 
     return 0;
 }

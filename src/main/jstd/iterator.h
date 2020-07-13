@@ -7,6 +7,7 @@
 #endif
 
 #include "jstd/basic/stdint.h"
+#include "jstd/type_traits.h"
 
 #include <cstdint>
 #include <memory>           // For std::pointer_traits<T>
@@ -287,18 +288,18 @@ public:
     // initialize with compatible base
     template <class other>
     reverse_iterator(const reverse_iterator<other> & right)
-        : iter_(right.iter()) {	
+        : iter_(right.base()) {	
     }
 
     // assign from compatible base
     template <class other>
     this_type & operator = (const reverse_iterator<other> & right) {
-        this->iter_ = right.iter();
+        this->iter_ = right.base();
         return (*this);
     }
 
     // return wrapped iterator
-    iterator_type iter() const {
+    iterator_type base() const {
         return this->iter_;
     }
 
@@ -321,9 +322,9 @@ public:
 
     // postincrement: iter++;
     this_type operator ++ (int) {
-        this_type _Tmp = *this;
+        this_type tmp = *this;
         --(this->iter_);
-        return (_Tmp);
+        return (tmp);
     }
 
     // predecrement: --iter;
@@ -386,9 +387,9 @@ template <class RandomIter1, class RandomIter2>
 inline
 auto operator - (const reverse_iterator<RandomIter1> & left,
                  const reverse_iterator<RandomIter2> & right)
-    -> decltype(right.iter() - left.iter())
+    -> decltype(right.base() - left.base())
 {
-    return (right.iter() - left.iter());
+    return (right.base() - left.base());
 }
 
 // test for reverse_iterator equality
@@ -397,7 +398,7 @@ inline
 bool operator == (const reverse_iterator<RandomIter1> & left,
                   const reverse_iterator<RandomIter2> & right)
 {
-    return (left.iter() == right.iter());
+    return (left.base() == right.base());
 }
 
 // test for reverse_iterator inequality
@@ -415,7 +416,7 @@ inline
 bool operator < (const reverse_iterator<RandomIter1> & left,
                  const reverse_iterator<RandomIter2> & right)
 {
-    return (right.iter() < left.iter());
+    return (right.base() < left.base());
 }
 
 // test for reverse_iterator > reverse_iterator
@@ -608,6 +609,8 @@ auto crend(const Container & container)
 }
 
 /////////////////////////////////////////////////////////////////
+
+// Template functions: container common interface
 
 // get size() for container
 template <class Container>
