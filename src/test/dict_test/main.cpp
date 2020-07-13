@@ -98,7 +98,6 @@ public:
     ListIterator operator - (difference_type offset) {
         return ListIterator(ptr_ - offset);
     }
-
 };
 
 int main(int argc, char *argv[])
@@ -111,9 +110,19 @@ int main(int argc, char *argv[])
     iter += std::ptrdiff_t(10);
     iter -= std::ptrdiff_t(5);
 
+    jstd::reverse_iterator<ListIterator<ListDemo>> riter;
+    riter++;
+    riter--;
+    riter += std::ptrdiff_t(10);
+    riter -= std::ptrdiff_t(5);
+
     ListIterator<ListDemo> random_iter;
     jstd::iterator_utils::advance(random_iter, std::ptrdiff_t(1));
 
-    printf("dict_test.exe - %d, 0x%p\n\n", (int)is_iterator, (void *)iter.ptr());
+    printf("dict_test.exe - %d, 0x%p, 0x%p\n\n",
+           (int)is_iterator,
+           (void *)iter.ptr(),
+           (void *)riter.iter().ptr());
+
     return 0;
 }

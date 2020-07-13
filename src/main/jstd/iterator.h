@@ -9,9 +9,12 @@
 #include "jstd/basic/stdint.h"
 
 #include <cstdint>
-#include <memory>
+#include <memory>           // For std::pointer_traits<T>
+#include <initializer_list> // For std::initializer_list<T>
 
 namespace jstd {
+
+/////////////////////////////////////////////////////////////////
 
 // Iterator stuff (from <iterator>)
 // Iterator tags  (from <iterator>)
@@ -63,6 +66,8 @@ struct iterator
 
 // base for output iterators
 typedef iterator<output_iterator_tag, void, void, void, void>   OutputIter;
+
+/////////////////////////////////////////////////////////////////
 
 // TEMPLATE CLASS iterator_traits
 
@@ -149,8 +154,6 @@ struct is_iterator< T, jstd::void_t<
 struct iterator_utils {
 
     typedef iterator_utils this_type;
-
-    //////////////////////////////////////////////////////////////////////////////////////
 
     // increment iterator by offset, input iterators
     template <class InputIter, class Difference>
@@ -241,9 +244,450 @@ struct iterator_utils {
         this_type::advance(first, -offset);
         return first;
     }
-
-    //////////////////////////////////////////////////////////////////////////////////////
 };
+
+template <class T>
+struct pointer_traits;
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+// Template class reverse_iterator
+
+// wrap iterator to run it backwards
+template <class RandomIter>
+class reverse_iterator
+    : public iterator<
+        typename iterator_traits<RandomIter>::iterator_category,
+        typename iterator_traits<RandomIter>::value_type,
+        typename iterator_traits<RandomIter>::difference_type,
+        typename iterator_traits<RandomIter>::pointer,
+        typename iterator_traits<RandomIter>::reference>
+{
+    typedef reverse_iterator<RandomIter> this_type;
+
+public:
+    typedef typename iterator_traits<RandomIter>::value_type        value_type;
+	typedef typename iterator_traits<RandomIter>::difference_type   difference_type;
+	typedef typename iterator_traits<RandomIter>::pointer           pointer;
+	typedef typename iterator_traits<RandomIter>::reference         reference;
+	typedef RandomIter                                              iterator_type;
+
+protected:
+    iterator_type iter_;
+
+public:
+    // construct with value-initialized wrapped iterator
+    reverse_iterator() : iter_() {
+    }
+
+    // construct wrapped iterator from _Right
+    explicit reverse_iterator(iterator_type right) : iter_(right) {
+    }
+
+    // initialize with compatible base
+    template <class other>
+    reverse_iterator(const reverse_iterator<other> & right)
+        : iter_(right.iter()) {	
+    }
+
+    // assign from compatible base
+    template <class other>
+    this_type & operator = (const reverse_iterator<other> & right) {
+        this->iter_ = right.iter();
+        return (*this);
+    }
+
+    // return wrapped iterator
+    iterator_type iter() const {
+        return this->iter_;
+    }
+
+    // return designated value
+    reference operator * () const {
+        iterator_type tmp = this->iter_;
+        return (*--tmp);
+    }
+
+    // return pointer to class object
+    pointer operator -> () const {
+        return (std::pointer_traits<pointer>::pointer_to(**this));
+    }
+
+    // preincrement: ++iter;
+    this_type & operator ++ () {
+        --(this->iter_);
+        return (*this);
+    }
+
+    // postincrement: iter++;
+    this_type operator ++ (int) {
+        this_type _Tmp = *this;
+        --(this->iter_);
+        return (_Tmp);
+    }
+
+    // predecrement: --iter;
+    this_type & operator -- () {
+        ++(this->iter_);
+        return (*this);
+    }
+
+    // postdecrement: iter--;
+    this_type operator -- (int) {
+        this_type tmp = *this;
+        ++(this->iter_);
+        return (tmp);
+    }
+
+    // increment by integer
+    this_type & operator += (difference_type offset) {
+        this->iter_ -= offset;
+        return (*this);
+    }
+
+    // return this + integer
+    this_type operator + (difference_type offset) const {
+        return (this_type(this->iter_ - offset));
+    }
+
+    // decrement by integer
+    this_type & operator -= (difference_type offset) {
+        this->iter_ += offset;
+        return (*this);
+    }
+
+    // return this - integer
+    this_type operator - (difference_type offset) const {
+        return (this_type(this->iter_ + offset));
+    }
+
+    // subscript
+    reference operator [] (difference_type offset) const {
+        return (*(*this + offset));
+    }
+};
+
+/////////////////////////////////////////////////////////////////
+
+// reverse_iterator template operators
+
+// return reverse_iterator + integer
+template <class RandomIter>
+inline
+reverse_iterator<RandomIter> operator + (
+    typename reverse_iterator<RandomIter>::difference_type offset,
+    const reverse_iterator<RandomIter> & right)
+{
+    return (right + offset);
+}
+
+// return difference of reverse_iterators
+template <class RandomIter1, class RandomIter2>
+inline
+auto operator - (const reverse_iterator<RandomIter1> & left,
+                 const reverse_iterator<RandomIter2> & right)
+    -> decltype(right.iter() - left.iter())
+{
+    return (right.iter() - left.iter());
+}
+
+// test for reverse_iterator equality
+template <class RandomIter1, class RandomIter2>
+inline
+bool operator == (const reverse_iterator<RandomIter1> & left,
+                  const reverse_iterator<RandomIter2> & right)
+{
+    return (left.iter() == right.iter());
+}
+
+// test for reverse_iterator inequality
+template <class RandomIter1, class RandomIter2>
+inline
+bool operator != (const reverse_iterator<RandomIter1> & left,
+                  const reverse_iterator<RandomIter2> & right)
+{
+    return (!(left == right));
+}
+
+// test for reverse_iterator < reverse_iterator
+template <class RandomIter1, class RandomIter2>
+inline
+bool operator < (const reverse_iterator<RandomIter1> & left,
+                 const reverse_iterator<RandomIter2> & right)
+{
+    return (right.iter() < left.iter());
+}
+
+// test for reverse_iterator > reverse_iterator
+template <class RandomIter1, class RandomIter2>
+inline
+bool operator > (const reverse_iterator<RandomIter1> & left,
+                 const reverse_iterator<RandomIter2> & right)
+{
+    return (right < left);
+}
+
+// test for reverse_iterator <= reverse_iterator
+template <class RandomIter1, class RandomIter2>
+inline
+bool operator <= (const reverse_iterator<RandomIter1> & left,
+                  const reverse_iterator<RandomIter2> & right)
+{
+    return (!(right < left));
+}
+
+// test for reverse_iterator >= reverse_iterator
+template <class RandomIter1, class RandomIter2>
+inline
+bool operator >= (const reverse_iterator<RandomIter1> & left,
+                  const reverse_iterator<RandomIter2> & right)
+{
+    return (!(left < right));
+}
+
+/////////////////////////////////////////////////////////////////
+
+// Template function: make_reverse_iterator
+
+// make reverse_iterator from iterator
+template <class RandomIter>
+inline
+reverse_iterator<RandomIter> make_reverse_iterator(RandomIter iter)
+{
+    return (reverse_iterator<RandomIter>(iter));
+}
+
+/////////////////////////////////////////////////////////////////
+
+// Template functions: begin() AND end()
+
+// get beginning of sequence
+template <class Container>
+inline
+auto begin(Container & container) -> decltype(container.begin())
+{
+    return (container.begin());
+}
+
+// get beginning of sequence
+template <class Container>
+inline
+auto begin(const Container & container) -> decltype(container.begin())
+{
+    return (container.begin());
+}
+
+// get end of sequence
+template <class Container>
+inline
+auto end(Container & container) -> decltype(container.end())
+{
+    return (container.end());
+}
+
+// get end of sequence
+template <class Container>
+inline
+auto end(const Container & container) -> decltype(container.end())
+{
+    return (container.end());
+}
+
+/////////////////////////////////////////////////////////////////
+
+// Template functions: cbegin() AND cend()
+
+// get beginning of sequence
+template <class Container>
+inline
+constexpr auto cbegin(const Container & container)
+noexcept(noexcept(begin(container)))
+-> decltype(begin(container))
+{
+    return (begin(container));
+}
+
+// get end of sequence
+template <class Container>
+inline
+constexpr auto cend(const Container & container)
+noexcept(noexcept(end(container)))
+-> decltype(end(container))
+{
+    return (end(container));
+}
+
+/////////////////////////////////////////////////////////////////
+
+// Template functions: rbegin() AND rend()
+
+// get beginning of reversed sequence
+template <class Container>
+inline
+auto rbegin(Container & container) -> decltype(container.rbegin())
+{
+    return (container.rbegin());
+}
+
+// get beginning of reversed sequence
+template <class Container>
+inline
+auto rbegin(const Container & container) -> decltype(container.rbegin())
+{
+    return (container.rbegin());
+}
+
+// get end of reversed sequence
+template <class Container>
+inline
+auto rend(Container & container) -> decltype(container.rend())
+{
+    return (container.rend());
+}
+
+// get end of reversed sequence
+template <class Container>
+inline
+auto rend(const Container & container) -> decltype(container.rend())
+{
+    return (container.rend());
+}
+
+// get beginning of reversed array
+template <class T, std::size_t Size>
+inline
+reverse_iterator<T *> rbegin(T(&Array)[Size])
+{
+    return (reverse_iterator<T *>(Array + Size));
+}
+
+// get end of reversed array
+template <class T, std::size_t Size>
+inline
+reverse_iterator<T *> rend(T(&Array)[Size])
+{
+    return (reverse_iterator<T *>(Array));
+}
+
+// get beginning of reversed sequence
+template <class Element>
+inline
+reverse_iterator<const Element *>
+rbegin(std::initializer_list<Element> initList)
+{
+    return (reverse_iterator<const Element *>(initList.end()));
+}
+
+// get end of reversed sequence
+template <class Element>
+inline
+reverse_iterator<const Element *>
+rend(std::initializer_list<Element> initList)
+{
+    return (reverse_iterator<const Element *>(initList.begin()));
+}
+
+// Template functions: crbegin() AND crend()
+
+// get beginning of reversed sequence
+template <class Container>
+inline
+auto crbegin(const Container & container)
+-> decltype(rbegin(container))
+{
+    return (rbegin(container));
+}
+
+// get end of reversed sequence
+template <class Container>
+inline
+auto crend(const Container & container)
+-> decltype(rend(container))
+{
+    return (rend(container));
+}
+
+/////////////////////////////////////////////////////////////////
+
+// get size() for container
+template <class Container>
+inline
+constexpr auto size(const Container & container)
+-> decltype(container.size())
+{
+    return (container.size());
+}
+
+// get dimension for array
+template <class T, std::size_t Size>
+inline
+constexpr std::size_t size(const T(&)[Size]) noexcept
+{
+    return Size;
+}
+
+// get empty() for container
+template <class Container>
+inline
+constexpr auto empty(const Container & container)
+-> decltype(container.empty())
+{
+    return (container.empty());
+}
+
+// get dimension == 0 for array (can't happen)
+template <class T, std::size_t Size>
+inline
+constexpr bool empty(const T(&)[Size]) noexcept
+{
+    return (false);
+}
+
+// get dimension == 0 for initializer_list
+template <class Element>
+inline
+constexpr bool empty(
+    std::initializer_list<Element> initList) noexcept
+{
+    return (initList.size() == 0);
+}
+
+// get data() for container
+template <class Container>
+inline
+constexpr auto data(Container & container)
+-> decltype(container.data())
+{
+    return (container.data());
+}
+
+// get pointer to data of const container
+template <class Container>
+inline
+constexpr auto data(const Container & container)
+-> decltype(container.data())
+{
+    return (container.data());
+}
+
+// get pointer to data of array
+template <class T, std::size_t Size>
+inline
+constexpr T * data(T(&Array)[Size]) noexcept
+{
+    return Array;
+}
+
+// get pointer to data of initializer_list
+template <class Element>
+inline
+constexpr const Element * data(
+    std::initializer_list<Element> initList) noexcept
+{
+    return (initList.begin());
+}
+
+/////////////////////////////////////////////////////////////////
 
 } // namespace jstd
 
