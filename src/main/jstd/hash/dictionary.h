@@ -56,36 +56,36 @@ public:
     typedef typename Hasher::index_type     index_type;
     typedef BasicDictionary<Key, Value, HashFunc, Hasher, Comparer>
                                             this_type;
-    struct entry {
-        entry *     next;
-        hash_type   hash;
-        pair_type   pair;
+    struct hash_entry {
+        hash_entry * next;
+        hash_type    hash;
+        pair_type    pair;
 
-        entry() : next(nullptr), hash(0) {}
-        entry(hash_type hash_code) : next(nullptr), hash(hash_code) {}
+        hash_entry() : next(nullptr), hash(0) {}
+        hash_entry(hash_type hash_code) : next(nullptr), hash(hash_code) {}
 
-        entry(hash_type hash_code, const key_type & key,
-              const value_type & value, this_type * next_entry = nullptr)
+        hash_entry(hash_type hash_code, const key_type & key,
+              const value_type & value, hash_entry * next_entry = nullptr)
             : next(next_entry), hash(hash_code), pair(key, value) {}
-        entry(hash_type hash_code, key_type && key,
-              value_type && value, this_type * next_entry = nullptr)
+        hash_entry(hash_type hash_code, key_type && key,
+              value_type && value, hash_entry * next_entry = nullptr)
             : next(next_entry), hash(hash_code),
               pair(std::forward<key_type>(key), std::forward<value_type>(value)) {}
 
-        entry(const key_type & key, const value_type & value)
+        hash_entry(const key_type & key, const value_type & value)
             : next(nullptr), hash(0), pair(key, value) {}
-        entry(key_type && key, value_type && value)
+        hash_entry(key_type && key, value_type && value)
             : next(nullptr), hash(0),
               pair(std::forward<key_type>(key), std::forward<value_type>(value)) {}
 
-        ~entry() {
+        ~hash_entry() {
 #ifndef NDEBUG
             this->next = nullptr;
 #endif
         }
     };
 
-    typedef entry                       entry_type;
+    typedef hash_entry                  entry_type;
     typedef entry_type *                iterator;
     typedef const entry_type *          const_iterator;
     typedef std::vector<entry_type *>   buckets_List;
@@ -97,7 +97,7 @@ public:
 
     public:
         free_list() : head_(nullptr), size_(0) {}
-        free_list(entry * head) : head_(head), size_(0) {}
+        free_list(hash_entry * head) : head_(head), size_(0) {}
         ~free_list() {
 #ifndef NDEBUG
             this->clear();
@@ -125,7 +125,7 @@ public:
             this->size_ = 0;
         }
 
-        void reset(entry * head) {
+        void reset(hash_entry * head) {
             this->head_ = head;
             this->size_ = 0;
         }
@@ -177,13 +177,13 @@ public:
         lhs.swap(rhs);
     }
 
-private:
+protected:
     buckets_List    buckets_List_;
     entry_type **   buckets_;
     entry_type *    entries_;
     size_type       bucket_mask_;
     size_type       bucket_capacity_;
-    size_type       entries_count_;
+    size_type       entries_size_;
     size_type       entries_capacity_;
     free_list       freelist_;
 #if DICTIONARY_SUPPORT_VERSION
@@ -214,7 +214,7 @@ private:
 public:
     BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
         : buckets_(nullptr), entries_(nullptr), bucket_mask_(0), bucket_capacity_(0),
-          entries_count_(0), entries_capacity_(0)
+          entries_size_(0), entries_capacity_(0)
 #if DICTIONARY_SUPPORT_VERSION
           , version_(1) /* Since 0 means that the version attribute is not supported,
                            the initial value of version starts from 1. */
@@ -241,32 +241,30 @@ public:
         return (iterator)&this->entries_[this->entries_capacity_];
     }
 
+    size_type size() const {
+        assert(this->entries_size_ >= this->freelist_.size());
+        return (this->entries_size_ - this->freelist_.size());
+    }
+    size_type capacity() const { return this->entries_capacity(); }
+
     size_type bucket_mask() const { return this->bucket_mask_; }
     size_type bucket_capacity() const { return this->bucket_capacity_; }
 
     size_type entries_size() const { return this->size(); }
     size_type entries_count() const { return this->entries_capacity_; }
-    size_type entries_capacity() const { return this->entries_capacity_; }
-
-    size_type size() const {
-        assert(this->entries_count_ >= this->freelist_.size());
-        return (this->entries_count_ - this->freelist_.size());
-    }
-    size_type capacity() const { return this->entries_capacity(); }
-
-    size_type max_size() const { return (std::numeric_limits<size_type>::max)(); }
 
     entry_type ** buckets() const { return this->buckets_; }
     entry_type *  entries() const { return this->entries_; }
 
-    size_type min_bucket_capacity() const { return this_type::kMinimumCapacity; }
     size_type max_bucket_capacity() const {
         return (std::min)(this_type::kMaximumCapacity, (std::numeric_limits<size_type>::max)());
     }
-    size_type default_bucket_capacity() const { return this_type::kDefaultInitialCapacity; }
+    size_type max_size() const {
+        return this->max_bucket_capacity();
+    }
 
-    bool is_valid() const { return (this->buckets_ != nullptr); }
-    bool is_empty() const { return (this->size() == 0); }
+    bool valid() const { return (this->buckets() != nullptr); }
+    bool empty() const { return (this->size() == 0); }
 
     size_type version() const {
 #if DICTIONARY_SUPPORT_VERSION
@@ -297,7 +295,7 @@ public:
         }
 #ifndef NDEBUG
         // Setting status
-        this->entries_count_ = 0;
+        this->entries_size_ = 0;
         this->bucket_mask_ = 0;
         this->entries_capacity_ = 0;
 #endif
@@ -309,7 +307,7 @@ public:
             memset((void *)this->buckets_, 0, sizeof(entry_type *) * this->entries_capacity_);
         }
         // Setting status
-        this->entries_count_ = 0;
+        this->entries_size_ = 0;
         this->freelist_.clear();
     }
 
@@ -371,7 +369,7 @@ private:
 
                 // Initialize status
                 this->entries_ = new_entries;
-                this->entries_count_ = 0;
+                this->entries_size_ = 0;
                 this->entries_capacity_ = new_capacity;
                 this->freelist_.clear();
             }
@@ -391,7 +389,7 @@ private:
 #if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
         assert(this->entries_ != nullptr);
         entry_type * entry = this->entries_;
-        for (size_type i = 0; i < this->entries_count_; ++i) {
+        for (size_type i = 0; i < this->entries_size_; ++i) {
 #if DICTIONARY_ENTRY_RELEASE_ON_ERASE
             if (likely(entry->hash != kInvalidHash)) {
                 assert(entry != nullptr);
@@ -447,7 +445,7 @@ private:
             // Push the old entry to front of new list.
             old_entry->next = new_buckets[index];
             new_buckets[index] = old_entry;
-            ++(this->entries_count_);
+            ++(this->entries_size_);
 
             // Scan next entry
             old_entry = next_entry;
@@ -490,7 +488,7 @@ private:
 
                         // Copy the old entries to new entries.
                         size_type new_count = 0;
-                        for (size_type i = 0; i < this->entries_count_; ++i) {
+                        for (size_type i = 0; i < this->entries_size_; ++i) {
                             assert(new_entry != nullptr);
                             assert(old_entry != nullptr);
                             if (likely(old_entry->hash != kInvalidHash)) {
@@ -567,8 +565,8 @@ private:
 
                     // Recalculate the bucket of all keys.
                     if (likely(this->buckets_ != nullptr)) {
-                        size_type old_count = this->entries_count_;
-                        this->entries_count_ = 0;
+                        size_type old_size = this->entries_size_;
+                        this->entries_size_ = 0;
                         size_type new_mask = new_capacity - 1;
 
                         entry_type ** old_buckets = this->buckets_;
@@ -588,7 +586,7 @@ private:
                                 old_buckets++;
                             }
                         }
-                        assert(this->entries_count_ == old_count);
+                        assert(this->entries_size_ == old_size);
 
                         // Free old buckets data.
                         //operator delete((void *)this->buckets_, std::nothrow);
@@ -756,7 +754,7 @@ public:
                 // Insert the new key.
                 entry_type * new_entry;
                 if (likely(this->freelist_.is_empty())) {
-                    if (likely(this->entries_count_ >= this->entries_capacity_)) {
+                    if (likely(this->entries_size_ >= this->entries_capacity_)) {
                         // Resize the buckets and the entries.
                         this->resize_internal(this->entries_capacity_ + 1, this->bucket_capacity_ * 2);
                         // Recalculate the bucket index.
@@ -764,9 +762,9 @@ public:
                     }
 
                     // Get a unused entry.
-                    new_entry = &this->entries_[this->entries_count_];
+                    new_entry = &this->entries_[this->entries_size_];
                     assert(new_entry != nullptr);
-                    ++(this->entries_count_);
+                    ++(this->entries_size_);
                 }
                 else {
                     // Pop a free entry from freelist.
@@ -808,7 +806,7 @@ public:
                 // Insert the new key.
                 entry_type * new_entry;
                 if (likely(this->freelist_.is_empty())) {
-                    if (likely(this->entries_count_ >= this->entries_capacity_)) {
+                    if (likely(this->entries_size_ >= this->entries_capacity_)) {
                         // Resize the buckets and the entries.
                         this->resize_internal(this->entries_capacity_ + 1, this->bucket_capacity_ * 2);
                         // Recalculate the bucket index.
@@ -816,9 +814,9 @@ public:
                     }
 
                     // Get a unused entry.
-                    new_entry = &this->entries_[this->entries_count_];
+                    new_entry = &this->entries_[this->entries_size_];
                     assert(new_entry != nullptr);
-                    ++(this->entries_count_);
+                    ++(this->entries_size_);
                 }
                 else {
                     // Pop a free entry from freelist.
@@ -1072,15 +1070,15 @@ public:
     static const char * name() {
         switch (HashFunc) {
         case HashFunc_CRC32C:
-            return "kvdb::Dictionary<K, V>";
+            return "jstd::Dictionary<K, V>";
         case HashFunc_Time31:
-            return "kvdb::Dictionary_v1<K, V>";
+            return "jstd::Dictionary_v1<K, V>";
         case HashFunc_Time31Std:
-            return "kvdb::Dictionary_v2<K, V>";
+            return "jstd::Dictionary_v2<K, V>";
         case HashFunc_SHA1_MSG2:
-            return "kvdb::Dictionary_v3<K, V>";
+            return "jstd::Dictionary_v3<K, V>";
         case HashFunc_SHA1:
-            return "kvdb::Dictionary_v4<K, V>";
+            return "jstd::Dictionary_v4<K, V>";
         default:
             return "Unknown class name";
         }
