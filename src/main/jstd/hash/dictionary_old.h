@@ -40,22 +40,24 @@ namespace jstd {
 
 template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
            typename Hasher = hash<Key, HashFunc>,
-           typename KeyEqual = equal_to<Key> >
+           typename Comparer = equal_to<Key> >
 class BasicDictionary {
 public:
     typedef Key                             key_type;
     typedef Value                           mapped_type;
     typedef std::pair<Key, Value>           value_type;
 
-    typedef Hasher                          hasher;
     typedef Hasher                          hasher_type;
-    typedef KeyEqual                        key_equal;
+    typedef Comparer                        comparer_type;
+
+    typedef Hasher                          hasher;
+    typedef Comparer                        key_equal;
 
     typedef double                          float_type;
-    typedef std::size_t                     size_type;
-    typedef std::size_t                     index_type;
-    typedef typename Hasher::result_type    hash_type;
-    typedef BasicDictionary<Key, Value, HashFunc, Hasher, KeyEqual>
+    typedef typename Hasher::size_type      size_type;
+    typedef typename Hasher::hash_type      hash_type;
+    typedef typename Hasher::index_type     index_type;
+    typedef BasicDictionary<Key, Value, HashFunc, Hasher, Comparer>
                                             this_type;
     struct hash_entry {
         hash_entry * next;
@@ -89,6 +91,7 @@ public:
     typedef hash_entry                  entry_type;
     typedef entry_type *                iterator;
     typedef const entry_type *          const_iterator;
+    typedef std::vector<entry_type *>   buckets_List;
 
     class free_list {
     private:
@@ -178,6 +181,7 @@ public:
     }
 
 protected:
+    buckets_List    buckets_List_;
     entry_type **   buckets_;
     entry_type *    entries_;
     size_type       bucket_mask_;
@@ -189,7 +193,7 @@ protected:
     size_type       version_;
 #endif
     hasher_type     hasher_;
-    key_equal       key_is_equal_;
+    comparer_type   comparer_;
 
     // Default initial capacity is 64.
     static const size_type kDefaultInitialCapacity = 64;
@@ -337,6 +341,10 @@ protected:
             new_capacity = detail::aligned_to(new_capacity, kBucketBlockCapacity);
         }
 
+        // Preserve the bucket list size.
+        buckets_List_.clear();
+        buckets_List_.reserve(4);
+
         // The the array of bucket's first entry.
         // entry_type ** new_buckets = new (std::nothrow) entry_type *[bucket_capacity];
         entry_type ** new_buckets = JSTD_NEW_ARRAY(entry_type *, bucket_capacity);
@@ -416,15 +424,6 @@ protected:
         return new_capacity;
     }
 
-    index_type index_of(hash_type hash, size_type capacity_mask) const {
-        return (index_type)((size_type)hash & capacity_mask);
-    }
-
-    index_type next_index(index_type index, size_type capacity_mask) const {
-        ++index;
-        return (index_type)((size_type)index & capacity_mask);
-    }
-
     inline size_type calc_shrink_capacity(size_type new_capacity) {
         // The maximum bucket is kMaximumCapacity = 1 << 30.
         new_capacity = (new_capacity <= kMaximumCapacity) ? new_capacity : kMaximumCapacity;
@@ -441,7 +440,7 @@ protected:
 
         do {
             hash_type hash = old_entry->hash;
-            size_type index = this->index_of(hash, new_mask);
+            size_type index = this->hasher_.index_of(hash, new_mask);
 
             // Save the value of old_entry->next.
             entry_type * next_entry = old_entry->next;
@@ -551,7 +550,7 @@ protected:
                             hash_type hash = new_entry->hash;
                             assert(hash != kInvalidHash);
                             // Insert the new entries to the new buckets.
-                            size_type index = this->index_of(hash, new_mask);
+                            size_type index = this->hasher_.index_of(hash, new_mask);
                             new_entry->next = new_buckets[index];
                             new_buckets[index] = new_entry;
                             ++new_entry;
@@ -661,8 +660,8 @@ public:
 
     iterator find(const key_type & key) {
         if (likely(this->buckets() != nullptr)) {
-            hash_type hash = this->hasher_(key);
-            index_type index = this->index_of(hash, this->bucket_mask_);
+            hash_type hash = this->hasher_.hash_code(key);
+            index_type index = this->hasher_.index_of(hash, this->bucket_mask_);
 
             assert(this->entries() != nullptr);
             entry_type * entry = this->buckets_[index];
@@ -674,7 +673,7 @@ public:
                 }
                 else {
                     // If hash value is equal, then compare the key sizes and the strings.
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    if (likely(this->comparer_.key_is_equals(key, entry->value.first))) {
                         return (iterator)entry;
                     }
                     // Scan next entry
@@ -702,7 +701,7 @@ public:
             }
             else {
                 // If hash value is equal, then compare the key sizes and the strings.
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(this->comparer_.key_is_equals(key, entry->value.first))) {
                     return (iterator)entry;
                 }
                 // Scan next entry
@@ -715,8 +714,8 @@ public:
     }
 
     inline iterator find_before(const key_type & key, entry_type *& before_out, size_type & index) {
-        hash_type hash = this->hasher_(key);
-        index = this->index_of(hash, this->bucket_mask_);
+        hash_type hash = this->hasher_.hash_code(key);
+        index = this->hasher_.index_of(hash, this->bucket_mask_);
 
         assert(this->buckets() != nullptr);
         assert(this->entries() != nullptr);
@@ -731,7 +730,7 @@ public:
             }
             else {
                 // If hash value is equal, then compare the key sizes and the strings.
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(this->comparer_.key_is_equals(key, entry->value.first))) {
                     before_out = before;
                     return (iterator)entry;
                 }
@@ -751,8 +750,8 @@ public:
 
     void insert(const key_type & key, const mapped_type & value) {
         if (likely(this->buckets_ != nullptr)) {
-            hash_type hash = this->hasher_(key);
-            index_type index = this->index_of(hash, this->bucket_mask_);
+            hash_type hash = this->hasher_.hash_code(key);
+            index_type index = this->hasher_.index_of(hash, this->bucket_mask_);
             iterator iter = this->find_internal(key, hash, index);
             if (likely(iter == this->unsafe_end())) {
                 // Insert the new key.
@@ -762,7 +761,7 @@ public:
                         // Resize the buckets and the entries.
                         this->resize_internal(this->entries_capacity_ + 1, this->bucket_capacity_ * 2);
                         // Recalculate the bucket index.
-                        index = this->index_of(hash, this->bucket_mask_);
+                        index = this->hasher_.index_of(hash, this->bucket_mask_);
                     }
 
                     // Get a unused entry.
@@ -803,8 +802,8 @@ public:
 
     void insert(key_type && key, mapped_type && value) {
         if (likely(this->buckets_ != nullptr)) {
-            hash_type hash = this->hasher_(key);
-            index_type index = this->index_of(hash, this->bucket_mask_);
+            hash_type hash = this->hasher_.hash_code(key);
+            index_type index = this->hasher_.index_of(hash, this->bucket_mask_);
             iterator iter = this->find_internal(std::forward<key_type>(key), hash, index);
             if (likely(iter == this->unsafe_end())) {
                 // Insert the new key.
@@ -814,7 +813,7 @@ public:
                         // Resize the buckets and the entries.
                         this->resize_internal(this->entries_capacity_ + 1, this->bucket_capacity_ * 2);
                         // Recalculate the bucket index.
-                        index = this->index_of(hash, this->bucket_mask_);
+                        index = this->hasher_.index_of(hash, this->bucket_mask_);
                     }
 
                     // Get a unused entry.
@@ -949,8 +948,8 @@ public:
 #else
     bool erase(const key_type & key) {
         if (likely(this->buckets_ != nullptr)) {
-            hash_type hash = this->hasher(key);
-            size_type index = this->index_of(hash, this->mask_);
+            hash_type hash = this->hasher_.hash_code(key);
+            size_type index = this->hasher_.index_of(hash, this->mask_);
 
             assert(this->buckets() != nullptr);
             assert(this->entries() != nullptr);
@@ -965,7 +964,7 @@ public:
                 }
                 else {
                     // If hash value is equal, then compare the key sizes and the strings.
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    if (likely(this->comparer_.key_is_equals(key, entry->value.first))) {
                         if (likely(before != nullptr))
                             before->next = entry->next;
                         else
@@ -1010,8 +1009,8 @@ public:
 
     bool erase(key_type && key) {
         if (likely(this->buckets_ != nullptr)) {
-            hash_type hash = this->hasher_(std::forward<key_type>(key));
-            size_type index = this->index_of(hash, this->mask_);
+            hash_type hash = this->hasher_.hash_code(std::forward<key_type>(key));
+            size_type index = this->hasher_.index_of(hash, this->mask_);
 
             assert(this->buckets() != nullptr);
             assert(this->entries() != nullptr);
@@ -1026,8 +1025,8 @@ public:
                 }
                 else {
                     // If hash value is equal, then compare the key sizes and the strings.
-                    if (likely(this->key_is_equal_(std::forward<key_type>(key),
-                                                   entry->value.first))) {
+                    if (likely(this->comparer_.key_is_equals(std::forward<key_type>(key),
+                                                             entry->value.first))) {
                         if (likely(before != nullptr))
                             before->next = entry->next;
                         else
@@ -1099,16 +1098,26 @@ using Dictionary_v1 = BasicDictionary<Key, Value, HashFunc_Time31>;
 template <typename Key, typename Value>
 using Dictionary_v2 = BasicDictionary<Key, Value, HashFunc_Time31Std>;
 
+#if SUPPORT_SMID_SHA
+template <typename Key, typename Value>
+using Dictionary_SHA_v1 = BasicDictionary<Key, Value, HashFunc_SHA1_MSG2>;
+#endif
+
+#if SUPPORT_SMID_SHA
+template <typename Key, typename Value>
+using Dictionary_SHA_v2 = BasicDictionary<Key, Value, HashFunc_SHA1>;
+#endif
+
 #if SUPPORT_SSE42_CRC32C
 template <typename Key, typename Value>
-using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C>;
+using Dictionary_CRC32C = BasicDictionary<Key, Value, HashFunc_CRC32C>;
 
 template <typename Key, typename Value>
 using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C>;
 #else
 template <typename Key, typename Value>
 using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31Std>;
-#endif // SUPPORT_SSE42_CRC32C
+#endif
 
 } // namespace jstd
 

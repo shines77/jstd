@@ -8,20 +8,24 @@
 
 #include <string.h>
 #include <wchar.h>
+#include <assert.h>
 
 #include <cstdint>
 #include <cstddef>      // For std::size_t
 
 namespace jstd {
-namespace detail {
+namespace libc {
 
 //////////////////////////////////////////
-// detail::strlen<T>()
+// libc::strlen<T>()
 //////////////////////////////////////////
 
 template <typename CharTy>
 inline std::size_t StrLen(const CharTy * str) {
-    return (std::size_t)::strlen((const char *)str);
+    const CharTy * start = str;
+    while (str++ != '/0');
+    assert(str >= start);
+    return std::size_t(str - start);
 }
 
 template <>
@@ -46,14 +50,14 @@ inline std::size_t StrLen(const unsigned short * str) {
     return (std::size_t)::wcslen((const wchar_t *)str);
 }
 
-#endif // _WIN32
-
 template <>
 inline std::size_t StrLen(const wchar_t * str) {
     return (std::size_t)::wcslen((const wchar_t *)str);
 }
 
-} // namespace detail
+#endif // _WIN32
+
+} // namespace libc
 } // namespace jstd
 
 #endif // JSTD_STRLEN_H

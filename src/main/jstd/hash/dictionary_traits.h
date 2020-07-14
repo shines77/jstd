@@ -21,44 +21,32 @@ namespace jstd {
 //
 // Default jstd::dictionary<K, V> hash traits
 //
-template <typename Key, typename Value, std::size_t HashFunc = HashFunc_Default>
+template <typename Key, std::size_t HashFunc = HashFunc_Default>
 struct DefaultDictionaryHasher {
-    typedef Key             key_type;
-    typedef Value           value_type;
-    typedef std::size_t     size_type;
-    typedef std::uint32_t   hash_type;
-    typedef std::size_t     index_type;
+    typedef Key             argument_type;
+    typedef std::uint32_t   result_type;
 
     // The invalid hash value.
-    static const hash_type kInvalidHash = static_cast<hash_type>(-1);
+    static const result_type kInvalidHash = static_cast<result_type>(-1);
     // The replacement value for invalid hash value.
-    static const hash_type kReplacedHash = static_cast<hash_type>(-2);
+    static const result_type kReplacedHash = static_cast<result_type>(-2);
 
     DefaultDictionaryHasher() {}
     ~DefaultDictionaryHasher() {}
 
-    hash_type hash_code(const key_type & key) const {
+    result_type operator () (const argument_type & key) const {
         // All of the following two methods can get the hash value.
 #if 0
-        hash_type hash = jstd::HashHelper<key_type, hash_type, HashFunc>::getHashCode(key);
+        result_type hash_code = jstd::HashHelper<argument_type, result_type, HashFunc>::getHashCode(key);
 #else
-        jstd::hash<key_type, hash_type, HashFunc> hasher;
-        hash_type hash = hasher(key);
+        jstd::hash<argument_type, result_type, HashFunc> hasher;
+        result_type hash_code = hasher(key);
 #endif
         // The hash code can't equal to kInvalidHash, replacement to kReplacedHash.
         if (likely(hash != kInvalidHash))
             return hash;
         else
             return kReplacedHash;
-    }
-
-    index_type index_of(hash_type hash, size_type capacity_mask) const {
-        return (index_type)((size_type)hash & capacity_mask);
-    }
-
-    index_type next_index(index_type index, size_type capacity_mask) const {
-        ++index;
-        return (index_type)((size_type)index & capacity_mask);
     }
 };
 
@@ -73,7 +61,7 @@ struct DefaultDictionaryComparer {
     DefaultDictionaryComparer() {}
     ~DefaultDictionaryComparer() {}
 
-#if (STRING_COMPARE_MODE == STRING_COMPARE_STDC)
+#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
 
     bool key_is_equals(const key_type & key1, const key_type & key2) const {
         return (::strcmp(key1.c_str(), key2. c_str()) == 0);
@@ -91,7 +79,7 @@ struct DefaultDictionaryComparer {
         return ::strcmp(value1.c_str(), value2. c_str());
     }
 
-#else // (STRING_COMPARE_MODE != STRING_COMPARE_STDC)
+#else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
 
     bool key_is_equals(const key_type & key1, const key_type & key2) const {
         return StrUtils::is_equals(key1, key2);
@@ -164,7 +152,60 @@ struct DefaultDictionaryTraits {
     int value_compare(const value_type & value1, const value_type & value2) const {
         return this->comparer_.value_compare(value1, value2);
     }
+};
 
+template <typename Key>
+struct equal_to {
+    typedef Key key_type;
+
+    equal_to() {}
+    ~equal_to() {}
+
+    bool operator () (const key_type & key1, const key_type & key2) const {
+        return (key1 == key2);
+    }
+};
+
+template <>
+struct equal_to<std::string> {
+    typedef std::string key_type;
+
+    equal_to() {}
+    ~equal_to() {}
+
+#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
+    bool operator () (const key_type & key1, const key_type & key2) const {
+        if (key1.size() == key2.size())
+            return (::strcmp(key1.c_str(), key2.c_str()) == 0);
+        else
+            return false;
+    }
+#else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
+    bool operator () (const key_type & key1, const key_type & key2) const {
+        return StrUtils::is_equals(key1, key2);
+    }
+#endif
+};
+
+template <>
+struct equal_to<std::wstring> {
+    typedef std::wstring key_type;
+
+    equal_to() {}
+    ~equal_to() {}
+
+#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
+    bool operator () (const key_type & key1, const key_type & key2) const {
+        if (key1.size() == key2.size())
+            return (::memcmp(key1.c_str(), key2.c_str(), key1.size() * sizeof(wchar_t)) == 0);
+        else
+            return false;
+    }
+#else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
+    bool operator () (const key_type & key1, const key_type & key2) const {
+        return StrUtils::is_equals(key1, key2);
+    }
+#endif
 };
 
 } // namespace jstd
