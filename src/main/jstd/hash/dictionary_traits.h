@@ -39,12 +39,12 @@ struct DefaultDictionaryHasher {
 #if 0
         result_type hash_code = jstd::HashHelper<argument_type, result_type, HashFunc>::getHashCode(key);
 #else
-        jstd::hash<argument_type, result_type, HashFunc> hasher;
+        jstd::hash<argument_type, HashFunc, result_type> hasher;
         result_type hash_code = hasher(key);
 #endif
         // The hash code can't equal to kInvalidHash, replacement to kReplacedHash.
-        if (likely(hash != kInvalidHash))
-            return hash;
+        if (likely(hash_code != kInvalidHash))
+            return hash_code;
         else
             return kReplacedHash;
     }

@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstdbool>
+#include <memory>
 
 #include <type_traits>
 

@@ -23,33 +23,39 @@ namespace jstd {
 // identifying tag for input iterators
 struct input_iterator_tag
 {
+    input_iterator_tag() = default;
 };
 
 // TRANSITION, remove for Dev15
 
 // identifying tag for mutable iterators
 struct mutable_iterator_tag
-{	
+{
+    mutable_iterator_tag() = default;
 };
 
 // identifying tag for output iterators
 struct output_iterator_tag : mutable_iterator_tag
 {
+    output_iterator_tag() = default;
 };
 
 // identifying tag for forward iterators
 struct forward_iterator_tag : input_iterator_tag, mutable_iterator_tag
 {
+    forward_iterator_tag() = default;
 };
 
 // identifying tag for bidirectional iterators
 struct bidirectional_iterator_tag : forward_iterator_tag
 {
+    bidirectional_iterator_tag() = default;
 };
 
 // identifying tag for random-access iterators
 struct random_access_iterator_tag : bidirectional_iterator_tag
 {
+    random_access_iterator_tag() = default;
 };
 
 // base type for iterator classes
