@@ -26,8 +26,8 @@
 
 #include <jstd/all.h>
 
-#include <utility>
 #include <memory>
+#include <utility>
 
 class ListDemo {
 public:
@@ -39,6 +39,18 @@ template <class T>
 class ListIterator : public jstd::iterator<
         jstd::random_access_iterator_tag, ListIterator<T>
     > {
+public:
+    typedef jstd::iterator<jstd::random_access_iterator_tag, ListIterator<T>>
+                                                    base_type;
+    typedef ListIterator<T>                         this_type;
+
+    typedef typename base_type::iterator_category   iterator_category;
+    typedef typename base_type::value_type          value_type;
+    typedef typename base_type::difference_type     difference_type;
+
+    typedef typename base_type::pointer             pointer;
+    typedef typename base_type::reference           reference;
+
 private:
     T * ptr_;
 
@@ -63,14 +75,14 @@ public:
 
     // assign from compatible base
     template <class Other>
-    ListIterator & operator = (const ListIterator<Other> & right) {
+    this_type & operator = (const ListIterator<Other> & right) {
         ptr_ = right.ptr();
         return (*this);
     }
 
     // return designated value
     reference operator * () const {
-        return (*const_cast<ListIterator *>(this));
+        return (*const_cast<this_type *>(this));
     }
 
     // return pointer to class object
@@ -78,45 +90,45 @@ public:
         return (std::pointer_traits<pointer>::pointer_to(**this));
     }
 
-    ListIterator & operator ++ () {
+    this_type & operator ++ () {
         ++ptr_;
         return (*this);
     }
 
-    ListIterator operator ++ (int) {
-        ListIterator tmp = *this;
+    this_type operator ++ (int) {
+        this_type tmp = *this;
         ++ptr_;
         return tmp;
     }
 
-    ListIterator & operator -- () {
+    this_type & operator -- () {
         --ptr_;
         return (*this);
     }
 
-    ListIterator operator -- (int) {
-        ListIterator tmp = *this;
+    this_type operator -- (int) {
+        this_type tmp = *this;
         --ptr_;
         return tmp;
     }
 
     // increment by integer
-    ListIterator & operator += (difference_type offset) {
+    this_type & operator += (difference_type offset) {
         ptr_ += offset;
         return (*this);
     }
 
-    ListIterator operator + (difference_type offset) {
-        return ListIterator(ptr_ + offset);
+    this_type operator + (difference_type offset) {
+        return this_type(ptr_ + offset);
     }
 
-    ListIterator & operator -= (difference_type offset) {
+    this_type & operator -= (difference_type offset) {
         ptr_ -= offset;
         return (*this);
     }
 
-    ListIterator operator - (difference_type offset) {
-        return ListIterator(ptr_ - offset);
+    this_type operator - (difference_type offset) {
+        return this_type(ptr_ - offset);
     }
 };
 
