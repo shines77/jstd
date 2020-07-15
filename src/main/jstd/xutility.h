@@ -13,7 +13,6 @@
 #include <cstddef>
 #include <cstdbool>
 
-#include <xutility>
 #include <type_traits>
 
 namespace jstd {
