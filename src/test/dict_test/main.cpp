@@ -22,7 +22,7 @@
 #define STRING_COMPARE_U64      1
 #define STRING_COMPARE_SSE42    2
 
-#define STRING_COMPARE_MODE     STRING_COMPARE_LIBC
+#define STRING_COMPARE_MODE     STRING_COMPARE_SSE42
 
 #include <jstd/all.h>
 
