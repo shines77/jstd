@@ -193,7 +193,7 @@ struct iterator_utils {
     template <class InputIter, class Difference>
     static inline
     void advance(InputIter & where, Difference offset) {
-        this_type::advance_impl(where, offset, iter_cat_t<std::remove_const<InputIter>::type>());
+        this_type::advance_impl(where, offset, iter_cat_t<typename std::remove_const<InputIter>::type>());
     }
 
     //////////////////////////////////////////////////////////////////////////////////////

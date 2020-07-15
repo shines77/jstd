@@ -23,7 +23,7 @@ namespace libc {
 template <typename CharTy>
 inline std::size_t StrLen(const CharTy * str) {
     const CharTy * start = str;
-    while (*str++ != CharTy('/0'));
+    while (*str++ != '/0');
     assert(str >= start);
     return std::size_t(str - start);
 }
