@@ -45,7 +45,7 @@ class BasicDictionary {
 public:
     typedef Key                             key_type;
     typedef Value                           mapped_type;
-    typedef std::pair<Key, Value>           value_type;
+    typedef std::pair<const Key, Value>     value_type;
 
     typedef Hasher                          hasher;
     typedef Hasher                          hasher_type;
@@ -889,11 +889,11 @@ public:
                 entry->next = this->freelist_.head();
                 entry->hash = kInvalidHash;
 #ifdef _MSC_VER
-                entry->pair.first.clear();
-                entry->pair.second.clear();
+                entry->value.first.clear();
+                entry->value.second.clear();
 #else
-                entry->pair.first = std::string("");
-                entry->pair.second = std::string("");
+                entry->value.first = std::string("");
+                entry->value.second = std::string("");
 #endif
                 this->freelist_.set_head(entry);
                 this->freelist_.increase();
@@ -927,11 +927,11 @@ public:
                 entry->next = this->freelist_.head();
                 entry->hash = kInvalidHash;
 #ifdef _MSC_VER
-                entry->pair.first.clear();
-                entry->pair.second.clear();
+                entry->value.first.clear();
+                entry->value.second.clear();
 #else
-                entry->pair.first = std::string("");
-                entry->pair.second = std::string("");
+                entry->value.first = std::string("");
+                entry->value.second = std::string("");
 #endif
                 this->freelist_.set_head(entry);
                 this->freelist_.increase();
