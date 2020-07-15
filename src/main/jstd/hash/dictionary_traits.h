@@ -104,7 +104,7 @@ struct DefaultDictionaryComparer {
 // Default Dictionary<K, V> traits
 //
 template <typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
-          typename Hasher = DefaultDictionaryHasher<Key, Value, HashFunc>,
+          typename Hasher = DefaultDictionaryHasher<Key, HashFunc>,
           typename Comparer = DefaultDictionaryComparer<Key, Value>>
 struct DefaultDictionaryTraits {
     typedef Key                             key_type;
@@ -113,8 +113,8 @@ struct DefaultDictionaryTraits {
     typedef typename Hasher::hash_type      hash_type;
     typedef typename Hasher::index_type     index_type;
 
-    Hasher hasher_;
-    Comparer comparer_;
+    Hasher      hasher_;
+    Comparer    comparer_;
 
     DefaultDictionaryTraits() {}
     ~DefaultDictionaryTraits() {}
@@ -123,15 +123,7 @@ struct DefaultDictionaryTraits {
     // Hasher
     //
     hash_type hash_code(const key_type & key) const {
-        return this->hasher_.hash_code(key);
-    }
-
-    index_type index_of(hash_type hash, size_type capacity_mask) const {
-        return this->hasher_.index_of(hash, capacity_mask);
-    }
-
-    index_type next_index(index_type index, size_type capacity_mask) const {
-        return this->hasher_.next_index(index, capacity_mask);
+        return this->hasher_(key);
     }
 
     //
@@ -175,10 +167,7 @@ struct equal_to<std::string> {
 
 #if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
-        if (key1.size() == key2.size())
-            return (::strcmp(key1.c_str(), key2.c_str()) == 0);
-        else
-            return false;
+        return libc::StrEqual(key1, key2);
     }
 #else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
@@ -196,10 +185,7 @@ struct equal_to<std::wstring> {
 
 #if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
-        if (key1.size() == key2.size())
-            return (::memcmp(key1.c_str(), key2.c_str(), key1.size() * sizeof(wchar_t)) == 0);
-        else
-            return false;
+        return libc::StrEqual(key1, key2);
     }
 #else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {

@@ -140,8 +140,11 @@ int main(int argc, char *argv[])
     ListIterator<ListDemo> random_iter;
     jstd::iterator_utils::advance(random_iter, std::ptrdiff_t(1));
 
-    jstd::Dictionary_crc32c<std::wstring, std::wstring> dict;
-    dict.insert(L"1", L"100");
+    jstd::Dictionary_crc32c<std::string, std::string> dict;
+    dict.insert("1", "100");
+
+    jstd::Dictionary_crc32c<std::wstring, std::wstring> wdict;
+    wdict.insert(L"2", L"200");
 
     printf("dict_test.exe - %d, 0x%p, 0x%p\n\n",
            (int)is_iterator,

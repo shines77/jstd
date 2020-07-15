@@ -1107,7 +1107,7 @@ template <typename Key, typename Value>
 using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C>;
 #else
 template <typename Key, typename Value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31Std>;
+using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31>;
 #endif // SUPPORT_SSE42_CRC32C
 
 } // namespace jstd

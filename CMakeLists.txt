@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-project(jstd-unittest)
+project(dict-test)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -52,10 +52,11 @@ include_directories(src)
 include_directories(src/main)
 include_directories(src/test)
 include_directories(src/unittest)
+include_directories(src/test/dict_test)
 
 set(SOURCE_FILES
-    src/main/jstd/lang/Global.cpp
-    src/unittest/jstd-unittest/main.cpp
+    src/main/jstd/lib.cpp
+    src/test/dict_test/main.cpp
     )
 
 add_custom_target(release
@@ -64,5 +65,5 @@ add_custom_target(release
     COMMENT "Switch CMAKE_BUILD_TYPE to Release"
 )
 
-add_executable(jstd-unittest ${SOURCE_FILES})
-target_link_libraries(jstd-unittest ${EXTRA_LIBS})
+add_executable(dict-test ${SOURCE_FILES})
+target_link_libraries(dict-test ${EXTRA_LIBS})

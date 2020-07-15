@@ -76,7 +76,7 @@ bool StrEqual(const wchar_t * str1, const wchar_t * str2) {
 
 template <typename CharTy>
 inline
-int StrEqual(const CharTy * str1, const CharTy * str2, size_t len) {
+bool StrEqual(const CharTy * str1, const CharTy * str2, size_t len) {
     assert(libc::StrLen(str1) == len);
     assert(libc::StrLen(str2) == len);
     return StrEqual(str1, str2);
@@ -84,7 +84,7 @@ int StrEqual(const CharTy * str1, const CharTy * str2, size_t len) {
 
 template <>
 inline
-int StrEqual(const wchar_t * str1, const wchar_t * str2, size_t len) {
+bool StrEqual(const wchar_t * str1, const wchar_t * str2, size_t len) {
     assert(libc::StrLen(str1) == len);
     assert(libc::StrLen(str2) == len);
     return (::memcmp((const void *)str1, (const void *)str2, len * sizeof(wchar_t)) == 0);
@@ -92,7 +92,7 @@ int StrEqual(const wchar_t * str1, const wchar_t * str2, size_t len) {
 
 template <typename CharTy>
 inline
-int StrEqual(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2) {
+bool StrEqual(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2) {
     if (len1 == len2)
         return StrEqual(str1, str2);
     else
@@ -101,11 +101,17 @@ int StrEqual(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2)
 
 template <>
 inline
-int StrEqual(const wchar_t * str1, size_t len1, const wchar_t * str2, size_t len2) {
+bool StrEqual(const wchar_t * str1, size_t len1, const wchar_t * str2, size_t len2) {
     if (len1 == len2)
         return StrEqual(str1, str2, len1);
     else
         return false;
+}
+
+template <typename StringTy>
+inline
+bool StrEqual(const StringTy & str1, const StringTy & str2) {
+    return StrEqual(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 // StrCmp()
@@ -148,6 +154,12 @@ template <>
 inline
 int StrCmp(const wchar_t * str1, size_t len1, const wchar_t * str2, size_t len2) {
     return StrCmp(str1, str2);
+}
+
+template <typename StringTy>
+inline
+int StrCmp(const StringTy & str1, const StringTy & str2) {
+    return StrCmp(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 } // namespace libc
