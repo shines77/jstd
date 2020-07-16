@@ -316,25 +316,26 @@ protected:
         assert(entries != nullptr);
         assert(capacity > 0);
         entry_type * entry = entries;
+        entry_type * next_entry = entries + 1;
         for (size_type i = 0; i < capacity; ++i) {
-            entry_type * next_entry = entry + 1;
             entry->next = next_entry;
-            entry = next_entry;
+            entry++;
+            next_entry++;
         }
         freelist.set_head(entries);
         freelist.set_size(capacity);
     }
 
-    void initialize(size_type new_capacity) {
-        size_type bucket_capacity = detail::round_up_to_pow2(new_capacity);
+    void initialize(size_type init_capacity) {
+        size_type bucket_capacity = detail::round_up_to_pow2(init_capacity);
         assert(bucket_capacity > 0);
         assert((bucket_capacity & (bucket_capacity - 1)) == 0);
 
         if (likely(bucket_capacity <= kBucketBlockCapacity)) {
-            new_capacity = bucket_capacity;
+            init_capacity = bucket_capacity;
         }
         else {
-            new_capacity = detail::aligned_to(new_capacity, kBucketBlockCapacity);
+            init_capacity = detail::aligned_to(init_capacity, kBucketBlockCapacity);
         }
 
         // The the array of bucket's first entry.
@@ -342,7 +343,7 @@ protected:
         entry_type ** new_buckets = JSTD_NEW_ARRAY(entry_type *, bucket_capacity);
         IF_LIKELY(new_buckets != nullptr) {
             // Initialize the buckets's data.
-            memset((void *)new_buckets, 0, sizeof(entry_type *) * bucket_capacity);
+            ::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
             // Save the buckets data info.
             this->buckets_ = new_buckets;
@@ -353,10 +354,10 @@ protected:
 #if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
             // entry_type * new_entries = (entry_type *)operator new(
             //                             sizeof(entry_type) * new_capacity, std::nothrow);
-            entry_type * new_entries = JSTD_PLACEMENT_NEW(entry_type, new_capacity);
+            entry_type * new_entries = JSTD_PLACEMENT_NEW(entry_type, init_capacity);
 #else
             // entry_type * new_entries = new (std::nothrow) entry_type[new_capacity];
-            entry_type * new_entries = JSTD_NEW_ARRAY(entry_type, new_capacity);
+            entry_type * new_entries = JSTD_NEW_ARRAY(entry_type, init_capacity);
 #endif
             IF_LIKELY(new_entries != nullptr) {
                 // Linked all new entries to the free list.
@@ -365,7 +366,7 @@ protected:
                 // Initialize status
                 this->entries_ = new_entries;
                 this->entries_size_ = 0;
-                this->entries_capacity_ = new_capacity;
+                this->entries_capacity_ = init_capacity;
                 this->freelist_.clear();
             }
         }
@@ -406,14 +407,25 @@ protected:
 #endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
     }
 
-    inline size_type calc_capacity(size_type new_capacity) {
+    inline size_type calc_capacity(size_type capacity) const {
         // The minimum bucket is kMinimumCapacity = 16.
-        new_capacity = (new_capacity >= kMinimumCapacity) ? new_capacity : kMinimumCapacity;
+        //capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
+
         // The maximum bucket is kMaximumCapacity = 1 << 30.
-        new_capacity = (new_capacity <= kMaximumCapacity) ? new_capacity : kMaximumCapacity;
+        capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
+
         // Round up the new_capacity to power 2.
-        new_capacity = detail::round_up_to_pow2(new_capacity);
-        return new_capacity;
+        capacity = detail::round_up_to_pow2(capacity);
+        return capacity;
+    }
+
+    inline size_type calc_shrink_capacity(size_type capacity) {
+        // The maximum bucket is kMaximumCapacity = 1 << 30.
+        capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
+
+        // Round up the new_capacity to power 2.
+        capacity = detail::round_up_to_pow2(capacity);
+        return capacity;
     }
 
     index_type index_of(hash_type hash, size_type capacity_mask) const {
@@ -423,14 +435,6 @@ protected:
     index_type next_index(index_type index, size_type capacity_mask) const {
         ++index;
         return (index_type)((size_type)index & capacity_mask);
-    }
-
-    inline size_type calc_shrink_capacity(size_type new_capacity) {
-        // The maximum bucket is kMaximumCapacity = 1 << 30.
-        new_capacity = (new_capacity <= kMaximumCapacity) ? new_capacity : kMaximumCapacity;
-        // Round up the new_capacity to power 2.
-        new_capacity = detail::round_up_to_pow2(new_capacity);
-        return new_capacity;
     }
 
     void reinsert_list(entry_type ** new_buckets, size_type new_mask,
