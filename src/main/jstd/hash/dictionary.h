@@ -641,10 +641,10 @@ public:
         printf("jstd::BasicDictionary<K, V>::dump()\n\n");
     }
 
-    void reserve(size_type new_capacity) {
+    void reserve(size_type capacity) {
         // Recalculate the size of new_capacity.
-        size_type bucket_capacity = this->calc_capacity(new_capacity);
-        this->rehash_internal<false>(new_capacity, bucket_capacity);
+        size_type bucket_capacity = this->calc_capacity(capacity);
+        this->rehash_internal<false>(capacity, bucket_capacity);
     }
 
     void rehash(size_type new_capacity) {
@@ -653,8 +653,8 @@ public:
         this->rehash_internal<false>(new_capacity, bucket_capacity);
     }
 
-    void resize(size_type new_capacity) {
-        this->rehash(new_capacity);
+    void resize(size_type new_size) {
+        this->rehash(new_size);
     }
 
     void shrink_to_fit(size_type new_capacity) {
@@ -954,7 +954,7 @@ public:
     bool erase(const key_type & key) {
         if (likely(this->buckets_ != nullptr)) {
             hash_type hash = this->hasher(key);
-            size_type index = this->index_of(hash, this->mask_);
+            size_type index = this->index_of(hash, this->bucket_mask_);
 
             assert(this->buckets() != nullptr);
             assert(this->entries() != nullptr);
@@ -1015,7 +1015,7 @@ public:
     bool erase(key_type && key) {
         if (likely(this->buckets_ != nullptr)) {
             hash_type hash = this->hasher_(std::forward<key_type>(key));
-            size_type index = this->index_of(hash, this->mask_);
+            size_type index = this->index_of(hash, this->bucket_mask_);
 
             assert(this->buckets() != nullptr);
             assert(this->entries() != nullptr);
