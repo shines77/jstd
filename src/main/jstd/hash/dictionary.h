@@ -133,11 +133,11 @@ public:
             this->size_ = 0;
         }
 
-        void increase() {
+        void inc() {
             ++(this->size_);
         }
 
-        void decrease() {
+        void dec() {
             --(this->size_);
         }
 
@@ -268,61 +268,35 @@ public:
 #endif
     }
 
-    void destroy() {
-        // Free the resources.
-        if (likely(this->buckets_ != nullptr)) {
-            if (likely(this->entries_ != nullptr)) {
-                // Free all entries.
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-                this->destroy_entries();
-#else
-                //jstd::nothrow_deleter::destroy(this->entries_);
-                JSTD_DELETE_ARRAY(this->entries_);
-#endif
-                this->entries_ = nullptr;
-            }
-            // Free the array of bucket's first entry.
-            //operator delete((void *)this->buckets_, std::nothrow);
-            //jstd::nothrow_deleter::free(this->buckets_);
-            JSTD_FREE_ARRAY(this->buckets_);
-            this->buckets_ = nullptr;
-        }
-
-        // Clear settings
-        this->bucket_mask_ = 0;
-        this->bucket_capacity_ = 0;
-        this->entry_size_ = 0;
-        this->entry_capacity_ = 0;
-
-        this->freelist_.clear();
-    }
-
-    void clear() {
-        if (likely(this->buckets_ != nullptr)) {
-            // Initialize the buckets's data.
-            memset((void *)this->buckets_, 0, this->entry_capacity_ * sizeof(entry_type *));
-        }
-
-        // Clear settings
-        this->entry_size_ = 0;
-        this->freelist_.clear();
-    }
-
 protected:
-    // Linked the entries to the free list.
-    void fill_freelist(free_list & freelist, entry_type * entries, size_type capacity) {
-        assert(entries != nullptr);
-        assert(capacity > 0);
-        entry_type * entry = entries + capacity - 1;
-        entry_type * prev = entries + capacity;
-        entry_type * last_entry = entry;
-        for (size_type i = 0; i < capacity; i++) {
-            entry->next = prev;
-            prev--;
-            entry--;
-        }
-        last_entry->next = nullptr;
-        freelist.set_list(entries, capacity);
+    inline size_type calc_capacity(size_type capacity) const {
+        // The minimum bucket is kMinimumCapacity = 16.
+        //capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
+
+        // The maximum bucket is kMaximumCapacity = 1 << 30.
+        capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
+
+        // Round up the new_capacity to power 2.
+        capacity = detail::round_up_to_pow2(capacity);
+        return capacity;
+    }
+
+    inline size_type calc_shrink_capacity(size_type capacity) {
+        // The maximum bucket is kMaximumCapacity = 1 << 30.
+        capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
+
+        // Round up the new_capacity to power 2.
+        capacity = detail::round_up_to_pow2(capacity);
+        return capacity;
+    }
+
+    index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
+        return (index_type)((size_type)hash_code & capacity_mask);
+    }
+
+    index_type next_index(index_type index, size_type capacity_mask) const {
+        ++index;
+        return (index_type)((size_type)index & capacity_mask);
     }
 
     void initialize(size_type init_capacity) {
@@ -367,11 +341,16 @@ protected:
         this->freelist_.clear();
     }
 
+    void free_buckets_impl() {
+        assert(this->buckets_ != nullptr);
+        //operator delete((void *)this->buckets_, std::nothrow);
+        //jstd::nothrow_deleter::free(this->buckets_);
+        JSTD_FREE_ARRAY(this->buckets_);
+    }
+
     void free_buckets() {
         if (likely(this->buckets_ != nullptr)) {
-            //operator delete((void *)this->buckets_, std::nothrow);
-            //jstd::nothrow_deleter::free(this->buckets_);
-            JSTD_FREE_ARRAY(this->buckets_);
+            this->free_buckets_impl();
         }
     }
 
@@ -414,34 +393,20 @@ protected:
 #endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
     }
 
-    inline size_type calc_capacity(size_type capacity) const {
-        // The minimum bucket is kMinimumCapacity = 16.
-        //capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
-
-        // The maximum bucket is kMaximumCapacity = 1 << 30.
-        capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-
-        // Round up the new_capacity to power 2.
-        capacity = detail::round_up_to_pow2(capacity);
-        return capacity;
-    }
-
-    inline size_type calc_shrink_capacity(size_type capacity) {
-        // The maximum bucket is kMaximumCapacity = 1 << 30.
-        capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-
-        // Round up the new_capacity to power 2.
-        capacity = detail::round_up_to_pow2(capacity);
-        return capacity;
-    }
-
-    index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
-        return (index_type)((size_type)hash_code & capacity_mask);
-    }
-
-    index_type next_index(index_type index, size_type capacity_mask) const {
-        ++index;
-        return (index_type)((size_type)index & capacity_mask);
+    // Linked the entries to the free list.
+    void fill_freelist(free_list & freelist, entry_type * entries, size_type capacity) {
+        assert(entries != nullptr);
+        assert(capacity > 0);
+        entry_type * entry = entries + capacity - 1;
+        entry_type * prev = entries + capacity;
+        entry_type * last_entry = entry;
+        for (size_type i = 0; i < capacity; i++) {
+            entry->next = prev;
+            prev--;
+            entry--;
+        }
+        last_entry->next = nullptr;
+        freelist.set_list(entries, capacity);
     }
 
     void reinsert_list(entry_type ** new_buckets, size_type new_mask,
@@ -627,6 +592,60 @@ protected:
         }
     }
 
+    inline iterator find_internal(const key_type & key, hash_code_t hash_code, index_type index) {
+        assert(this->buckets() != nullptr);
+        assert(this->entries() != nullptr);
+        entry_type * entry = this->buckets_[index];
+        while (likely(entry != nullptr)) {
+            // Found a entry, next to check the hash value.
+            if (likely(entry->hash_code != hash_code)) {
+                // Scan next entry
+                entry = entry->next;
+            }
+            else {
+                // If hash value is equal, then compare the key sizes and the strings.
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    return (iterator)entry;
+                }
+                // Scan next entry
+                entry = entry->next;
+            }
+        }
+
+        // Not found
+        return this->unsafe_end();
+    }
+
+    inline iterator find_before(const key_type & key, entry_type *& before_out, size_type & index) {
+        hash_code_t hash_code = this->hasher_(key);
+        index = this->index_of(hash_code, this->bucket_mask_);
+
+        assert(this->buckets() != nullptr);
+        assert(this->entries() != nullptr);
+        entry_type * before = nullptr;
+        entry_type * entry = this->buckets_[index];
+        while (likely(entry != nullptr)) {
+            // Found entry, next to check the hash value.
+            if (likely(entry->hash_code != hash_code)) {
+                // Scan next entry
+                before = entry;
+                entry = entry->next;
+            }
+            else {
+                // If hash value is equal, then compare the key sizes and the strings.
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    before_out = before;
+                    return (iterator)entry;
+                }
+                // Scan next entry
+                entry = entry->next;
+            }
+        }
+
+        // Not found
+        return this->unsafe_end();
+    }
+
     void updateVersion() {
 #if DICTIONARY_SUPPORT_VERSION
         ++(this->version_);
@@ -634,8 +653,43 @@ protected:
     }
 
 public:
-    void dump() {
-        printf("jstd::BasicDictionary<K, V>::dump()\n\n");
+    void destroy() {
+        // Free the resources.
+        if (likely(this->buckets_ != nullptr)) {
+            if (likely(this->entries_ != nullptr)) {
+                // Free all entries.
+#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+                this->destroy_entries();
+#else
+                //jstd::nothrow_deleter::destroy(this->entries_);
+                JSTD_DELETE_ARRAY(this->entries_);
+#endif
+                this->entries_ = nullptr;
+            }
+
+            // Free the array of bucket.
+            this->free_buckets_impl();
+            this->buckets_ = nullptr;
+        }
+
+        // Clear settings
+        this->bucket_mask_ = 0;
+        this->bucket_capacity_ = 0;
+        this->entry_size_ = 0;
+        this->entry_capacity_ = 0;
+
+        this->freelist_.clear();
+    }
+
+    void clear() {
+        if (likely(this->buckets_ != nullptr)) {
+            // Initialize the buckets's data.
+            memset((void *)this->buckets_, 0, this->entry_capacity_ * sizeof(entry_type *));
+        }
+
+        // Clear settings
+        this->entry_size_ = 0;
+        this->freelist_.clear();
     }
 
     void reserve(size_type capacity) {
@@ -689,60 +743,6 @@ public:
 
         // Not found (this->buckets() == nullptr)
         return nullptr;
-    }
-
-    inline iterator find_internal(const key_type & key, hash_code_t hash_code, index_type index) {
-        assert(this->buckets() != nullptr);
-        assert(this->entries() != nullptr);
-        entry_type * entry = this->buckets_[index];
-        while (likely(entry != nullptr)) {
-            // Found a entry, next to check the hash value.
-            if (likely(entry->hash_code != hash_code)) {
-                // Scan next entry
-                entry = entry->next;
-            }
-            else {
-                // If hash value is equal, then compare the key sizes and the strings.
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    return (iterator)entry;
-                }
-                // Scan next entry
-                entry = entry->next;
-            }
-        }
-
-        // Not found
-        return this->unsafe_end();
-    }
-
-    inline iterator find_before(const key_type & key, entry_type *& before_out, size_type & index) {
-        hash_code_t hash_code = this->hasher_(key);
-        index = this->index_of(hash_code, this->bucket_mask_);
-
-        assert(this->buckets() != nullptr);
-        assert(this->entries() != nullptr);
-        entry_type * before = nullptr;
-        entry_type * entry = this->buckets_[index];
-        while (likely(entry != nullptr)) {
-            // Found entry, next to check the hash value.
-            if (likely(entry->hash_code != hash_code)) {
-                // Scan next entry
-                before = entry;
-                entry = entry->next;
-            }
-            else {
-                // If hash value is equal, then compare the key sizes and the strings.
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    before_out = before;
-                    return (iterator)entry;
-                }
-                // Scan next entry
-                entry = entry->next;
-            }
-        }
-
-        // Not found
-        return this->unsafe_end();
     }
 
     bool contains(const key_type & key) {
@@ -937,6 +937,10 @@ public:
 
         // Not found the key.
         return size_type(0);
+    }
+
+    void dump() {
+        printf("jstd::BasicDictionary<K, V>::dump()\n\n");
     }
 
     static const char * name() {
