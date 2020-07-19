@@ -111,16 +111,16 @@ struct iterator_traits : iterator_traits_base<InputIter>
 template <class T>
 struct iterator_traits<T *>
 {
-    typedef random_access_iterator_tag      iterator_category;
-    typedef T                               value_type;
-    typedef std::ptrdiff_t                  difference_type;
+    typedef random_access_iterator_tag  iterator_category;
+    typedef T                           value_type;
+    typedef std::ptrdiff_t              difference_type;
 
-    typedef T *                             pointer;
-    typedef T &                             reference;
+    typedef T *                         pointer;
+    typedef T &                         reference;
 };
 
 // get traits from const pointer
-template<class T>
+template <class T>
 struct iterator_traits<const T *>
 {
     typedef random_access_iterator_tag  iterator_category;
