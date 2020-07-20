@@ -282,27 +282,19 @@ struct hash {
     ~hash() {}
 
     result_type operator() (const key_type & key) const {
-        result_type hash_code = HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
-        hash_code = hash_traits<result_type>::filter(hash_code);
-        return hash_code;
+        return HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
     }
 
     result_type operator() (const volatile key_type & key) const {
-        result_type hash_code = HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
-        hash_code = hash_traits<result_type>::filter(hash_code);
-        return hash_code;
+        return HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
     }
 
     result_type operator() (const key_type * key) const {
-        result_type hash_code = HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
-        hash_code = hash_traits<result_type>::filter(hash_code);
-        return hash_code;
+        return HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
     }
 
     result_type operator() (const volatile key_type * key) const {
-        result_type hash_code = HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
-        hash_code = hash_traits<result_type>::filter(hash_code);
-        return hash_code;
+        return HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
     }
 };
 

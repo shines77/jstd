@@ -284,11 +284,21 @@ protected:
         return capacity;
     }
 
-    index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
+    inline hash_code_t get_hash(const key_type & key) const {
+        hash_code_t hash_code = this->hasher_(key);
+        return hash_traits<hash_code_t>::filter(hash_code);
+    }
+
+    inline hash_code_t get_hash(key_type && key) const {
+        hash_code_t hash_code = this->hasher_(std::forward<key_type>(key));
+        return hash_traits<hash_code_t>::filter(hash_code);
+    }
+
+    inline index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
         return (index_type)((size_type)hash_code & capacity_mask);
     }
 
-    index_type next_index(index_type index, size_type capacity_mask) const {
+    inline index_type next_index(index_type index, size_type capacity_mask) const {
         ++index;
         return (index_type)((size_type)index & capacity_mask);
     }
@@ -611,7 +621,7 @@ protected:
     }
 
     inline iterator find_before(const key_type & key, entry_type *& before_out, size_type & index) {
-        hash_code_t hash_code = this->hasher_(key);
+        hash_code_t hash_code = this->get_hash(key);
         index = this->index_of(hash_code, this->bucket_mask_);
 
         assert(this->buckets() != nullptr);
@@ -710,7 +720,7 @@ public:
 
     iterator find(const key_type & key) {
         if (likely(this->buckets() != nullptr)) {
-            hash_code_t hash_code = this->hasher_(key);
+            hash_code_t hash_code = this->get_hash(key);
             index_type index = this->index_of(hash_code, this->bucket_mask_);
 
             assert(this->entries() != nullptr);
@@ -746,7 +756,7 @@ public:
 
     void insert(const key_type & key, const mapped_type & value) {
         if (likely(this->buckets_ != nullptr)) {
-            hash_code_t hash_code = this->hasher_(key);
+            hash_code_t hash_code = this->get_hash(key);
             index_type index = this->index_of(hash_code, this->bucket_mask_);
             iterator iter = this->find_internal(key, hash_code, index);
             if (likely(iter == this->unsafe_end())) {
@@ -798,7 +808,7 @@ public:
 
     void insert(key_type && key, mapped_type && value) {
         if (likely(this->buckets_ != nullptr)) {
-            hash_code_t hash_code = this->hasher_(std::forward<key_type>(key));
+            hash_code_t hash_code = this->get_hash(std::forward<key_type>(key));
             index_type index = this->index_of(hash_code, this->bucket_mask_);
             iterator iter = this->find_internal(std::forward<key_type>(key), hash_code, index);
             if (likely(iter == this->unsafe_end())) {
