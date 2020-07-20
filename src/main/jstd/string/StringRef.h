@@ -242,7 +242,7 @@ public:
 template <typename CharTy>
 inline
 bool operator == (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy> & rhs) {
-    return jstd::StrUtils::is_equals_flat(lhs, rhs);
+    return jstd::StrUtils::is_equals(lhs, rhs);
 }
 
 template <typename CharTy>

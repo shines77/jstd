@@ -180,8 +180,8 @@ protected:
     hasher_type     hasher_;
     key_equal       key_is_equal_;
 
-    // Default initial capacity is 16.
-    static const size_type kDefaultInitialCapacity = 16;
+    // Default initial capacity is 64.
+    static const size_type kDefaultInitialCapacity = 64;
     // Minimum capacity is 16.
     static const size_type kMinimumCapacity = 16;
     // Maximum capacity is 1 << 31.
@@ -602,26 +602,20 @@ protected:
 
     inline iterator find_internal(const key_type & key, hash_code_t hash_code, index_type index) {
         assert(this->buckets() != nullptr);
-        assert(this->entries() != nullptr);
         entry_type * entry = this->buckets_[index];
         while (likely(entry != nullptr)) {
-            // Found a entry, next to check the hash value.
             if (likely(entry->hash_code != hash_code)) {
-                // Scan next entry
                 entry = entry->next;
             }
             else {
-                // If hash value is equal, then compare the key sizes and the strings.
                 if (likely(this->key_is_equal_(key, entry->value.first))) {
                     return (iterator)entry;
                 }
-                // Scan next entry
                 entry = entry->next;
             }
         }
 
-        // Not found
-        return this->unsafe_end();
+        return this->unsafe_end();  // Not found
     }
 
     inline iterator find_before(const key_type & key, entry_type *& before_out, size_type & index) {
@@ -629,29 +623,23 @@ protected:
         index = this->index_of(hash_code, this->bucket_mask_);
 
         assert(this->buckets() != nullptr);
-        assert(this->entries() != nullptr);
         entry_type * before = nullptr;
         entry_type * entry = this->buckets_[index];
         while (likely(entry != nullptr)) {
-            // Found entry, next to check the hash value.
             if (likely(entry->hash_code != hash_code)) {
-                // Scan next entry
                 before = entry;
                 entry = entry->next;
             }
             else {
-                // If hash value is equal, then compare the key sizes and the strings.
                 if (likely(this->key_is_equal_(key, entry->value.first))) {
                     before_out = before;
                     return (iterator)entry;
                 }
-                // Scan next entry
                 entry = entry->next;
             }
         }
 
-        // Not found
-        return this->unsafe_end();
+        return this->unsafe_end();  // Not found
     }
 
     void updateVersion() {
@@ -727,30 +715,23 @@ public:
             hash_code_t hash_code = this->get_hash(key);
             index_type index = this->index_of(hash_code, this->bucket_mask_);
 
-            assert(this->entries() != nullptr);
             entry_type * entry = this->buckets_[index];
             while (likely(entry != nullptr)) {
-                // Found a entry, next to check the hash value.
                 if (likely(entry->hash_code != hash_code)) {
-                    // Scan next entry
                     entry = entry->next;
                 }
                 else {
-                    // If hash value is equal, then compare the key sizes and the strings.
                     if (likely(this->key_is_equal_(key, entry->value.first))) {
                         return (iterator)entry;
                     }
-                    // Scan next entry
                     entry = entry->next;
                 }
             }
 
-            // Not found
-            return this->unsafe_end();
+            return this->unsafe_end();  // Not found
         }
 
-        // Not found (this->buckets() == nullptr)
-        return nullptr;
+        return nullptr; // Error: buckets data is invalid
     }
 
     bool contains(const key_type & key) {
@@ -810,61 +791,6 @@ public:
         }
     }
 
-    /*
-    void insert(const key_type & key, mapped_type && value) {
-        if (likely(this->buckets_ != nullptr)) {
-            hash_code_t hash_code = this->get_hash(key);
-            index_type index = this->index_of(hash_code, this->bucket_mask_);
-            iterator iter = this->find_internal(key, hash_code, index);
-            if (likely(iter == this->unsafe_end())) {
-                // Insert the new key.
-                entry_type * new_entry;
-                if (likely(this->freelist_.is_empty())) {
-                    if (likely(this->entry_size_ >= this->entry_capacity_)) {
-                        // Resize the buckets and the entries.
-                        this->resize(this->entry_size_ + 1);
-                        // Recalculate the bucket index.
-                        index = this->index_of(hash_code, this->bucket_mask_);
-                    }
-
-                    // Get a unused entry.
-                    new_entry = &this->entries_[this->entry_size_];
-                    assert(new_entry != nullptr);
-                    ++(this->entry_size_);
-                }
-                else {
-                    // Pop a free entry from freelist.
-                    new_entry = this->freelist_.pop_front();
-                    assert(new_entry != nullptr);
-                }
-
-                new_entry->next = this->buckets_[index];
-                new_entry->hash_code = hash_code;
-                this->buckets_[index] = new_entry;
-
-#if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
-                // pair_type class placement new
-                void * pair_buf = (void *)&(new_entry->value);
-                value_type * new_pair = new (pair_buf) value_type(key,
-                                                                  std::forward<mapped_type>(value));
-                assert(new_pair == &new_entry->value);
-#else
-                new_entry->value.first.swap(key);
-                new_entry->value.second.swap(value);
-#endif
-                this->updateVersion();
-            }
-            else {
-                // Update the existed key's value.
-                assert(iter != nullptr);
-                iter->value.second = std::move(std::forward<mapped_type>(value));
-
-                this->updateVersion();
-            }
-        }
-    }
-    //*/
-
     void insert(key_type && key, mapped_type && value) {
         if (likely(this->buckets_ != nullptr)) {
             hash_code_t hash_code = this->get_hash(std::forward<key_type>(key));
@@ -923,7 +849,8 @@ public:
     }
 
     void insert(value_type && pair) {
-        this->insert(std::forward<value_type>(pair).first, std::forward<value_type>(pair).second);
+        this->insert(std::forward<typename value_type::first_type>(pair.first),
+                     std::forward<typename value_type::second_type>(pair.second));
     }
 
     void emplace(const key_type & key, const mapped_type & value) {
@@ -934,12 +861,17 @@ public:
         this->insert(key, std::forward<mapped_type>(value));
     }
 
+    void emplace(key_type && key, mapped_type && value) {
+        this->insert(std::forward<key_type>(key), std::forward<mapped_type>(value));
+    }
+
     void emplace(const value_type & pair) {
         this->insert(pair.first, pair.second);
     }
 
     void emplace(value_type && pair) {
-        this->insert(std::forward<value_type>(pair).first, std::forward<value_type>(pair).second);
+        this->insert(std::forward<typename value_type::first_type>(pair.first),
+                     std::forward<typename value_type::second_type>(pair.second));
     }
 
     size_type erase(const key_type & key) {

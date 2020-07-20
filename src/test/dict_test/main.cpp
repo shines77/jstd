@@ -65,6 +65,8 @@ static const std::size_t kIterations = 3000000;
 static const std::size_t kIterations = 10000;
 #endif
 
+static const std::size_t kInitCapacity = 16;
+
 //
 // See: https://blog.csdn.net/janekeyzheng/article/details/42419407
 //
@@ -311,7 +313,7 @@ void cpu_warmup(int delayMillsecs)
 #endif // !_DEBUG
 }
 
-template <typename Key = std::string, typename Value = std::string>
+template <typename Key, typename Value>
 class std_map {
 public:
     typedef std::map<Key, Value>                map_type;
@@ -325,7 +327,8 @@ private:
     map_type map_;
 
 public:
-    std_map() {}
+    std_map(size_type capacity = kInitCapacity) {
+    }
     ~std_map() {}
 
     const char * name() {
@@ -407,7 +410,7 @@ public:
     }
 };
 
-template <typename Key = std::string, typename Value = std::string>
+template <typename Key, typename Value>
 class std_unordered_map {
 public:
     typedef std::unordered_map<Key, Value>      map_type;
@@ -421,7 +424,7 @@ private:
     map_type map_;
 
 public:
-    std_unordered_map() {}
+    std_unordered_map(size_type capacity = kInitCapacity) : map_(capacity) {}
     ~std_unordered_map() {}
 
     const char * name() {
@@ -521,7 +524,7 @@ private:
     map_type map_;
 
 public:
-    hash_table_impl() {}
+    hash_table_impl(size_type capacity = kInitCapacity) : map_(capacity) {}
     ~hash_table_impl() {}
 
     const char * name() {
@@ -719,7 +722,7 @@ void hashtable_insert_benchmark_impl()
         StopWatch sw;
 
         for (size_t i = 0; i < kRepeatTimes; ++i) {
-            AlgorithmTy algorithm;
+            AlgorithmTy algorithm(kInitCapacity);
             sw.start();
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
                 algorithm.insert(field_str[j], index_str[j]);
@@ -802,7 +805,7 @@ void hashtable_emplace_benchmark_impl()
         StopWatch sw;
 
         for (size_t i = 0; i < kRepeatTimes; ++i) {
-            AlgorithmTy algorithm;
+            AlgorithmTy algorithm(kInitCapacity);
             sw.start();
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
                 algorithm.emplace(field_str[j], index_str[j]);

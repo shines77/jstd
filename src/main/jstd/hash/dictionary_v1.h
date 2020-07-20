@@ -591,26 +591,20 @@ protected:
 
     inline iterator find_internal(const key_type & key, hash_code_t hash_code, index_type index) {
         assert(this->buckets() != nullptr);
-        assert(this->entries() != nullptr);
         entry_type * entry = this->buckets_[index];
         while (likely(entry != nullptr)) {
-            // Found a entry, next to check the hash value.
             if (likely(entry->hash_code != hash_code)) {
-                // Scan next entry
                 entry = entry->next;
             }
             else {
-                // If hash value is equal, then compare the key sizes and the strings.
                 if (likely(this->key_is_equal_(key, entry->value.first))) {
                     return (iterator)entry;
                 }
-                // Scan next entry
                 entry = entry->next;
             }
         }
 
-        // Not found
-        return this->unsafe_end();
+        return this->unsafe_end();  // Not found
     }
 
     inline iterator find_before(const key_type & key, entry_type *& before_out, size_type & index) {
@@ -618,29 +612,23 @@ protected:
         index = this->index_of(hash_code, this->bucket_mask_);
 
         assert(this->buckets() != nullptr);
-        assert(this->entries() != nullptr);
         entry_type * before = nullptr;
         entry_type * entry = this->buckets_[index];
         while (likely(entry != nullptr)) {
-            // Found entry, next to check the hash value.
             if (likely(entry->hash_code != hash_code)) {
-                // Scan next entry
                 before = entry;
                 entry = entry->next;
             }
             else {
-                // If hash value is equal, then compare the key sizes and the strings.
                 if (likely(this->key_is_equal_(key, entry->value.first))) {
                     before_out = before;
                     return (iterator)entry;
                 }
-                // Scan next entry
                 entry = entry->next;
             }
         }
 
-        // Not found
-        return this->unsafe_end();
+        return this->unsafe_end();  // Not found
     }
 
     void updateVersion() {
@@ -719,27 +707,21 @@ public:
             assert(this->entries() != nullptr);
             entry_type * entry = this->buckets_[index];
             while (likely(entry != nullptr)) {
-                // Found a entry, next to check the hash value.
                 if (likely(entry->hash_code != hash_code)) {
-                    // Scan next entry
                     entry = entry->next;
                 }
                 else {
-                    // If hash value is equal, then compare the key sizes and the strings.
                     if (likely(this->key_is_equal_(key, entry->value.first))) {
                         return (iterator)entry;
                     }
-                    // Scan next entry
                     entry = entry->next;
                 }
             }
 
-            // Not found
-            return this->unsafe_end();
+            return this->unsafe_end();  // Not found
         }
 
-        // Not found (this->buckets() == nullptr)
-        return nullptr;
+        return nullptr; // Error: buckets data is invalid
     }
 
     bool contains(const key_type & key) {
@@ -857,7 +839,8 @@ public:
     }
 
     void insert(value_type && pair) {
-        this->insert(std::forward<key_type>(pair.first), std::forward<mapped_type>(pair.second));
+        this->insert(std::forward<typename value_type::first_type>(pair.first),
+                     std::forward<typename value_type::second_type>(pair.second));
     }
 
     void emplace(const key_type & key, const mapped_type & value) {
@@ -868,12 +851,17 @@ public:
         this->insert(key, std::forward<mapped_type>(value));
     }
 
+    void emplace(key_type && key, mapped_type && value) {
+        this->insert(std::forward<key_type>(key), std::forward<mapped_type>(value));
+    }
+
     void emplace(const value_type & pair) {
         this->insert(pair.first, pair.second);
     }
 
     void emplace(value_type && pair) {
-        this->insert(std::forward<key_type>(pair.first), std::forward<mapped_type>(pair.second));
+        this->insert(std::forward<typename value_type::first_type>(pair.first),
+                     std::forward<typename value_type::second_type>(pair.second));
     }
 
     size_type erase(const key_type & key) {

@@ -38,22 +38,8 @@ bool StrEqual(const CharTy * str1, const CharTy * str2) {
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
 
 inline
-bool StrEqualW(const wchar_t * str1, const wchar_t * str2) {
-    return (::wcscmp(str1, str2) == 0);
-}
-
-template <>
-inline
 bool StrEqual(const wchar_t * str1, const wchar_t * str2) {
-    while (*str1 == *str2) {
-        if (((*str1) & (*str2)) == 0) {
-            return true;
-        }
-        str1++;
-        str2++;
-    }
-
-    return false;
+    return (::wcscmp(str1, str2) == 0);
 }
 
 #else

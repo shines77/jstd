@@ -80,9 +80,9 @@ private:
     static const size_type kMaximumCapacity = 1U << 30;
 
 public:
-    basic_hash_table() :
+    basic_hash_table(size_type initialCapacity = kDefaultInitialCapacity) :
         table_(nullptr), size_(0), mask_(0), buckets_(0) {
-        this->initialize(kDefaultInitialCapacity);
+        this->initialize(initialCapacity);
     }
     ~basic_hash_table() {
         this->destroy();
@@ -581,7 +581,7 @@ public:
             case HashFunc_Time31Std:
                 return "jstd::hash_table<K, V> (Time31Std)";
             default:
-                return "Unknown class name";
+                return "jstd::hash_table<K, V> (Unknown)";
         }
     }
 };
