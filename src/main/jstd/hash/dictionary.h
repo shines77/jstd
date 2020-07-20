@@ -72,12 +72,6 @@ public:
             : next(next_entry), hash_code(hash_code),
               value(std::forward<key_type>(key), std::forward<mapped_type>(value)) {}
 
-        hash_entry(const key_type & key, const mapped_type & value)
-            : next(nullptr), hash_code(0), value(key, value) {}
-        hash_entry(key_type && key, mapped_type && value)
-            : next(nullptr), hash_code(0),
-              value(std::forward<key_type>(key), std::forward<mapped_type>(value)) {}
-
         ~hash_entry() {
 #ifndef NDEBUG
             this->next = nullptr;

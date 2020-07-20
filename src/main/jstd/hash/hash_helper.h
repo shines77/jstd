@@ -105,7 +105,7 @@ struct HashHelper {
     typedef ResultType  result_type;
 
     typedef typename std::remove_pointer<
-                typename std::remove_const<
+                typename std::remove_cv<
                     typename std::remove_reference<T>::type
                 >::type
             >::type     key_type;
@@ -120,7 +120,7 @@ struct HashHelper<T *, std::uint32_t, HashFunc_Default> {
     typedef std::uint32_t  result_type;
 
     typedef typename std::remove_pointer<
-                typename std::remove_const<
+                typename std::remove_cv<
                     typename std::remove_reference<T>::type
                 >::type
             >::type     key_type;
@@ -259,6 +259,11 @@ struct hash_traits {
     // The replacement value for invalid hash value.
     static const ResultType kReplacedHash = static_cast<ResultType>(0);
 
+    static ResultType filter(ResultType hash_code) {
+        // The hash code can't equal to kInvalidHash, replacement to kReplacedHash.
+        return (hash_code != kInvalidHash) ? hash_code : kReplacedHash;
+    }
+
 };
 
 template <typename Key, std::size_t HashFunc = HashFunc_Default,
@@ -277,19 +282,27 @@ struct hash {
     ~hash() {}
 
     result_type operator() (const key_type & key) const {
-        return HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
+        result_type hash_code = HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
+        hash_code = hash_traits<result_type>::filter(hash_code);
+        return hash_code;
     }
 
     result_type operator() (const volatile key_type & key) const {
-        return HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
+        result_type hash_code = HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
+        hash_code = hash_traits<result_type>::filter(hash_code);
+        return hash_code;
     }
 
     result_type operator() (const key_type * key) const {
-        return HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
+        result_type hash_code = HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
+        hash_code = hash_traits<result_type>::filter(hash_code);
+        return hash_code;
     }
 
     result_type operator() (const volatile key_type * key) const {
-        return HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
+        result_type hash_code = HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
+        hash_code = hash_traits<result_type>::filter(hash_code);
+        return hash_code;
     }
 };
 
