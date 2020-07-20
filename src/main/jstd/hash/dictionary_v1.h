@@ -943,22 +943,22 @@ public:
     static const char * name() {
         switch (HashFunc) {
         case HashFunc_CRC32C:
-            return "jstd::v1::Dictionary_crc32c<K, V>";
+            return "jstd::v1::Dictionary<K, V> (CRC32c)";
         case HashFunc_Time31:
-            return "jstd::v1::Dictionary_Time31<K, V>";
+            return "jstd::v1::Dictionary<K, V> (Time31)";
         case HashFunc_Time31Std:
-            return "jstd::v1::Dictionary_Time31Std<K, V>";
+            return "jstd::v1::Dictionary<K, V> (Time31Std)";
         default:
-            return "jstd::v1::Dictionary_XXXX<K, V>, Unknown class name";
+            return "jstd::v1::Dictionary<K, V> (Unknown)";
         }
     }
 }; // BasicDictionary<K, V>
 
 template <typename Key, typename Value>
-using Dictionary_v1 = BasicDictionary<Key, Value, HashFunc_Time31>;
+using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31>;
 
 template <typename Key, typename Value>
-using Dictionary_v2 = BasicDictionary<Key, Value, HashFunc_Time31Std>;
+using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std>;
 
 #if SUPPORT_SSE42_CRC32C
 template <typename Key, typename Value>

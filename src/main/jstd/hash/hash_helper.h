@@ -21,7 +21,7 @@
 
 #define HASH_HELPER_CHAR(KeyType, ResultType, HashFuncId, HashFunc)             \
     template <>                                                                 \
-    struct HashHelper<KeyType, ResultType, HashFuncId> {                        \
+    struct hash_helper<KeyType, ResultType, HashFuncId> {                       \
         typedef ResultType  result_type;                                        \
         typedef typename std::remove_pointer<KeyType>::type char_type;          \
                                                                                 \
@@ -101,7 +101,7 @@ enum hash_func_id_t {
 template <typename T,
           typename ResultType = std::uint32_t,
           std::size_t HashFunc = HashFunc_Default>
-struct HashHelper {
+struct hash_helper {
     typedef ResultType  result_type;
 
     typedef typename std::remove_pointer<
@@ -116,7 +116,7 @@ struct HashHelper {
 };
 
 template <typename T>
-struct HashHelper<T *, std::uint32_t, HashFunc_Default> {
+struct hash_helper<T *, std::uint32_t, HashFunc_Default> {
     typedef std::uint32_t  result_type;
 
     typedef typename std::remove_pointer<
@@ -134,7 +134,7 @@ struct HashHelper<T *, std::uint32_t, HashFunc_Default> {
 
 /***************************************************************************
 template <>
-struct HashHelper<const char *, std::uint32_t, HashFunc_CRC32C> {
+struct hash_helper<const char *, std::uint32_t, HashFunc_CRC32C> {
     static std::uint32_t getHashCode(const char * data, size_t length) {
         return crc32::crc32c_x64(data, length);
     }
@@ -144,7 +144,7 @@ struct HashHelper<const char *, std::uint32_t, HashFunc_CRC32C> {
 HASH_HELPER_CHAR_ALL(HASH_HELPER_CHAR, std::uint32_t, HashFunc_CRC32C, jstd::crc32::crc32c_x64);
 
 template <>
-struct HashHelper<std::string, std::uint32_t, HashFunc_CRC32C> {
+struct hash_helper<std::string, std::uint32_t, HashFunc_CRC32C> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::string & key) {
@@ -153,7 +153,7 @@ struct HashHelper<std::string, std::uint32_t, HashFunc_CRC32C> {
 };
 
 template <>
-struct HashHelper<std::wstring, std::uint32_t, HashFunc_CRC32C> {
+struct hash_helper<std::wstring, std::uint32_t, HashFunc_CRC32C> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::wstring & key) {
@@ -165,7 +165,7 @@ struct HashHelper<std::wstring, std::uint32_t, HashFunc_CRC32C> {
 
 /***************************************************************************
 template <>
-struct HashHelper<const char *, std::uint32_t, HashFunc_Time31> {
+struct hash_helper<const char *, std::uint32_t, HashFunc_Time31> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const char * data, size_t length) {
@@ -177,7 +177,7 @@ struct HashHelper<const char *, std::uint32_t, HashFunc_Time31> {
 HASH_HELPER_CHAR_ALL(HASH_HELPER_CHAR, std::uint32_t, HashFunc_Time31, hashes::Times31);
 
 template <>
-struct HashHelper<std::string, std::uint32_t, HashFunc_Time31> {
+struct hash_helper<std::string, std::uint32_t, HashFunc_Time31> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::string & key) {
@@ -186,7 +186,7 @@ struct HashHelper<std::string, std::uint32_t, HashFunc_Time31> {
 };
 
 template <>
-struct HashHelper<std::wstring, std::uint32_t, HashFunc_Time31> {
+struct hash_helper<std::wstring, std::uint32_t, HashFunc_Time31> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::wstring & key) {
@@ -196,7 +196,7 @@ struct HashHelper<std::wstring, std::uint32_t, HashFunc_Time31> {
 
 /***************************************************************************
 template <>
-struct HashHelper<const char *, std::uint32_t, HashFunc_Time31Std> {
+struct hash_helper<const char *, std::uint32_t, HashFunc_Time31Std> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const char * data, size_t length) {
@@ -208,7 +208,7 @@ struct HashHelper<const char *, std::uint32_t, HashFunc_Time31Std> {
 HASH_HELPER_CHAR_ALL(HASH_HELPER_CHAR, std::uint32_t, HashFunc_Time31Std, hashes::Times31_std);
 
 template <>
-struct HashHelper<std::string, std::uint32_t, HashFunc_Time31Std> {
+struct hash_helper<std::string, std::uint32_t, HashFunc_Time31Std> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::string & key) {
@@ -217,7 +217,7 @@ struct HashHelper<std::string, std::uint32_t, HashFunc_Time31Std> {
 };
 
 template <>
-struct HashHelper<std::wstring, std::uint32_t, HashFunc_Time31Std> {
+struct hash_helper<std::wstring, std::uint32_t, HashFunc_Time31Std> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::wstring & key) {
@@ -282,19 +282,19 @@ struct hash {
     ~hash() {}
 
     result_type operator() (const key_type & key) const {
-        return HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
+        return hash_helper<key_type, result_type, HashFunc>::getHashCode(key);
     }
 
     result_type operator() (const volatile key_type & key) const {
-        return HashHelper<key_type, result_type, HashFunc>::getHashCode(key);
+        return hash_helper<key_type, result_type, HashFunc>::getHashCode(key);
     }
 
     result_type operator() (const key_type * key) const {
-        return HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
+        return hash_helper<key_type *, result_type, HashFunc>::getHashCode(key);
     }
 
     result_type operator() (const volatile key_type * key) const {
-        return HashHelper<key_type *, result_type, HashFunc>::getHashCode(key);
+        return hash_helper<key_type *, result_type, HashFunc>::getHashCode(key);
     }
 };
 

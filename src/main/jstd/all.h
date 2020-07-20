@@ -10,6 +10,8 @@
 #include "jstd/xutility.h"
 #include "jstd/type_traits.h"
 #include "jstd/iterator.h"
+#include "jstd/string/StringRef.h"
+#include "jstd/hash/hash_table.h"
 #include "jstd/hash/dictionary.h"
 #include "jstd/lib.h"
 

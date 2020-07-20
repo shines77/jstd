@@ -19,6 +19,8 @@
 #include <vector>
 #include <type_traits>
 
+#define USE_JSTD_DICTIONARY         1
+
 // This macro must define before include file "jstd/nothrow_new.h".
 #undef  JSTD_USE_NOTHROW_NEW
 #define JSTD_USE_NOTHROW_NEW        1
@@ -237,6 +239,7 @@ public:
     size_type capacity() const { return this->entry_capacity_; }
 
     size_type bucket_mask() const { return this->bucket_mask_; }
+    size_type bucket_count() const { return this->bucket_capacity_; }
     size_type bucket_capacity() const { return this->bucket_capacity_; }
 
     size_type entry_size() const { return this->size(); }
@@ -807,6 +810,61 @@ public:
         }
     }
 
+    /*
+    void insert(const key_type & key, mapped_type && value) {
+        if (likely(this->buckets_ != nullptr)) {
+            hash_code_t hash_code = this->get_hash(key);
+            index_type index = this->index_of(hash_code, this->bucket_mask_);
+            iterator iter = this->find_internal(key, hash_code, index);
+            if (likely(iter == this->unsafe_end())) {
+                // Insert the new key.
+                entry_type * new_entry;
+                if (likely(this->freelist_.is_empty())) {
+                    if (likely(this->entry_size_ >= this->entry_capacity_)) {
+                        // Resize the buckets and the entries.
+                        this->resize(this->entry_size_ + 1);
+                        // Recalculate the bucket index.
+                        index = this->index_of(hash_code, this->bucket_mask_);
+                    }
+
+                    // Get a unused entry.
+                    new_entry = &this->entries_[this->entry_size_];
+                    assert(new_entry != nullptr);
+                    ++(this->entry_size_);
+                }
+                else {
+                    // Pop a free entry from freelist.
+                    new_entry = this->freelist_.pop_front();
+                    assert(new_entry != nullptr);
+                }
+
+                new_entry->next = this->buckets_[index];
+                new_entry->hash_code = hash_code;
+                this->buckets_[index] = new_entry;
+
+#if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
+                // pair_type class placement new
+                void * pair_buf = (void *)&(new_entry->value);
+                value_type * new_pair = new (pair_buf) value_type(key,
+                                                                  std::forward<mapped_type>(value));
+                assert(new_pair == &new_entry->value);
+#else
+                new_entry->value.first.swap(key);
+                new_entry->value.second.swap(value);
+#endif
+                this->updateVersion();
+            }
+            else {
+                // Update the existed key's value.
+                assert(iter != nullptr);
+                iter->value.second = std::move(std::forward<mapped_type>(value));
+
+                this->updateVersion();
+            }
+        }
+    }
+    //*/
+
     void insert(key_type && key, mapped_type && value) {
         if (likely(this->buckets_ != nullptr)) {
             hash_code_t hash_code = this->get_hash(std::forward<key_type>(key));
@@ -853,7 +911,7 @@ public:
             else {
                 // Update the existed key's value.
                 assert(iter != nullptr);
-                iter->value.second.swap(value);
+                iter->value.second = std::move(std::forward<mapped_type>(value));
 
                 this->updateVersion();
             }
@@ -865,7 +923,7 @@ public:
     }
 
     void insert(value_type && pair) {
-        this->insert(std::forward<key_type>(pair.first), std::forward<mapped_type>(pair.second));
+        this->insert(std::forward<value_type>(pair).first, std::forward<value_type>(pair).second);
     }
 
     void emplace(const key_type & key, const mapped_type & value) {
@@ -881,12 +939,12 @@ public:
     }
 
     void emplace(value_type && pair) {
-        this->insert(std::forward<key_type>(pair.first), std::forward<mapped_type>(pair.second));
+        this->insert(std::forward<value_type>(pair).first, std::forward<value_type>(pair).second);
     }
 
     size_type erase(const key_type & key) {
         if (likely(this->buckets_ != nullptr)) {
-            hash_code_t hash_code = this->hasher(key);
+            hash_code_t hash_code = this->get_hash(key);
             size_type index = this->index_of(hash_code, this->bucket_mask_);
 
             assert(this->buckets() != nullptr);
@@ -951,22 +1009,22 @@ public:
     static const char * name() {
         switch (HashFunc) {
         case HashFunc_CRC32C:
-            return "jstd::Dictionary_crc32c<K, V>";
+            return "jstd::Dictionary<K, V> (CRC32c)";
         case HashFunc_Time31:
-            return "jstd::Dictionary_Time31<K, V>";
+            return "jstd::Dictionary<K, V> (Time31)";
         case HashFunc_Time31Std:
-            return "jstd::Dictionary_Time31Std<K, V>";
+            return "jstd::Dictionary<K, V> (Time31Std)";
         default:
-            return "jstd::Dictionary_XXXX<K, V>, Unknown class name";
+            return "jstd::Dictionary<K, V> (Unknown)";
         }
     }
 }; // BasicDictionary<K, V>
 
 template <typename Key, typename Value>
-using Dictionary_v1 = BasicDictionary<Key, Value, HashFunc_Time31>;
+using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31>;
 
 template <typename Key, typename Value>
-using Dictionary_v2 = BasicDictionary<Key, Value, HashFunc_Time31Std>;
+using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std>;
 
 #if SUPPORT_SSE42_CRC32C
 template <typename Key, typename Value>
