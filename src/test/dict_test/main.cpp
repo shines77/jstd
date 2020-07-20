@@ -390,16 +390,16 @@ public:
 
     void insert(key_type && key, value_type && value) {
         this->map_.insert(std::make_pair(std::forward<key_type>(key),
-            std::forward<value_type>(value)));
+                                         std::forward<value_type>(value)));
     }
 
     void emplace(const key_type & key, const value_type & value) {
-        this->map_.emplace(std::make_pair(key, value));
+        this->map_.emplace(key, value);
     }
 
     void emplace(key_type && key, value_type && value) {
-        this->map_.emplace(std::make_pair(std::forward<key_type>(key),
-            std::forward<value_type>(value)));
+        this->map_.emplace(std::forward<key_type>(key),
+                           std::forward<value_type>(value));
     }
 
     void erase(const key_type & key) {
