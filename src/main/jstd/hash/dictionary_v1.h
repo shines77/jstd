@@ -1,6 +1,6 @@
 
-#ifndef JSTD_HASH_DICTIONARY_H
-#define JSTD_HASH_DICTIONARY_H
+#ifndef JSTD_HASH_DICTIONARY_V1_H
+#define JSTD_HASH_DICTIONARY_V1_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -28,16 +28,8 @@
 #include "jstd/nothrow_new.h"
 #include "jstd/support/Power2.h"
 
-#define DICTIONARY_ENTRY_USE_PLACEMENT_NEW      1
-
-// The entry's pair whether release on erase the entry.
-#define DICTIONARY_ENTRY_RELEASE_ON_ERASE       1
-
-#define DICTIONARY_USE_FAST_REHASH_MODE         1
-
-#define DICTIONARY_SUPPORT_VERSION              0
-
 namespace jstd {
+namespace v1 {
 
 template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
            typename Hasher = hash<Key, HashFunc>,
@@ -945,19 +937,19 @@ public:
     }
 
     void dump() {
-        printf("jstd::BasicDictionary<K, V>::dump()\n\n");
+        printf("jstd::v1::BasicDictionary<K, V>::dump()\n\n");
     }
 
     static const char * name() {
         switch (HashFunc) {
         case HashFunc_CRC32C:
-            return "jstd::Dictionary_crc32c<K, V>";
+            return "jstd::v1::Dictionary_crc32c<K, V>";
         case HashFunc_Time31:
-            return "jstd::Dictionary_Time31<K, V>";
+            return "jstd::v1::Dictionary_Time31<K, V>";
         case HashFunc_Time31Std:
-            return "jstd::Dictionary_Time31Std<K, V>";
+            return "jstd::v1::Dictionary_Time31Std<K, V>";
         default:
-            return "jstd::Dictionary_XXXX<K, V>, Unknown class name";
+            return "jstd::v1::Dictionary_XXXX<K, V>, Unknown class name";
         }
     }
 }; // BasicDictionary<K, V>
@@ -979,6 +971,7 @@ template <typename Key, typename Value>
 using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31>;
 #endif // SUPPORT_SSE42_CRC32C
 
+} // namespace v1
 } // namespace jstd
 
-#endif // JSTD_HASH_DICTIONARY_H
+#endif // JSTD_HASH_DICTIONARY_V1_H
