@@ -41,6 +41,7 @@
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/nothrow_new.h"
 #include "jstd/support/Power2.h"
+#include "jstd/support/PowerOf2.h"
 
 namespace jstd {
 
@@ -70,11 +71,10 @@ public:
     struct hash_entry {
         hash_entry * next;
         hash_code_t  hash_code;
-        hash_code_t  reserve;
-        value_type * value;
-        value_type   pair;
+        uint32_t     flags;
+        value_type   value;
 
-        hash_entry() : next(nullptr), hash_code(0), reserve(0), value(nullptr) {}
+        hash_entry() : next(nullptr), hash_code(0), flags(0) {}
 
         ~hash_entry() {
 #ifndef NDEBUG
@@ -86,10 +86,10 @@ public:
     struct hash_entry {
         hash_entry * next;
         hash_code_t  hash_code;
-        value_type * value;
-        value_type   pair;
+        uint32_t     flags;
+        value_type   value;
 
-        hash_entry() : next(nullptr), hash_code(0), value(nullptr) {}
+        hash_entry() : next(nullptr), hash_code(0), flags(0) {}
 
         ~hash_entry() {
 #ifndef NDEBUG
@@ -208,10 +208,11 @@ protected:
     // Maximum capacity is 1 << 31.
     static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2;
 
-    // The bucket block size (bytes), default is 64 KB bytes.
-    static const size_type kBucketBlockSize = 64 * 1024;
-    // The bucket block entries capacity (entry_type *).
-    static const size_type kBucketBlockCapacity = kBucketBlockSize / sizeof(entry_type *);
+    // The maximum entry's chunk bytes, default is 8 MB bytes.
+    static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
+    // The entry's block size per chunk (entry_type).
+    static const size_type kEntryChunkSize =
+            compile_time::round_up_to_pow2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
 
     // The threshold of treeify to red-black tree.
     static const size_type kTreeifyThreshold = 8;
@@ -219,9 +220,6 @@ protected:
     static const hash_code_t kInvalidHash = hash_traits<hash_code_t>::kInvalidHash;
     // The replacement value for invalid hash value.
     static const hash_code_t kReplacedHash = hash_traits<hash_code_t>::kReplacedHash;
-
-    // The factor of bucket per entry.
-    static const size_type kBucketPerEntryFactor = 1;
 
 public:
     BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
@@ -289,22 +287,14 @@ public:
 
 protected:
     inline size_type calc_capacity(size_type capacity) const {
-        // The minimum bucket is kMinimumCapacity = 16.
-        //capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
-
-        // The maximum bucket is kMaximumCapacity = 1 << 30.
+        capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
         capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-
-        // Round up the new_capacity to power 2.
         capacity = detail::round_up_to_pow2(capacity);
         return capacity;
     }
 
     inline size_type calc_shrink_capacity(size_type capacity) {
-        // The maximum bucket is kMaximumCapacity = 1 << 30.
         capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-
-        // Round up the new_capacity to power 2.
         capacity = detail::round_up_to_pow2(capacity);
         return capacity;
     }
@@ -401,15 +391,15 @@ protected:
         entry_type * entry = this->entries_;
         for (size_type i = 0; i < this->entry_size_; i++) {
 #if DICTIONARY_ENTRY_RELEASE_ON_ERASE
+            assert(entry != nullptr);
             if (likely(entry->hash_code != kInvalidHash)) {
-                assert(entry != nullptr);
-                value_type * __pair = entry->value;
+                value_type * __pair = &entry->value;
                 assert(__pair != nullptr);
                 __pair->~value_type();
             }
 #else
             assert(entry != nullptr);
-            value_type * __pair = entry->value;
+            value_type * __pair = &entry->value;
             assert(__pair != nullptr);
             __pair->~value_type();
 #endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
@@ -508,13 +498,13 @@ protected:
                                 new_entry->hash_code = old_entry->hash_code;
 
                                 // pair_type class placement new
-                                void * pair_buf = (void *)(new_entry->value);
-                                value_type * new_pair = new (pair_buf) value_type(std::move(*old_entry->value));
-                                assert(new_pair == new_entry->value);
+                                void * pair_buf = (void *)&new_entry->value;
+                                value_type * new_pair = new (pair_buf) value_type(std::move(old_entry->value));
+                                assert(new_pair == &new_entry->value);
                                 //new_entry->pair.swap(old_entry->pair);
 
                                 // pair_type class placement delete
-                                value_type * pair_ptr = old_entry->value;
+                                value_type * pair_ptr = &old_entry->value;
                                 assert(pair_ptr != nullptr);
                                 pair_ptr->~value_type();
 #else // !DICTIONARY_ENTRY_USE_PLACEMENT_NEW
@@ -624,10 +614,8 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(entry->value != nullptr)) {
-                    if (likely(this->key_is_equal_(key, entry->value->first))) {
-                        return (iterator)entry;
-                    }
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    return (iterator)entry;
                 }
                 entry = entry->next;
             }
@@ -649,11 +637,9 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(entry->value != nullptr)) {
-                    if (likely(this->key_is_equal_(key, entry->value->first))) {
-                        before_out = before;
-                        return (iterator)entry;
-                    }
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    before_out = before;
+                    return (iterator)entry;
                 }
                 entry = entry->next;
             }
@@ -741,10 +727,8 @@ public:
                     entry = entry->next;
                 }
                 else {
-                    if (likely(entry->value != nullptr)) {
-                        if (likely(this->key_is_equal_(key, entry->value->first))) {
-                            return (iterator)entry;
-                        }
+                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                        return (iterator)entry;
                     }
                     entry = entry->next;
                 }
@@ -793,21 +777,18 @@ public:
 
 #if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
-                void * pair_ptr = (void *)&new_entry->pair;
+                void * pair_ptr = (void *)&new_entry->value;
                 value_type * new_pair = new (pair_ptr) value_type(key, value);
-                assert(new_pair == &new_entry->pair);
+                assert(new_pair == &new_entry->value);
 #else
-                new_entry->value = &new_entry->pair;
-                new_entry->pair.first = key;
-                new_entry->pair.second = value;
+                new_entry->value.first = key;
+                new_entry->value.second = value;
 #endif
             }
             else {
                 // Update the existed key's value.
                 assert(iter != nullptr);
-                if (iter->value != nullptr) {
-                    iter->value->second = value;
-                }
+                iter->value.second = value;
             }
 
             this->updateVersion();
@@ -846,22 +827,19 @@ public:
 
 #if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
-                void * pair_ptr = (void *)&new_entry->pair;
+                void * pair_ptr = (void *)&new_entry->value;
                 value_type * new_pair = new (pair_ptr) value_type(std::forward<key_type>(key),
                                                                   std::forward<mapped_type>(value));
-                assert(new_pair == &new_entry->pair);
+                assert(new_pair == &new_entry->value);
 #else
-                new_entry->value = &new_entry->pair;
-                new_entry->pair.first.swap(key);
-                new_entry->pair.second.swap(value);
+                new_entry->value.first.swap(key);
+                new_entry->value.second.swap(value);
 #endif
             }
             else {
                 // Update the existed key's value.
                 assert(iter != nullptr);
-                if (iter->value != nullptr) {
-                    iter->value->second = std::move(std::forward<mapped_type>(value));
-                }
+                iter->value.second = std::move(std::forward<mapped_type>(value));
             }
 
             this->updateVersion();
@@ -913,42 +891,38 @@ public:
                     entry = entry->next;
                 }
                 else {
-                    if (likely(entry->value != nullptr)) {
-                        if (likely(this->key_is_equal_(key, entry->value->first))) {
-                            if (likely(before != nullptr))
-                                before->next = entry->next;
-                            else
-                                this->buckets_[index] = entry->next;
+                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                        if (likely(before != nullptr))
+                            before->next = entry->next;
+                        else
+                            this->buckets_[index] = entry->next;
 
-                            entry->hash_code = kInvalidHash;
-                            this->freelist_.push_front(entry);
+                        entry->hash_code = kInvalidHash;
+                        this->freelist_.push_front(entry);
 
 #if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
 #if DICTIONARY_ENTRY_RELEASE_ON_ERASE
-                            // pair_type class placement delete
-                            value_type * pair_ptr = entry->value;
-                            assert(pair_ptr != nullptr);
-                            if (pair_ptr != nullptr) {
-                                pair_ptr->~value_type();
-                            }
+                        // pair_type class placement delete
+                        value_type * pair_ptr = &entry->value;
+                        assert(pair_ptr != nullptr);
+                        if (pair_ptr != nullptr) {
+                            pair_ptr->~value_type();
+                        }
 #endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
 #else
-                            if (entry->value != nullptr) {
 #ifdef _MSC_VER
-                                entry->value->first.clear();
-                                entry->value->second.clear();
+                        entry->value->first.clear();
+                        entry->value->second.clear();
 #else
-                                entry->value->first = std::move(key_type());
-                                entry->value->second = std::move(mapped_type());
+                        entry->value->first = std::move(key_type());
+                        entry->value->second = std::move(mapped_type());
 #endif // _MSC_VER
-                            }
 #endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
 
-                            this->updateVersion();
+                        this->updateVersion();
 
-                            // Has found
-                            return size_type(1);
-                        }
+                        // Has found
+                        return size_type(1);
                     }
 
                     before = entry;
