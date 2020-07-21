@@ -9,10 +9,12 @@
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
+#include "jstd/allocator.h"
 
 #include <memory.h>
 #include <assert.h>
 
+#include <cstdint>
 #include <cstddef>
 #include <memory>
 #include <limits>
@@ -44,7 +46,8 @@ namespace jstd {
 
 template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
            typename Hasher = hash<Key, HashFunc>,
-           typename KeyEqual = equal_to<Key> >
+           typename KeyEqual = equal_to<Key>,
+           typename Allocator = allocator<std::pair<const Key, Value>> >
 class BasicDictionary {
 public:
     typedef Key                             key_type;
@@ -54,27 +57,24 @@ public:
     typedef Hasher                          hasher;
     typedef Hasher                          hasher_type;
     typedef KeyEqual                        key_equal;
+    typedef Allocator                       allocator_type;
 
     typedef std::size_t                     size_type;
     typedef std::size_t                     index_type;
     typedef typename Hasher::result_type    hash_code_t;
     typedef BasicDictionary<Key, Value, HashFunc, Hasher, KeyEqual>
                                             this_type;
+
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
     struct hash_entry {
         hash_entry * next;
         hash_code_t  hash_code;
-        value_type   value;
+        hash_code_t  reserve;
+        value_type * value;
+        value_type   pair;
 
-        hash_entry() : next(nullptr), hash_code(0) {}
-        hash_entry(hash_code_t hash_code) : next(nullptr), hash_code(hash_code) {}
-
-        hash_entry(hash_code_t hash_code, const key_type & key,
-              const mapped_type & value, hash_entry * next_entry = nullptr)
-            : next(next_entry), hash_code(hash_code), value(key, value) {}
-        hash_entry(hash_code_t hash_code, key_type && key,
-              mapped_type && value, hash_entry * next_entry = nullptr)
-            : next(next_entry), hash_code(hash_code),
-              value(std::forward<key_type>(key), std::forward<mapped_type>(value)) {}
+        hash_entry() : next(nullptr), hash_code(0), reserve(0), value(nullptr) {}
 
         ~hash_entry() {
 #ifndef NDEBUG
@@ -82,6 +82,22 @@ public:
 #endif
         }
     };
+#else // !__amd64__
+    struct hash_entry {
+        hash_entry * next;
+        hash_code_t  hash_code;
+        value_type * value;
+        value_type   pair;
+
+        hash_entry() : next(nullptr), hash_code(0), value(nullptr) {}
+
+        ~hash_entry() {
+#ifndef NDEBUG
+            this->next = nullptr;
+#endif
+        }
+    };
+#endif // __amd64__
 
     typedef hash_entry                  entry_type;
     typedef entry_type *                iterator;
@@ -136,6 +152,7 @@ public:
         }
 
         void dec() {
+            assert(this->size_ > 0);
             --(this->size_);
         }
 
@@ -147,8 +164,8 @@ public:
         }
 
         entry_type * pop_front() {
+            assert(this->head_ != nullptr);
             entry_type * entry = this->head_;
-            assert(entry != nullptr);
             this->head_ = entry->next;
             assert(this->size_ > 0);
             --(this->size_);
@@ -170,6 +187,7 @@ public:
 protected:
     entry_type **   buckets_;
     entry_type *    entries_;
+    value_type *    values_;
     size_type       bucket_mask_;
     size_type       bucket_capacity_;
     size_type       entry_size_;
@@ -181,12 +199,14 @@ protected:
     hasher_type     hasher_;
     key_equal       key_is_equal_;
 
+    allocator_type  allocator_;
+
     // Default initial capacity is 16.
     static const size_type kDefaultInitialCapacity = 16;
     // Minimum capacity is 8.
     static const size_type kMinimumCapacity = 8;
     // Maximum capacity is 1 << 31.
-    static const size_type kMaximumCapacity = 1U << 30;
+    static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2;
 
     // The bucket block size (bytes), default is 64 KB bytes.
     static const size_type kBucketBlockSize = 64 * 1024;
@@ -205,8 +225,8 @@ protected:
 
 public:
     BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
-        : buckets_(nullptr), entries_(nullptr), bucket_mask_(0), bucket_capacity_(0),
-          entry_size_(0), entry_capacity_(0)
+        : buckets_(nullptr), entries_(nullptr), values_(nullptr),
+          bucket_mask_(0), entry_size_(0), entry_capacity_(0)
 #if DICTIONARY_SUPPORT_VERSION
           , version_(1) /* Since 0 means that the version attribute is not supported,
                            the initial value of version starts from 1. */
@@ -240,8 +260,8 @@ public:
     size_type capacity() const { return this->entry_capacity_; }
 
     size_type bucket_mask() const { return this->bucket_mask_; }
-    size_type bucket_count() const { return this->bucket_capacity_; }
-    size_type bucket_capacity() const { return this->bucket_capacity_; }
+    size_type bucket_count() const { return this->entry_capacity_; }
+    size_type bucket_capacity() const { return this->entry_capacity_; }
 
     size_type entry_size() const { return this->size(); }
     size_type entry_count() const { return this->entry_capacity_; }
@@ -250,7 +270,7 @@ public:
     entry_type *  entries() const { return this->entries_; }
 
     size_type max_bucket_capacity() const {
-        return (std::min)(this_type::kMaximumCapacity, (std::numeric_limits<size_type>::max)());
+        return ((std::numeric_limits<size_type>::max)() / 2);
     }
     size_type max_size() const {
         return this->max_bucket_capacity();
@@ -309,11 +329,11 @@ protected:
     }
 
     void initialize(size_type init_capacity) {
-        size_type entry_capacity = init_capacity;
+        size_type entry_capacity = detail::round_up_to_pow2(init_capacity);
         assert(entry_capacity > 0);
-        size_type bucket_capacity = detail::round_up_to_pow2(init_capacity * kBucketPerEntryFactor);
-        assert(bucket_capacity > 0);
-        assert((bucket_capacity & (bucket_capacity - 1)) == 0);
+        assert((entry_capacity & (entry_capacity - 1)) == 0);
+
+        size_type bucket_capacity = entry_capacity;
 
         // The the array of bucket's first entry.
         // entry_type ** new_buckets = new (std::nothrow) entry_type *[bucket_capacity];
@@ -325,7 +345,7 @@ protected:
             // Initialize the buckets info.
             this->buckets_ = new_buckets;
             this->bucket_mask_ = bucket_capacity - 1;
-            this->bucket_capacity_ = bucket_capacity;
+            this->entry_capacity_ = bucket_capacity;
 
             // The array of entries.
 #if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
@@ -343,7 +363,6 @@ protected:
                 // Initialize the entries info.
                 this->entries_ = new_entries;
                 this->entry_size_ = 0;
-                this->entry_capacity_ = entry_capacity;
             }
         }
 
@@ -384,13 +403,13 @@ protected:
 #if DICTIONARY_ENTRY_RELEASE_ON_ERASE
             if (likely(entry->hash_code != kInvalidHash)) {
                 assert(entry != nullptr);
-                value_type * __pair = &entry->value;
+                value_type * __pair = entry->value;
                 assert(__pair != nullptr);
                 __pair->~value_type();
             }
 #else
             assert(entry != nullptr);
-            value_type * __pair = &entry->value;
+            value_type * __pair = entry->value;
             assert(__pair != nullptr);
             __pair->~value_type();
 #endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
@@ -444,15 +463,12 @@ protected:
     template <bool force_shrink = false>
     void rehash_internal(size_type new_entry_capacity) {
         assert(new_entry_capacity > 0);
-        //assert((new_entry_capacity & (new_entry_capacity - 1)) == 0);
+        assert((new_entry_capacity & (new_entry_capacity - 1)) == 0);
 
-        // bucket_capacity = enrty_capacity * kBucketPerEntryFactor;
-        size_type new_bucket_capacity = calc_capacity(new_entry_capacity * kBucketPerEntryFactor);
+        size_type new_bucket_capacity = new_entry_capacity;
 
-        if (likely((force_shrink == false && (new_entry_capacity > this->entry_capacity_ ||
-                                              new_bucket_capacity > this->bucket_capacity_)) ||
-                   (force_shrink == true && (new_entry_capacity != this->entry_capacity_ ||
-                                             new_bucket_capacity != this->bucket_capacity_)))) {
+        if (likely((force_shrink == false && new_entry_capacity > this->entry_capacity_) ||
+                   (force_shrink == true && new_entry_capacity != this->entry_capacity_))) {
             // The the array of bucket's first entry.
             // entry_type ** new_buckets = new (std::nothrow) entry_type *[new_bucket_capacity];
             entry_type ** new_buckets = JSTD_NEW_ARRAY(entry_type *, new_bucket_capacity);
@@ -492,13 +508,13 @@ protected:
                                 new_entry->hash_code = old_entry->hash_code;
 
                                 // pair_type class placement new
-                                void * pair_buf = (void *)&(new_entry->value);
-                                value_type * new_pair = new (pair_buf) value_type(std::move(old_entry->value));
-                                assert(new_pair == &new_entry->value);
+                                void * pair_buf = (void *)(new_entry->value);
+                                value_type * new_pair = new (pair_buf) value_type(std::move(*old_entry->value));
+                                assert(new_pair == new_entry->value);
                                 //new_entry->pair.swap(old_entry->pair);
 
                                 // pair_type class placement delete
-                                value_type * pair_ptr = &old_entry->value;
+                                value_type * pair_ptr = old_entry->value;
                                 assert(pair_ptr != nullptr);
                                 pair_ptr->~value_type();
 #else // !DICTIONARY_ENTRY_USE_PLACEMENT_NEW
@@ -580,12 +596,11 @@ protected:
 
 #endif // DICTIONARY_USE_FAST_REHASH_MODE
 
-                    // Setting status
+                    // Save settings
                     this->buckets_ = new_buckets;
                     this->entries_ = new_entries;
                     this->bucket_mask_ = new_bucket_capacity - 1;
-                    this->bucket_capacity_ = new_bucket_capacity;
-                    //this->entry_size_ = ??;
+                    // Here, keep the entry_size_ unchanged.
                     this->entry_capacity_ = new_entry_capacity;
                     this->freelist_.clear();
 
@@ -609,8 +624,10 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    return (iterator)entry;
+                if (likely(entry->value != nullptr)) {
+                    if (likely(this->key_is_equal_(key, entry->value->first))) {
+                        return (iterator)entry;
+                    }
                 }
                 entry = entry->next;
             }
@@ -632,9 +649,11 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    before_out = before;
-                    return (iterator)entry;
+                if (likely(entry->value != nullptr)) {
+                    if (likely(this->key_is_equal_(key, entry->value->first))) {
+                        before_out = before;
+                        return (iterator)entry;
+                    }
                 }
                 entry = entry->next;
             }
@@ -671,7 +690,6 @@ public:
 
         // Clear settings
         this->bucket_mask_ = 0;
-        this->bucket_capacity_ = 0;
         this->entry_size_ = 0;
         this->entry_capacity_ = 0;
 
@@ -689,10 +707,6 @@ public:
         this->freelist_.clear();
     }
 
-    void reserve(size_type capacity) {
-        this->rehash_internal<false>(capacity);
-    }
-
     void rehash(size_type new_size) {
         assert(new_size > 0);
         // Recalculate the size of new_capacity.
@@ -700,13 +714,18 @@ public:
         this->rehash_internal<false>(new_capacity);
     }
 
+    void reserve(size_type capacity) {
+        this->rehash(capacity);
+    }
+
     void resize(size_type new_size) {
         this->rehash(new_size);
     }
 
     void shrink_to_fit(size_type new_size = 0) {
-        // Recalculate the size of new_capacity.
+        // Choose the maximum size of new size and now entry size.
         new_size = (this->entry_size_ >= new_size) ? this->entry_size_ : new_size;
+        // Recalculate the size of new_capacity.
         size_type new_capacity = this->calc_shrink_capacity(new_size);
         this->rehash_internal<true>(new_capacity);
     }
@@ -722,8 +741,10 @@ public:
                     entry = entry->next;
                 }
                 else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
-                        return (iterator)entry;
+                    if (likely(entry->value != nullptr)) {
+                        if (likely(this->key_is_equal_(key, entry->value->first))) {
+                            return (iterator)entry;
+                        }
                     }
                     entry = entry->next;
                 }
@@ -772,18 +793,21 @@ public:
 
 #if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
-                void * pair_buf = (void *)&(new_entry->value);
-                value_type * new_pair = new (pair_buf) value_type(key, value);
-                assert(new_pair == &new_entry->value);
+                void * pair_ptr = (void *)&new_entry->pair;
+                value_type * new_pair = new (pair_ptr) value_type(key, value);
+                assert(new_pair == &new_entry->pair);
 #else
-                new_entry->value.first = key;
-                new_entry->value.second = value;
+                new_entry->value = &new_entry->pair;
+                new_entry->pair.first = key;
+                new_entry->pair.second = value;
 #endif
             }
             else {
                 // Update the existed key's value.
                 assert(iter != nullptr);
-                iter->value.second = value;
+                if (iter->value != nullptr) {
+                    iter->value->second = value;
+                }
             }
 
             this->updateVersion();
@@ -822,19 +846,22 @@ public:
 
 #if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
-                void * pair_buf = (void *)&(new_entry->value);
-                value_type * new_pair = new (pair_buf) value_type(std::forward<key_type>(key),
+                void * pair_ptr = (void *)&new_entry->pair;
+                value_type * new_pair = new (pair_ptr) value_type(std::forward<key_type>(key),
                                                                   std::forward<mapped_type>(value));
-                assert(new_pair == &new_entry->value);
+                assert(new_pair == &new_entry->pair);
 #else
-                new_entry->value.first.swap(key);
-                new_entry->value.second.swap(value);
+                new_entry->value = &new_entry->pair;
+                new_entry->pair.first.swap(key);
+                new_entry->pair.second.swap(value);
 #endif
             }
             else {
                 // Update the existed key's value.
                 assert(iter != nullptr);
-                iter->value.second = std::move(std::forward<mapped_type>(value));
+                if (iter->value != nullptr) {
+                    iter->value->second = std::move(std::forward<mapped_type>(value));
+                }
             }
 
             this->updateVersion();
@@ -886,36 +913,42 @@ public:
                     entry = entry->next;
                 }
                 else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
-                        if (likely(before != nullptr))
-                            before->next = entry->next;
-                        else
-                            this->buckets_[index] = entry->next;
+                    if (likely(entry->value != nullptr)) {
+                        if (likely(this->key_is_equal_(key, entry->value->first))) {
+                            if (likely(before != nullptr))
+                                before->next = entry->next;
+                            else
+                                this->buckets_[index] = entry->next;
 
-                        entry->hash_code = kInvalidHash;
-                        this->freelist_.push_front(entry);
+                            entry->hash_code = kInvalidHash;
+                            this->freelist_.push_front(entry);
 
 #if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
 #if DICTIONARY_ENTRY_RELEASE_ON_ERASE
-                        // pair_type class placement delete
-                        value_type * pair_ptr = &entry->value;
-                        assert(pair_ptr != nullptr);
-                        pair_ptr->~value_type();
+                            // pair_type class placement delete
+                            value_type * pair_ptr = entry->value;
+                            assert(pair_ptr != nullptr);
+                            if (pair_ptr != nullptr) {
+                                pair_ptr->~value_type();
+                            }
 #endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
 #else
+                            if (entry->value != nullptr) {
 #ifdef _MSC_VER
-                        entry->value.first.clear();
-                        entry->value.second.clear();
+                                entry->value->first.clear();
+                                entry->value->second.clear();
 #else
-                        entry->value.first = std::move(key_type());
-                        entry->value.second = std::move(mapped_type());
+                                entry->value->first = std::move(key_type());
+                                entry->value->second = std::move(mapped_type());
 #endif // _MSC_VER
+                            }
 #endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
 
-                        this->updateVersion();
+                            this->updateVersion();
 
-                        // Has found
-                        return size_type(1);
+                            // Has found
+                            return size_type(1);
+                        }
                     }
 
                     before = entry;

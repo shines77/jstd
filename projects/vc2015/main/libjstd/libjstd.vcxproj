@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\main\jstd\all.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\allocator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\compiler.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\inttypes.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\msvc\inttypes.h" />

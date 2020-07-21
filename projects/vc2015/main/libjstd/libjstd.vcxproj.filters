@@ -133,6 +133,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_iterator.h">
       <Filter>src\string</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\allocator.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">
