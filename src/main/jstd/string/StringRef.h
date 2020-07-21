@@ -37,7 +37,7 @@ public:
     typedef jstd::const_string_iterator<BasicStringRef<CharTy>> const_iterator;
 
     typedef std::basic_string<char_type>    string_type;
-    typedef BasicStringRef<char_type>       stringref_type;
+    typedef BasicStringRef<char_type>       this_type;
 
 private:
     const char_type * data_;
@@ -56,13 +56,13 @@ public:
         : data_(data), length_(N - 1) {}
     BasicStringRef(const string_type & src)
         : data_(src.c_str()), length_(src.size()) {}
-    BasicStringRef(const stringref_type & src)
+    BasicStringRef(const this_type & src)
         : data_(src.data()), length_(src.length()) {}
     BasicStringRef(string_type && src)
         : data_(src.c_str()), length_(src.size()) {
         // Only reference from src string
     }
-    BasicStringRef(stringref_type && src)
+    BasicStringRef(this_type && src)
         : data_(src.data()), length_(src.length()) {
         src.reset();
     }
@@ -80,7 +80,7 @@ public:
         return *this;
     }
 
-    BasicStringRef & operator = (const stringref_type & rhs) {
+    BasicStringRef & operator = (const this_type & rhs) {
         this->data_ = rhs.data();
         this->length_ = rhs.length();
         return *this;
@@ -137,8 +137,15 @@ public:
         this->set_data(src.c_str(), src.size());
     }
 
-    void assign(const stringref_type & src) {
+    void assign(const this_type & src) {
         this->set_data(src.data(), src.length());
+    }
+
+    void swap(this_type & right) {
+        if (&right != this) {
+            std::swap(this->data_, right.data_);
+            std::swap(this->length_, right.length_);
+        }
     }
 
     void set_data(const char_type * data, size_t length) {
@@ -167,7 +174,7 @@ public:
         this->set_data(src.c_str(), src.size());
     }
 
-    void set_data(const stringref_type & src) {
+    void set_data(const this_type & src) {
         this->set_data(src.data(), src.length());
     }
 
@@ -183,8 +190,10 @@ public:
 template <typename StringTy, typename CharTy>
 class BasicStringHelper {
 public:
-    typedef StringTy string_type;
-    typedef CharTy char_type;
+    typedef BasicStringHelper<StringTy, CharTy>
+                                this_type;
+    typedef StringTy            string_type;
+    typedef CharTy              char_type;
 
 private:
     string_type str_;
@@ -237,7 +246,21 @@ public:
             truncated_ = false;
         }
     }
+
+    void swap(this_type & right) {
+        if (&right != this) {
+            this->str_.swap(right.str_);
+            std::swap(this->truncated_, right.truncated_);
+            std::swap(this->save_char_, right.save_char_);
+        }
+    }
 };
+
+template <typename CharTy>
+inline
+void swap(BasicStringRef<CharTy> & lhs, BasicStringRef<CharTy> & rhs) {
+    lhs.swap(rhs);
+}
 
 template <typename CharTy>
 inline
@@ -257,6 +280,13 @@ bool operator > (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy
     return (jstd::StrUtils::compare(lhs, rhs) == jstd::StrUtils::IsBigger);
 }
 
+template <typename StringTy, typename CharTy>
+inline
+void swap(BasicStringHelper<StringTy, CharTy> & lhs,
+          BasicStringHelper<StringTy, CharTy> & rhs) {
+    lhs.swap(rhs);
+}
+
 typedef BasicStringRef<char>                        StringRef;
 typedef BasicStringRef<wchar_t>                     StringRefW;
 
@@ -267,5 +297,22 @@ typedef BasicStringHelper<StringRef, char>          StringRefHelper;
 typedef BasicStringHelper<StringRefW, wchar_t>      StringRefHelperW;
 
 } // namespace jstd
+
+namespace std {
+
+template <typename CharTy>
+inline
+void swap(jstd::BasicStringRef<CharTy> & lhs, jstd::BasicStringRef<CharTy> & rhs) {
+    lhs.swap(rhs);
+}
+
+template <typename StringTy, typename CharTy>
+inline
+void swap(jstd::BasicStringHelper<StringTy, CharTy> & lhs,
+          jstd::BasicStringHelper<StringTy, CharTy> & rhs) {
+    lhs.swap(rhs);
+}
+
+} // namespace std
 
 #endif // JSTD_STRINGREF_H

@@ -19,7 +19,17 @@
 #include <vector>
 #include <type_traits>
 
-#define USE_JSTD_DICTIONARY         1
+#ifndef USE_JSTD_DICTIONARY
+
+#define USE_JSTD_DICTIONARY                     1
+#define DICTIONARY_ENTRY_USE_PLACEMENT_NEW      1
+
+// The entry's pair whether release on erase the entry.
+#define DICTIONARY_ENTRY_RELEASE_ON_ERASE       1
+#define DICTIONARY_USE_FAST_REHASH_MODE         1
+#define DICTIONARY_SUPPORT_VERSION              0
+
+#endif // USE_JSTD_DICTIONARY
 
 // This macro must define before include file "jstd/nothrow_new.h".
 #undef  JSTD_USE_NOTHROW_NEW
@@ -29,15 +39,6 @@
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/nothrow_new.h"
 #include "jstd/support/Power2.h"
-
-#define DICTIONARY_ENTRY_USE_PLACEMENT_NEW      1
-
-// The entry's pair whether release on erase the entry.
-#define DICTIONARY_ENTRY_RELEASE_ON_ERASE       1
-
-#define DICTIONARY_USE_FAST_REHASH_MODE         1
-
-#define DICTIONARY_SUPPORT_VERSION              0
 
 namespace jstd {
 
@@ -180,10 +181,10 @@ protected:
     hasher_type     hasher_;
     key_equal       key_is_equal_;
 
-    // Default initial capacity is 64.
-    static const size_type kDefaultInitialCapacity = 64;
-    // Minimum capacity is 16.
-    static const size_type kMinimumCapacity = 16;
+    // Default initial capacity is 16.
+    static const size_type kDefaultInitialCapacity = 16;
+    // Minimum capacity is 8.
+    static const size_type kMinimumCapacity = 8;
     // Maximum capacity is 1 << 31.
     static const size_type kMaximumCapacity = 1U << 30;
 
@@ -745,7 +746,6 @@ public:
             index_type index = this->index_of(hash_code, this->bucket_mask_);
             iterator iter = this->find_internal(key, hash_code, index);
             if (likely(iter == this->unsafe_end())) {
-                // Insert the new key.
                 entry_type * new_entry;
                 if (likely(this->freelist_.is_empty())) {
                     if (likely(this->entry_size_ >= this->entry_capacity_)) {
@@ -779,15 +779,14 @@ public:
                 new_entry->value.first = key;
                 new_entry->value.second = value;
 #endif
-                this->updateVersion();
             }
             else {
                 // Update the existed key's value.
                 assert(iter != nullptr);
                 iter->value.second = value;
-
-                this->updateVersion();
             }
+
+            this->updateVersion();
         }
     }
 
@@ -797,7 +796,6 @@ public:
             index_type index = this->index_of(hash_code, this->bucket_mask_);
             iterator iter = this->find_internal(std::forward<key_type>(key), hash_code, index);
             if (likely(iter == this->unsafe_end())) {
-                // Insert the new key.
                 entry_type * new_entry;
                 if (likely(this->freelist_.is_empty())) {
                     if (likely(this->entry_size_ >= this->entry_capacity_)) {
@@ -832,15 +830,14 @@ public:
                 new_entry->value.first.swap(key);
                 new_entry->value.second.swap(value);
 #endif
-                this->updateVersion();
             }
             else {
                 // Update the existed key's value.
                 assert(iter != nullptr);
                 iter->value.second = std::move(std::forward<mapped_type>(value));
-
-                this->updateVersion();
             }
+
+            this->updateVersion();
         }
     }
 
@@ -884,14 +881,11 @@ public:
             entry_type * before = nullptr;
             entry_type * entry = this->buckets_[index];
             while (likely(entry != nullptr)) {
-                // Found a entry, next to check the hash value.
                 if (likely(entry->hash_code != hash_code)) {
-                    // Scan next entry
                     before = entry;
                     entry = entry->next;
                 }
                 else {
-                    // If hash value is equal, then compare the key sizes and the strings.
                     if (likely(this->key_is_equal_(key, entry->value.first))) {
                         if (likely(before != nullptr))
                             before->next = entry->next;
@@ -920,17 +914,17 @@ public:
 
                         this->updateVersion();
 
-                        // Has found the key.
+                        // Has found
                         return size_type(1);
                     }
-                    // Scan next entry
+
                     before = entry;
                     entry = entry->next;
                 }
             }
         }
 
-        // Not found the key.
+        // Not found
         return size_type(0);
     }
 
