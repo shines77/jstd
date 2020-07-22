@@ -189,29 +189,29 @@ struct allocator_base {
     }
 
     // placement new
-    void constructor(pointer ptr) {
+    pointer constructor(pointer ptr) {
         assert(ptr != nullptr);
         void * v_ptr = static_cast<void *>(ptr);
-        ::operator new (v_ptr) value_type();
+        return ::new (v_ptr) value_type();
     }
 
     // placement new
-    void constructor(void * ptr) {
-        this->constructor(static_cast<pointer>(ptr));
+    pointer constructor(void * ptr) {
+        return this->constructor(static_cast<pointer>(ptr));
     }
 
     // placement new (Args...)
     template <typename ...Args>
-    void constructor(pointer ptr, Args && ... args) {
+    pointer constructor(pointer ptr, Args && ... args) {
         assert(ptr != nullptr);
         void * v_ptr = static_cast<void *>(ptr);
-        ::operator new (v_ptr) value_type(std::forward<Args>(args)...);
+        return ::new (v_ptr) value_type(std::forward<Args>(args)...);
     }
 
     // placement new (Args...)
     template <typename ...Args>
-    void constructor(void * ptr, Args && ... args) {
-        this->constructor(static_cast<pointer>(ptr), std::forward<Args>(args)...);
+    pointer constructor(void * ptr, Args && ... args) {
+        return this->constructor(static_cast<pointer>(ptr), std::forward<Args>(args)...);
     }
 
     template <typename U>

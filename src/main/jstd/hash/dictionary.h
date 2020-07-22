@@ -363,8 +363,6 @@ protected:
 
     void free_buckets_impl() {
         assert(this->buckets_ != nullptr);
-        //operator delete((void *)this->buckets_, std::nothrow);
-        //jstd::nothrow_deleter::free(this->buckets_);
         bucket_allocator_.deallocate(this->buckets_, this->entry_capacity_);
     }
 
@@ -375,41 +373,24 @@ protected:
     }
 
     void free_entries() {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
         assert(this->entries_ != nullptr);
-        //operator delete((void *)this->entries_, std::nothrow);
-        //jstd::nothrow_deleter::free(this->entries_);
-        JSTD_PLACEMENT_FREE(this->entries_);
-#else
-        //operator delete((void *)this->entries_, std::nothrow);
-        //jstd::nothrow_deleter::destroy(this->entries_);
-        JSTD_DELETE_ARRAY(this->entries_);
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+        entry_allocator_.deallocate(this->entries_, this->entry_capacity_);
     }
 
     void destroy_entries() {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-        assert(this->entries_ != nullptr);
         entry_type * entry = this->entries_;
         for (size_type i = 0; i < this->entry_size_; i++) {
             assert(entry != nullptr);
-#if DICTIONARY_ENTRY_RELEASE_ON_ERASE
             if (likely(entry->hash_code != kInvalidHash)) {
                 value_type * __pair = &entry->value;
                 assert(__pair != nullptr);
-                __pair->~value_type();
+                allocator_.destructor(__pair);
             }
-#else
-            value_type * __pair = &entry->value;
-            assert(__pair != nullptr);
-            __pair->~value_type();
-#endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
             ++entry;
         }
 
         // Free the entries buffer.
         this->free_entries();
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
     }
 
     // Linked all the entries to the free list.
@@ -461,22 +442,14 @@ protected:
         if (likely((force_shrink == false && new_entry_capacity > this->entry_capacity_) ||
                    (force_shrink == true && new_entry_capacity != this->entry_capacity_))) {
             // The the array of bucket's first entry.
-            // entry_type ** new_buckets = new (std::nothrow) entry_type *[new_bucket_capacity];
-            entry_type ** new_buckets = JSTD_NEW_ARRAY(entry_type *, new_bucket_capacity);
-            IF_LIKELY(new_buckets != nullptr) {
+            entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
+            if (likely(new_buckets != nullptr)) {
                 // Initialize the buckets's data.
                 ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
 
                 // The the array of entries.
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-                // entry_type * new_entries = (entry_type *)operator new(
-                //                             sizeof(entry_type) * new_entry_capacity, std::nothrow);
-                entry_type * new_entries = JSTD_PLACEMENT_NEW(entry_type, new_entry_capacity);
-#else
-                // entry_type * new_entries = new (std::nothrow) entry_type[new_entry_capacity];
-                entry_type * new_entries = JSTD_NEW_ARRAY(entry_type, new_entry_capacity);
-#endif
-                IF_LIKELY(new_entries != nullptr) {
+                entry_type * new_entries = entry_allocator_.allocate(new_entry_capacity);
+                if (likely(new_entries != nullptr)) {
                     // Linked all new entries to the new free list.
                     //free_list new_freelist;
                     //fill_freelist(new_freelist, new_entries, new_entry_capacity);
@@ -657,16 +630,11 @@ protected:
 
 public:
     void destroy() {
-        // Free the resources.
+        // Destroy the resources.
         if (likely(this->buckets_ != nullptr)) {
             if (likely(this->entries_ != nullptr)) {
-                // Free all entries.
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+                // Destroy all entries.
                 this->destroy_entries();
-#else
-                //jstd::nothrow_deleter::destroy(this->entries_);
-                JSTD_DELETE_ARRAY(this->entries_);
-#endif
                 this->entries_ = nullptr;
             }
 
@@ -686,7 +654,7 @@ public:
     void clear() {
         if (likely(this->buckets_ != nullptr)) {
             // Initialize the buckets's data.
-            memset((void *)this->buckets_, 0, this->entry_capacity_ * sizeof(entry_type *));
+            ::memset((void *)this->buckets_, 0, this->entry_capacity_ * sizeof(entry_type *));
         }
 
         // Clear settings
@@ -776,15 +744,10 @@ public:
                 new_entry->hash_code = hash_code;
                 this->buckets_[index] = new_entry;
 
-#if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
                 void * pair_ptr = (void *)&new_entry->value;
-                value_type * new_pair = new (pair_ptr) value_type(key, value);
+                value_type * new_pair = allocator_.constructor(pair_ptr, key, value);
                 assert(new_pair == &new_entry->value);
-#else
-                new_entry->value.first = key;
-                new_entry->value.second = value;
-#endif
             }
             else {
                 // Update the existed key's value.
@@ -826,16 +789,12 @@ public:
                 new_entry->hash_code = hash_code;
                 this->buckets_[index] = new_entry;
 
-#if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
                 void * pair_ptr = (void *)&new_entry->value;
-                value_type * new_pair = new (pair_ptr) value_type(std::forward<key_type>(key),
-                                                                  std::forward<mapped_type>(value));
+                value_type * new_pair = allocator_.constructor(pair_ptr,
+                                                               std::forward<key_type>(key),
+                                                               std::forward<mapped_type>(value));
                 assert(new_pair == &new_entry->value);
-#else
-                new_entry->value.first.swap(key);
-                new_entry->value.second.swap(value);
-#endif
             }
             else {
                 // Update the existed key's value.
@@ -901,24 +860,10 @@ public:
                         entry->hash_code = kInvalidHash;
                         this->freelist_.push_front(entry);
 
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-#if DICTIONARY_ENTRY_RELEASE_ON_ERASE
                         // pair_type class placement delete
                         value_type * pair_ptr = &entry->value;
                         assert(pair_ptr != nullptr);
-                        if (pair_ptr != nullptr) {
-                            pair_ptr->~value_type();
-                        }
-#endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
-#else
-#ifdef _MSC_VER
-                        entry->value->first.clear();
-                        entry->value->second.clear();
-#else
-                        entry->value->first = std::move(key_type());
-                        entry->value->second = std::move(mapped_type());
-#endif // _MSC_VER
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+                        allocator_.destructor(pair_ptr);
 
                         this->updateVersion();
 
