@@ -26,6 +26,9 @@
     <Filter Include="src\string">
       <UniqueIdentifier>{40f152d7-2c96-4b7a-a9b6-82a4f555fd80}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\memory">
+      <UniqueIdentifier>{e74b6445-df09-4290-b6c5-37c56cf4d80f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\compiler.h">
@@ -135,6 +138,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\allocator.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\onetime_ptr.h">
+      <Filter>src\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

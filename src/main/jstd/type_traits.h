@@ -68,6 +68,37 @@ struct param_tester
 template <class... Types>
 using void_t = typename param_tester<Types...>::type;
 
+template <typename T>
+struct remove_cv_rp {
+    typedef typename std::remove_cv<
+                typename std::remove_reference<
+                    typename std::remove_pointer<T>::type
+                >::type
+            >::type type;
+};
+
+template <typename T>
+struct remove_cv_rp_ext {
+    typedef typename std::remove_extent<
+                typename std::remove_cv<
+                    typename std::remove_reference<
+                        typename std::remove_pointer<T>::type
+                    >::type
+                >::type
+            >::type type;
+};
+
+template <typename T>
+struct remove_all {
+    typedef typename std::remove_all_extents<
+                typename std::remove_cv<
+                    typename std::remove_reference<
+                        typename std::remove_pointer<T>::type
+                    >::type
+                >::type
+            >::type type;
+};
+
 } // namespace jstd
 
 #endif // JSTD_TYPE_TRAITS_H

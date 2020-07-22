@@ -53,7 +53,8 @@ namespace jstd {
 template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
            typename Hasher = hash<Key, HashFunc>,
            typename KeyEqual = equal_to<Key>,
-           typename Allocator = allocator<std::pair<const Key, Value>> >
+           std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
+           typename Allocator = allocator<std::pair<const Key, Value>, Alignment> >
 class BasicDictionary {
 public:
     typedef Key                             key_type;
@@ -205,6 +206,9 @@ protected:
     key_equal               key_is_equal_;
     allocator_type          allocator_;
 
+    allocator<entry_type *, 16> bucket_allocator_;
+    allocator<entry_type, 16>   entry_allocator_;
+
     // Default initial capacity is 16.
     static const size_type kDefaultInitialCapacity = 16;
     // Minimum capacity is 8.
@@ -330,9 +334,8 @@ protected:
         size_type bucket_capacity = entry_capacity;
 
         // The the array of bucket's first entry.
-        // entry_type ** new_buckets = new (std::nothrow) entry_type *[bucket_capacity];
-        entry_type ** new_buckets = JSTD_NEW_ARRAY(entry_type *, bucket_capacity);
-        IF_LIKELY(new_buckets != nullptr) {
+        entry_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
+        if (likely(new_buckets != nullptr)) {
             // Initialize the buckets's data.
             ::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
@@ -342,18 +345,8 @@ protected:
             this->entry_capacity_ = bucket_capacity;
 
             // The array of entries.
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-            // entry_type * new_entries = (entry_type *)operator new(
-            //                             entry_capacity * sizeof(entry_type), std::nothrow);
-            entry_type * new_entries = JSTD_PLACEMENT_NEW(entry_type, entry_capacity);
-#else
-            // entry_type * new_entries = new (std::nothrow) entry_type[entry_capacity];
-            entry_type * new_entries = JSTD_NEW_ARRAY(entry_type, entry_capacity);
-#endif
-            IF_LIKELY(new_entries != nullptr) {
-                // Linked all new entries to the free list.
-                //fill_freelist(this->freelist_, new_entries, entry_capacity);
-
+            entry_type * new_entries = entry_allocator_.allocate(entry_capacity);
+            if (likely(new_entries != nullptr)) {
                 // Initialize the entries info.
                 this->entries_ = new_entries;
                 this->entry_size_ = 0;
@@ -361,6 +354,7 @@ protected:
                 this->entries_list_.clear();
                 this->entries_list_.emplace_back(new_entries, entry_capacity);
 
+                // Linked all new entries to the free list.
                 this->freelist_.clear();
                 fill_freelist(this->freelist_, new_entries, entry_capacity);
             }
@@ -371,7 +365,7 @@ protected:
         assert(this->buckets_ != nullptr);
         //operator delete((void *)this->buckets_, std::nothrow);
         //jstd::nothrow_deleter::free(this->buckets_);
-        JSTD_FREE_ARRAY(this->buckets_);
+        bucket_allocator_.deallocate(this->buckets_, this->entry_capacity_);
     }
 
     void free_buckets() {

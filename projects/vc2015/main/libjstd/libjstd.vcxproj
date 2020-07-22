@@ -169,6 +169,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_table.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\iterator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\lib.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\onetime_ptr.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\nothrow_deleter.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\nothrow_new.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\char_traits.h" />

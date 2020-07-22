@@ -13,6 +13,10 @@
 #include <memory>           // For std::pointer_traits<T>
 #include <initializer_list> // For std::initializer_list<T>
 
+//
+// See: https://www.cnblogs.com/mangoyuan/p/6446046.html
+//
+
 namespace jstd {
 
 /////////////////////////////////////////////////////////////////
