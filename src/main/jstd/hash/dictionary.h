@@ -43,6 +43,11 @@
 #include "jstd/support/Power2.h"
 #include "jstd/support/PowerOf2.h"
 
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+// is __amd64__
+#endif
+
 namespace jstd {
 
 template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
@@ -66,8 +71,6 @@ public:
     typedef BasicDictionary<Key, Value, HashFunc, Hasher, KeyEqual>
                                             this_type;
 
-#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
- || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
     struct hash_entry {
         hash_entry * next;
         hash_code_t  hash_code;
@@ -82,57 +85,56 @@ public:
 #endif
         }
     };
-#else // !__amd64__
-    struct hash_entry {
-        hash_entry * next;
-        hash_code_t  hash_code;
-        uint32_t     flags;
-        value_type   value;
 
-        hash_entry() : next(nullptr), hash_code(0), flags(0) {}
+    typedef hash_entry          entry_type;
+    typedef entry_type *        iterator;
+    typedef const entry_type *  const_iterator;
 
-        ~hash_entry() {
-#ifndef NDEBUG
-            this->next = nullptr;
-#endif
-        }
+    struct entry_list {
+        entry_type * entries;
+        size_type    capacity;
+
+        entry_list() : entries(nullptr), capacity(0) {}
+        entry_list(entry_type * entries, size_type capacity)
+            : entries(entries), capacity(capacity) {}
+        ~entry_list() {}
     };
-#endif // __amd64__
 
-    typedef hash_entry                  entry_type;
-    typedef entry_type *                iterator;
-    typedef const entry_type *          const_iterator;
-
+    template <typename T>
     class free_list {
+    public:
+        typedef T                               node_type;
+        typedef typename this_type::size_type   size_type;
+
     protected:
-        entry_type * head_;
-        size_type    size_;
+        node_type * head_;
+        size_type   size_;
 
     public:
-        free_list(hash_entry * head = nullptr) : head_(head), size_(0) {}
+        free_list(node_type * head = nullptr) : head_(head), size_(0) {}
         ~free_list() {
 #ifndef NDEBUG
             this->clear();
 #endif
         }
 
-        entry_type * begin() const { return this->head_; }
-        entry_type * end() const { return nullptr; }
+        node_type * begin() const { return this->head_; }
+        node_type * end() const { return nullptr; }
 
-        entry_type * head() const { return this->head_; }
-        size_type size() const { return this->size_; }
+        node_type * head() const { return this->head_; }
+        size_type   size() const { return this->size_; }
 
         bool is_valid() const { return (this->head_ != nullptr); }
         bool is_empty() const { return (this->size_ == 0); }
 
-        void set_head(entry_type * head) {
+        void set_head(node_type * head) {
             this->head_ = head;
         }
         void set_size(size_type size) {
             this->size_ = size;
         }
 
-        void set_list(entry_type * head, size_type size) {
+        void set_list(node_type * head, size_type size) {
             this->head_ = head;
             this->size_ = size;
         }
@@ -142,7 +144,7 @@ public:
             this->size_ = 0;
         }
 
-        void reset(hash_entry * head) {
+        void reset(node_type * head) {
             this->head_ = head;
             this->size_ = 0;
         }
@@ -156,20 +158,20 @@ public:
             --(this->size_);
         }
 
-        void push_front(entry_type * entry) {
-            assert(entry != nullptr);
-            entry->next = this->head_;
-            this->head_ = entry;
+        void push_front(node_type * node) {
+            assert(node != nullptr);
+            node->next = this->head_;
+            this->head_ = node;
             ++(this->size_);
         }
 
-        entry_type * pop_front() {
+        node_type * pop_front() {
             assert(this->head_ != nullptr);
-            entry_type * entry = this->head_;
-            this->head_ = entry->next;
+            node_type * node = this->head_;
+            this->head_ = node->next;
             assert(this->size_ > 0);
             --(this->size_);
-            return entry;
+            return node;
         }
 
         void swap(free_list & right) {
@@ -180,26 +182,28 @@ public:
         }
     };
 
-    inline void swap(free_list & lhs, free_list & rhs) {
+    template <typename T>
+    inline void swap(free_list<T> & lhs, free_list<T> & rhs) {
         lhs.swap(rhs);
     }
 
-protected:
-    entry_type **   buckets_;
-    entry_type *    entries_;
-    value_type *    values_;
-    size_type       bucket_mask_;
-    size_type       bucket_capacity_;
-    size_type       entry_size_;
-    size_type       entry_capacity_;
-    free_list       freelist_;
-#if DICTIONARY_SUPPORT_VERSION
-    size_type       version_;
-#endif
-    hasher_type     hasher_;
-    key_equal       key_is_equal_;
+    typedef free_list<entry_type> free_list_t;
 
-    allocator_type  allocator_;
+protected:
+    entry_type **           buckets_;
+    entry_type *            entries_;
+    size_type               bucket_mask_;
+    size_type               entry_size_;
+    size_type               entry_capacity_;
+    free_list_t             freelist_;
+#if DICTIONARY_SUPPORT_VERSION
+    size_type               version_;
+#endif
+    std::vector<entry_list> entries_list_;
+
+    hasher_type             hasher_;
+    key_equal               key_is_equal_;
+    allocator_type          allocator_;
 
     // Default initial capacity is 16.
     static const size_type kDefaultInitialCapacity = 16;
@@ -223,7 +227,7 @@ protected:
 
 public:
     BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
-        : buckets_(nullptr), entries_(nullptr), values_(nullptr),
+        : buckets_(nullptr), entries_(nullptr),
           bucket_mask_(0), entry_size_(0), entry_capacity_(0)
 #if DICTIONARY_SUPPORT_VERSION
           , version_(1) /* Since 0 means that the version attribute is not supported,
@@ -353,10 +357,14 @@ protected:
                 // Initialize the entries info.
                 this->entries_ = new_entries;
                 this->entry_size_ = 0;
+
+                this->entries_list_.clear();
+                this->entries_list_.emplace_back(new_entries, entry_capacity);
+
+                this->freelist_.clear();
+                fill_freelist(this->freelist_, new_entries, entry_capacity);
             }
         }
-
-        this->freelist_.clear();
     }
 
     void free_buckets_impl() {
@@ -390,15 +398,14 @@ protected:
         assert(this->entries_ != nullptr);
         entry_type * entry = this->entries_;
         for (size_type i = 0; i < this->entry_size_; i++) {
-#if DICTIONARY_ENTRY_RELEASE_ON_ERASE
             assert(entry != nullptr);
+#if DICTIONARY_ENTRY_RELEASE_ON_ERASE
             if (likely(entry->hash_code != kInvalidHash)) {
                 value_type * __pair = &entry->value;
                 assert(__pair != nullptr);
                 __pair->~value_type();
             }
 #else
-            assert(entry != nullptr);
             value_type * __pair = &entry->value;
             assert(__pair != nullptr);
             __pair->~value_type();
@@ -411,8 +418,8 @@ protected:
 #endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
     }
 
-    // Linked the entries to the free list.
-    void fill_freelist(free_list & freelist, entry_type * entries, size_type capacity) {
+    // Linked all the entries to the free list.
+    void fill_freelist(free_list_t & freelist, entry_type * entries, size_type capacity) {
         assert(entries != nullptr);
         assert(capacity > 0);
         entry_type * entry = entries + capacity - 1;
