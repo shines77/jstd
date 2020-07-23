@@ -335,7 +335,7 @@ protected:
 
         // The the array of bucket's first entry.
         entry_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
-        if (likely(new_buckets != nullptr)) {
+        if (likely(bucket_allocator_.is_ok(new_buckets))) {
             // Initialize the buckets's data.
             ::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
@@ -346,7 +346,7 @@ protected:
 
             // The array of entries.
             entry_type * new_entries = entry_allocator_.allocate(entry_capacity);
-            if (likely(new_entries != nullptr)) {
+            if (likely(entry_allocator_.is_ok(new_entries))) {
                 // Initialize the entries info.
                 this->entries_ = new_entries;
                 this->entry_size_ = 0;
@@ -443,13 +443,13 @@ protected:
                    (force_shrink == true && new_entry_capacity != this->entry_capacity_))) {
             // The the array of bucket's first entry.
             entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
-            if (likely(new_buckets != nullptr)) {
+            if (likely(bucket_allocator_.is_ok(new_buckets))) {
                 // Initialize the buckets's data.
                 ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
 
                 // The the array of entries.
                 entry_type * new_entries = entry_allocator_.allocate(new_entry_capacity);
-                if (likely(new_entries != nullptr)) {
+                if (likely(entry_allocator_.is_ok(new_entries))) {
                     // Linked all new entries to the new free list.
                     //free_list new_freelist;
                     //fill_freelist(new_freelist, new_entries, new_entry_capacity);
@@ -647,7 +647,6 @@ public:
 
     void rehash(size_type new_size) {
         assert(new_size > 0);
-        // Recalculate the size of new_capacity.
         size_type new_capacity = this->calc_capacity(new_size);
         this->rehash_internal<false>(new_capacity);
     }
@@ -663,7 +662,7 @@ public:
     void shrink_to_fit(size_type new_size = 0) {
         // Choose the maximum size of new size and now entry size.
         new_size = (this->entry_size_ >= new_size) ? this->entry_size_ : new_size;
-        // Recalculate the size of new_capacity.
+
         size_type new_capacity = this->calc_shrink_capacity(new_size);
         this->rehash_internal<true>(new_capacity);
     }

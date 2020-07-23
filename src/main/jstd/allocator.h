@@ -22,6 +22,8 @@
 #include <memory>   // For std::pointer_traits<T>
 #include <limits>   // For std::numeric_limits<T>::max()
 
+#include <new>      // ::operator new, ::operator new[], ::operator delete
+
 #define JSTD_MINIMUM_ALIGNMENT   4
 #define JSTD_DEFAULT_ALIGNMENT   alignof(std::max_align_t)
 
@@ -118,6 +120,16 @@ struct allocator_base {
     size_type align_of() const { return kAlignOf; }
     size_type alignment() const { return kAlignment; }
 
+    bool is_ok(bool expression) {
+        derive_type * pThis = static_cast<derive_type *>(this);
+        return (!pThis->is_nothrow() || expression);
+    }
+
+    bool is_ok(pointer ptr) {
+        derive_type * pThis = static_cast<derive_type *>(this);
+        return (!pThis->is_nothrow() || (ptr != nullptr));
+    }
+
     size_type max_size() const {
         // Estimate maximum array size
         return (std::numeric_limits<std::size_t>::max() / sizeof(T));
@@ -164,17 +176,17 @@ struct allocator_base {
     }
 
     template <typename U>
-    pointer create_at(U * ptr) {
-        return this->create_array_at(ptr, 1);
+    pointer re_create(U * ptr) {
+        return this->re_create_array(ptr, 1);
     }
 
     template <typename U, typename ...Args>
-    pointer create_at(U * ptr, Args && ... args) {
-        return this->create_array_at(ptr, 1, std::forward<Args>(args)...);
+    pointer re_create(U * ptr, Args && ... args) {
+        return this->re_create_array(ptr, 1, std::forward<Args>(args)...);
     }
 
     template <typename U>
-    pointer create_array_at(U * ptr, size_type count) {
+    pointer re_create_array(U * ptr, size_type count) {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -186,7 +198,7 @@ struct allocator_base {
     }
 
     template <typename U, typename ...Args>
-    pointer create_array_at(U * ptr, size_type count, Args && ... args) {
+    pointer re_create_array(U * ptr, size_type count, Args && ... args) {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -218,6 +230,7 @@ struct allocator_base {
     pointer constructor(pointer ptr) {
         assert(ptr != nullptr);
         void * v_ptr = static_cast<void *>(ptr);
+        // call ::operator new (size_t size, void * p);
         return ::new (v_ptr) value_type();
     }
 
@@ -231,6 +244,7 @@ struct allocator_base {
     pointer constructor(pointer ptr, Args && ... args) {
         assert(ptr != nullptr);
         void * v_ptr = static_cast<void *>(ptr);
+        // call ::operator new (size_t size, void * p, Args &&... args);
         return ::new (v_ptr) value_type(std::forward<Args>(args)...);
     }
 
@@ -323,7 +337,8 @@ struct allocator : public allocator_base<
             _Deallocate((void *)ptr, count * sizeof(value_type));
     }
 
-    bool isAutoRelease() { return true; }
+    bool is_auto_release() { return true; }
+    bool is_nothrow() { return true; }
 };
 
 template <class T, std::size_t Alignment = align_of<T>::value>
@@ -373,7 +388,59 @@ struct std_new_allocator : public allocator_base<
         ::operator delete[]((void *)ptr, count * sizeof(value_type));
     }
 
-    bool isAutoRelease() { return true; }
+    bool is_auto_release() { return true; }
+    bool is_nothrow() { return false; }
+};
+
+template <class T, std::size_t Alignment = align_of<T>::value>
+struct nothrow_allocator : public allocator_base<
+            nothrow_allocator<T, Alignment>, T, Alignment> {
+    typedef nothrow_allocator<T, Alignment>         this_type;
+    typedef allocator_base<this_type, T, Alignment> base_type;
+
+    typedef typename base_type::value_type          value_type;
+    typedef typename base_type::pointer             pointer;
+    typedef typename base_type::const_pointer       const_pointer;
+    typedef typename base_type::reference           reference;
+    typedef typename base_type::reference           const_reference;
+
+    typedef typename base_type::difference_type     difference_type;
+    typedef typename base_type::size_type           size_type;
+
+    nothrow_allocator() noexcept {}
+    nothrow_allocator(const this_type & other) noexcept {}
+    template <typename U>
+    nothrow_allocator(const nothrow_allocator<U, Alignment> & other) noexcept {}
+
+    this_type & operator = (const this_type & other) noexcept {
+        return *this;
+    }
+    template <typename U>
+    this_type & operator = (const nothrow_allocator<U, Alignment> & other) noexcept {
+        return *this;
+    }
+
+    ~nothrow_allocator() {}
+
+    pointer allocate(size_type count = 1) {
+        pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type), std::nothrow));
+        return ptr;
+    }
+
+    template <typename U>
+    pointer reallocate(U * ptr, size_type count = 1) {
+        pointer new_ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type), std::nothrow));
+        return new_ptr;
+    }
+
+    template <typename U>
+    void deallocate(U * ptr, size_type count = 1) {
+        assert(ptr != nullptr);
+        ::operator delete[]((void *)ptr, std::nothrow);
+    }
+
+    bool is_auto_release() { return true; }
+    bool is_nothrow() { return true; }
 };
 
 template <typename T, std::size_t Alignment = align_of<T>::value>
@@ -423,7 +490,8 @@ struct malloc_allocator : public allocator_base<
         std::free((void *)ptr);
     }
 
-    bool isAutoRelease() { return true; }
+    bool is_auto_release() { return true; }
+    bool is_nothrow() { return false; }
 };
 
 template <class T, std::size_t Alignment = align_of<T>::value>
@@ -469,7 +537,8 @@ struct dummy_allocator : public allocator_base<
     void deallocate(U * ptr, size_type count = 1) {
     }
 
-    bool isAutoRelease() { return false; }
+    bool is_auto_release() { return false; }
+    bool is_nothrow() { return false; }
 };
 
 } // namespace jstd

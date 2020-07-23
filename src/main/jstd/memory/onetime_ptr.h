@@ -191,7 +191,6 @@ protected:
         assert((value == nullptr) || (value != nullptr && value != this->value));
         this->value_   = value;
         this->shifted_ = false;
-        this->size_    = 0;
     }
 
     template <typename ...Args>
