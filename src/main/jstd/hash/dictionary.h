@@ -356,7 +356,7 @@ protected:
 
                 // Linked all new entries to the free list.
                 this->freelist_.clear();
-                fill_freelist(this->freelist_, new_entries, entry_capacity);
+                //fill_freelist(this->freelist_, new_entries, entry_capacity);
             }
         }
     }
@@ -382,9 +382,9 @@ protected:
         for (size_type i = 0; i < this->entry_size_; i++) {
             assert(entry != nullptr);
             if (likely(entry->hash_code != kInvalidHash)) {
-                value_type * __pair = &entry->value;
-                assert(__pair != nullptr);
-                allocator_.destructor(__pair);
+                value_type * pair_ptr = &entry->value;
+                assert(pair_ptr != nullptr);
+                allocator_.destructor(pair_ptr);
             }
             ++entry;
         }
@@ -466,40 +466,25 @@ protected:
                             assert(new_entry != nullptr);
                             assert(old_entry != nullptr);
                             if (likely(old_entry->hash_code != kInvalidHash)) {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
                                 // Swap old_entry and new_entry.
                                 new_entry->next = old_entry->next;
                                 new_entry->hash_code = old_entry->hash_code;
 
                                 // pair_type class placement new
-                                void * pair_buf = (void *)&new_entry->value;
-                                value_type * new_pair = new (pair_buf) value_type(std::move(old_entry->value));
+                                void * pair_ptr = (void *)&new_entry->value;
+                                value_type * new_pair = allocator_.constructor(pair_ptr, std::move(old_entry->value));
                                 assert(new_pair == &new_entry->value);
                                 //new_entry->pair.swap(old_entry->pair);
 
                                 // pair_type class placement delete
-                                value_type * pair_ptr = &old_entry->value;
-                                assert(pair_ptr != nullptr);
-                                pair_ptr->~value_type();
-#else // !DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-                                // Swap old_entry and new_entry.
-                                //new_entry->next = old_entry->next;
-                                new_entry->hash_code = old_entry->hash_code;
-                                new_entry->value.swap(old_entry->value);
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+                                value_type * old_pair_ptr = &old_entry->value;
+                                allocator_.destructor(old_pair_ptr);
+
                                 ++new_entry;
                                 ++old_entry;
                                 ++new_count;
                             }
                             else {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-#if (DICTIONARY_ENTRY_RELEASE_ON_ERASE == 0)
-                                // pair_type class placement delete
-                                value_type * pair_ptr = &old_entry->value;
-                                assert(pair_ptr != nullptr);
-                                pair_ptr->~value_type();
-#endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
                                 ++old_entry;
                             }
                         }
@@ -572,9 +557,7 @@ protected:
                 }
                 else {
                     // Free the array of new bucket.
-                    //operator delete((void *)new_buckets, std::nothrow);
-                    //jstd::nothrow_deleter::free(new_buckets);
-                    JSTD_FREE_ARRAY(new_buckets);
+                    bucket_allocator_.deallocate(new_buckets, new_entry_capacity);
                 }
             }
         }

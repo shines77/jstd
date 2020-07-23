@@ -315,9 +315,6 @@ struct std_new_allocator : public allocator_base<
     typedef typename base_type::difference_type     difference_type;
     typedef typename base_type::size_type           size_type;
 
-    static const size_type kAlignOf = base_type::kAlignOf;
-    static const size_type kAlignment = base_type::kAlignment;
-
     std_new_allocator() noexcept {}
     std_new_allocator(const this_type & other) noexcept {}
     template <typename U>
@@ -368,9 +365,6 @@ struct malloc_allocator : public allocator_base<
     typedef typename base_type::difference_type     difference_type;
     typedef typename base_type::size_type           size_type;
 
-    static const size_type kAlignOf = base_type::kAlignOf;
-    static const size_type kAlignment = base_type::kAlignment;
-
     malloc_allocator() noexcept {}
     malloc_allocator(const this_type & other) noexcept {}
     template <typename U>
@@ -420,9 +414,6 @@ struct dummy_allocator : public allocator_base<
 
     typedef typename base_type::difference_type     difference_type;
     typedef typename base_type::size_type           size_type;
-
-    static const size_type kAlignOf = base_type::kAlignOf;
-    static const size_type kAlignment = base_type::kAlignment;
 
     dummy_allocator() noexcept {}
     dummy_allocator(const this_type & other) noexcept {}
