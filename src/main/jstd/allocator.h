@@ -10,6 +10,8 @@
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 
+#include "jstd/support/PowerOf2.h"
+
 #include <stddef.h>
 #include <malloc.h>
 #include <memory.h>
@@ -18,7 +20,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <memory>   // For std::pointer_traits<T>
-#include <limits>   // For std::numeric_limits<T>
+#include <limits>   // For std::numeric_limits<T>::max()
 
 #define JSTD_MINIMUM_ALIGNMENT   4
 #define JSTD_DEFAULT_ALIGNMENT   alignof(std::max_align_t)
@@ -118,7 +120,7 @@ struct allocator_base {
 
     size_type max_size() const {
         // Estimate maximum array size
-        return (std::numeric_limits<std::size_t>::(max)() / sizeof(T));
+        return (std::numeric_limits<std::size_t>::max() / sizeof(T));
     }
 
     pointer address(reference value) const noexcept {
@@ -163,12 +165,12 @@ struct allocator_base {
 
     template <typename U>
     pointer create_at(U * ptr, size_type count) {
-        return this->create_array_at(U, 1);
+        return this->create_array_at(ptr, 1);
     }
 
     template <typename U, typename ...Args>
     pointer create_at(U * ptr, size_type count) {
-        return this->create_array_at(U, 1, std::forward<Args>(args)...);
+        return this->create_array_at(ptr, 1, std::forward<Args>(args)...);
     }
 
     template <typename U>
