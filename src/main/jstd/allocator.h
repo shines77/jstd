@@ -169,7 +169,7 @@ struct allocator_base {
     }
 
     template <typename U, typename ...Args>
-    pointer create_at(U * ptr) {
+    pointer create_at(U * ptr, Args && ... args) {
         return this->create_array_at(ptr, 1, std::forward<Args>(args)...);
     }
 
