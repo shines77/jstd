@@ -129,17 +129,17 @@ struct allocator_base {
         return std::addressof(value);
     }
 
-    pointer create_new() {
-        return this->create_new_array(1);
+    pointer create() {
+        return this->create_array(1);
     }
 
     template <typename ...Args>
-    pointer create_new(Args && ... args) {
-        return this->create_new_array(1, std::forward<Args>(args)...);
+    pointer create(Args && ... args) {
+        return this->create_array(1, std::forward<Args>(args)...);
     }
 
-    pointer create_new_array(size_type count) {
-        derive_type * pThis = static<derive_type *>(this);
+    pointer create_array(size_type count) {
+        derive_type * pThis = static_cast<derive_type *>(this);
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
         for (size_type i = count; i != 0; i--) {
@@ -150,8 +150,8 @@ struct allocator_base {
     }
 
     template <typename ...Args>
-    pointer create_new_array(size_type count, Args && ... args) {
-        derive_type * pThis = static<derive_type *>(this);
+    pointer create_array(size_type count, Args && ... args) {
+        derive_type * pThis = static_cast<derive_type *>(this);
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
         for (size_type i = count; i != 0; i--) {
@@ -162,18 +162,18 @@ struct allocator_base {
     }
 
     template <typename U>
-    pointer create_new_at(U * ptr, size_type count) {
-        return this->create_new_array_at(U, 1);
+    pointer create_at(U * ptr, size_type count) {
+        return this->create_array_at(U, 1);
     }
 
     template <typename U, typename ...Args>
-    pointer create_new_at(U * ptr, size_type count) {
-        return this->create_new_array_at(U, 1, std::forward<Args>(args)...);
+    pointer create_at(U * ptr, size_type count) {
+        return this->create_array_at(U, 1, std::forward<Args>(args)...);
     }
 
     template <typename U>
-    pointer create_new_array_at(U * ptr, size_type count) {
-        derive_type * pThis = static<derive_type *>(this);
+    pointer create_array_at(U * ptr, size_type count) {
+        derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
         for (size_type i = count; i != 0; i--) {
@@ -184,8 +184,8 @@ struct allocator_base {
     }
 
     template <typename U, typename ...Args>
-    pointer create_new_array_at(U * ptr, size_type count, Args && ... args) {
-        derive_type * pThis = static<derive_type *>(this);
+    pointer create_array_at(U * ptr, size_type count, Args && ... args) {
+        derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
         for (size_type i = count; i != 0; i--) {
@@ -202,7 +202,7 @@ struct allocator_base {
 
     template <typename U>
     void destroy_array(U * ptr, size_type count) {
-        derive_type * pThis = static<derive_type *>(this);
+        derive_type * pThis = static_cast<derive_type *>(this);
         assert(ptr != nullptr);
         U * cur = ptr;
         for (size_type i = count; i != 0; i--) {
@@ -250,12 +250,12 @@ struct allocator_base {
     }
 
     pointer reallocate(void * ptr, size_type count) {
-        derive_type * pThis = static<derive_type *>(this);
+        derive_type * pThis = static_cast<derive_type *>(this);
         return pThis->reallocate(static_cast<pointer>(ptr), count);
     }
 
     void deallocate(void * ptr, size_type count) {
-        derive_type * pThis = static<derive_type *>(this);
+        derive_type * pThis = static_cast<derive_type *>(this);
         pThis->deallocate(static_cast<pointer>(ptr), count);
     }
 };
@@ -293,7 +293,7 @@ struct allocator : public allocator_base<
 
     ~allocator() {}
 
-    pointer allocate(size_type count) {
+    pointer allocate(size_type count = 1) {
         pointer ptr;
         if (kAlignment != 0)
             ptr = static_cast<pointer>(_AlignedAllocate(count * sizeof(value_type), kAlignment));
@@ -303,7 +303,7 @@ struct allocator : public allocator_base<
     }
 
     template <typename U>
-    pointer reallocate(U * ptr, size_type count) {
+    pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr;
         if (kAlignment != 0)
             new_ptr = static_cast<pointer>(_AlignedReallocate((void *)ptr, count * sizeof(value_type), kAlignment));
@@ -313,7 +313,7 @@ struct allocator : public allocator_base<
     }
 
     template <typename U>
-    void deallocate(U * ptr, size_type count) {
+    void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
         if (kAlignment != 0)
             _AlignedDeallocate((void *)ptr, count * sizeof(value_type));
@@ -354,19 +354,19 @@ struct std_new_allocator : public allocator_base<
 
     ~std_new_allocator() {}
 
-    pointer allocate(size_type count) {
+    pointer allocate(size_type count = 1) {
         pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type)));
         return ptr;
     }
 
     template <typename U>
-    pointer reallocate(U * ptr, size_type count) {
+    pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type)));
         return new_ptr;
     }
 
     template <typename U>
-    void deallocate(U * ptr, size_type count) {
+    void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
         ::operator delete[]((void *)ptr, count * sizeof(value_type));
     }
@@ -404,19 +404,19 @@ struct malloc_allocator : public allocator_base<
 
     ~malloc_allocator() {}
 
-    pointer allocate(size_type count) {
+    pointer allocate(size_type count = 1) {
         pointer ptr = static_cast<pointer>(std::malloc(count * sizeof(value_type)));
         return ptr;
     }
 
     template <typename U>
-    pointer reallocate(U * ptr, size_type count) {
+    pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr = static_cast<pointer>(std::realloc((void *)ptr, count * sizeof(value_type)));
         return new_ptr;
     }
 
     template <typename U>
-    void deallocate(U * ptr, size_type count) {
+    void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
         std::free((void *)ptr);
     }
@@ -454,17 +454,17 @@ struct dummy_allocator : public allocator_base<
 
     ~dummy_allocator() {}
 
-    pointer allocate(size_type count) {
-        pointer nullptr;
+    pointer allocate(size_type count = 1) {
+        return nullptr;
     }
 
     template <typename U>
-    pointer reallocate(U * ptr, size_type count) {
-        pointer nullptr;
+    pointer reallocate(U * ptr, size_type count = 1) {
+        return nullptr;
     }
 
     template <typename U>
-    void deallocate(U * ptr, size_type count) {
+    void deallocate(U * ptr, size_type count = 1) {
     }
 
     bool isAutoRelease() { return false; }

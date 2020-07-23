@@ -86,7 +86,7 @@ public:
 
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void create_new(Args && ... args) {
+    void create(Args && ... args) {
         if (!this->shifted_) {
             if (this->value_) {
                 delete this->value_;
@@ -157,7 +157,7 @@ protected:
 
 public:
     custom_onetime_ptr(bool createNew = true) : value_(nullptr), shifted_(false) {
-        this->internal_create_new();
+        this->internal_create();
     }
     custom_onetime_ptr(this_type & src) {
         this->assign(src);
@@ -196,8 +196,8 @@ protected:
 
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void internal_create_new(Args && ... args) {
-        this->value_   = this->allocator_.create_new(std::forward<Args>(args)...);
+    void internal_create(Args && ... args) {
+        this->value_   = this->allocator_.create(std::forward<Args>(args)...);
         this->shifted_ = false;
     }
 
@@ -216,13 +216,13 @@ public:
 
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void create_new(Args && ... args) {
+    void create(Args && ... args) {
         if (!this->shifted_) {
             if (this->value_) {
                 this->allocator_.destroy(this->value_);
             }
         }
-        this->value_   = this->allocator_.create_new(std::forward<Args>(args)...);
+        this->value_   = this->allocator_.create(std::forward<Args>(args)...);
         this->shifted_ = false;
     }
 
