@@ -44,6 +44,8 @@
 #include <jstd/hash/dictionary.h>
 #include <jstd/support/StopWatch.h>
 
+#include <jstd/all.h>
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>
