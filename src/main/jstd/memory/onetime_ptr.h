@@ -142,18 +142,18 @@ public:
     }
 };
 
-template < typename T, typename Assigner = assigner<T> >
+template < typename T, typename Allocator = allocator<T> >
 class custom_onetime_ptr : public remove_cv_rp<T>::type {
 public:
     typedef typename remove_cv_rp<T>::type      value_type;
     typedef std::size_t                         size_type;
-    typedef Assigner                            assigner_type;
-    typedef custom_onetime_ptr<T, Assigner>     this_type;
+    typedef Allocator                           allocator_type;
+    typedef custom_onetime_ptr<T, Allocator>    this_type;
 
 protected:
-    value_type *  value_;
-    bool          shifted_;
-    assigner_type assigner_;
+    value_type *    value_;
+    bool            shifted_;
+    allocator_type  allocator_;
 
 public:
     custom_onetime_ptr(bool createNew = true) : value_(nullptr), shifted_(false) {
@@ -180,13 +180,6 @@ public:
     }
 
 protected:
-    template <typename ...Args>
-    JSTD_FORCEINLINE
-    void internal_create_new(Args && ... args) {
-        this->value_   = this->assigner_.create(std::forward<Args>(args)...);
-        this->shifted_ = false;
-    }
-
     void assign(this_type && src) {
         assert(&src != this);
         this->value_   = src.value_;
@@ -198,12 +191,20 @@ protected:
         assert((value == nullptr) || (value != nullptr && value != this->value));
         this->value_   = value;
         this->shifted_ = false;
+        this->size_    = 0;
+    }
+
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void internal_create_new(Args && ... args) {
+        this->value_   = this->allocator_.create_new(std::forward<Args>(args)...);
+        this->shifted_ = false;
     }
 
     void destroy() {
         if (!this->shifted_) {
             if (this->value_) {
-                this->assigner_.destroy(this->value_);
+                this->allocator_.destroy(this->value_);
                 this->value_ = nullptr;
             }
             this->shifted_ = true;
@@ -218,22 +219,10 @@ public:
     void create_new(Args && ... args) {
         if (!this->shifted_) {
             if (this->value_) {
-                this->assigner_.destroy(this->value_);
+                this->allocator_.destroy(this->value_);
             }
         }
-        this->value_ = this->assigner_.create(std::forward<Args>(args)...);
-        this->shifted_ = false;
-    }
-
-    template <typename ...Args>
-    JSTD_FORCEINLINE
-    void create_new_array(size_type count, Args && ... args) {
-        if (!this->shifted_) {
-            if (this->value_) {
-                this->assigner_.destroy_array(this->value_, count);
-            }
-        }
-        this->value_ = this->assigner_.create_array(count, std::forward<Args>(args)...);
+        this->value_   = this->allocator_.create_new(std::forward<Args>(args)...);
         this->shifted_ = false;
     }
 

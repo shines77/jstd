@@ -129,7 +129,16 @@ struct allocator_base {
         return std::addressof(value);
     }
 
-    pointer create_new(size_type count) {
+    pointer create_new() {
+        return this->create_new_array(1);
+    }
+
+    template <typename ...Args>
+    pointer create_new(Args && ... args) {
+        return this->create_new_array(1, std::forward<Args>(args)...);
+    }
+
+    pointer create_new_array(size_type count) {
         derive_type * pThis = static<derive_type *>(this);
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
@@ -141,7 +150,7 @@ struct allocator_base {
     }
 
     template <typename ...Args>
-    pointer create_new(size_type count, Args && ... args) {
+    pointer create_new_array(size_type count, Args && ... args) {
         derive_type * pThis = static<derive_type *>(this);
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
@@ -154,6 +163,16 @@ struct allocator_base {
 
     template <typename U>
     pointer create_new_at(U * ptr, size_type count) {
+        return this->create_new_array_at(U, 1);
+    }
+
+    template <typename U, typename ...Args>
+    pointer create_new_at(U * ptr, size_type count) {
+        return this->create_new_array_at(U, 1, std::forward<Args>(args)...);
+    }
+
+    template <typename U>
+    pointer create_new_array_at(U * ptr, size_type count) {
         derive_type * pThis = static<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -165,7 +184,7 @@ struct allocator_base {
     }
 
     template <typename U, typename ...Args>
-    pointer create_new_at(U * ptr, size_type count, Args && ... args) {
+    pointer create_new_array_at(U * ptr, size_type count, Args && ... args) {
         derive_type * pThis = static<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -177,7 +196,12 @@ struct allocator_base {
     }
 
     template <typename U>
-    void destroy(U * ptr, size_type count) {
+    void destroy(U * ptr) {
+        this->destroy(ptr, 1);
+    }
+
+    template <typename U>
+    void destroy_array(U * ptr, size_type count) {
         derive_type * pThis = static<derive_type *>(this);
         assert(ptr != nullptr);
         U * cur = ptr;
