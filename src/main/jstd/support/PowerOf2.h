@@ -178,7 +178,7 @@ inline SizeType round_down_to_pow2(SizeType n) {
     static_assert(std::is_integral<SizeType>::value,
                   "Error: round_down_to_pow2(SizeType n) -- SizeType must be a integral type.");
     if (n != 0)
-        return round_to_power2<SizeType>(n - 1);
+        return round_to_pow2<SizeType>(n - 1);
     else
         return 0;
 }
@@ -229,7 +229,7 @@ inline SizeType next_pow2(SizeType n) {
     static_assert(std::is_integral<SizeType>::value,
                   "Error: next_pow2(SizeType n) -- SizeType must be a integral type.");
     if (n < std::numeric_limits<SizeType>::max())
-        return round_up_to_power2<SizeType>(n + 1);
+        return round_up_to_pow2<SizeType>(n + 1);
     else
         return n;
 }
