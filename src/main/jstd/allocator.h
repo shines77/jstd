@@ -94,6 +94,18 @@ void _AlignedDeallocate(void * p, std::size_t size = 0) {
 #endif
 }
 
+static inline
+std::size_t aligned_to(std::size_t size, std::size_t alignment)
+{
+    assert(size >= 1);
+    if (likely((size & (size - 1)) == 0)) return size;
+
+    assert((alignment & (alignment - 1)) == 0);
+    size = (size + alignment - 1) & ~(alignment - 1);
+    assert((size / alignment * alignment) == size);
+    return size;
+}
+
 template <typename T>
 struct align_of {
     static const std::size_t value = alignof(T);
