@@ -17,9 +17,9 @@
 #include <type_traits>
 
 #include "jstd/hash/hash_helper.h"
+#include "jstd/hash/dictionary_traits.h"
 #include "jstd/string/string_utils.h"
-
-#include "jstd/support/Power2.h"
+#include "jstd/support/PowerOf2.h"
 
 #define USE_SSE42_STRING_COMPARE    1
 
