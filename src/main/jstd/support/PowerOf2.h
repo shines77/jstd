@@ -134,21 +134,6 @@ std::size_t next_pow2(std::size_t n)
 //
 // N is power of 2, and [x] is rounding function.
 //
-//   (2 ^ [Log2(n) - 1]) <= N < (2 ^ [Log2(n)])
-//
-template <typename SizeType>
-inline SizeType round_down_to_pow2(SizeType n) {
-    static_assert(std::is_integral<SizeType>::value,
-                  "Error: round_down_to_pow2(SizeType n) -- SizeType must be a integral type.");
-    if (n != 0)
-        return round_to_power2<SizeType>(n - 1);
-    else
-        return 0;
-}
-
-//
-// N is power of 2, and [x] is rounding function.
-//
 // If n is power of 2:
 //      N = 2 ^ [Log2(n)],
 //
@@ -181,6 +166,21 @@ inline SizeType round_to_pow2(SizeType n) {
                 static_cast<SizeType>((u + 1) / 2) :
                 static_cast<SizeType>(jstd::integral_utils<unsigned_type>::max_power2);
     }
+}
+
+//
+// N is power of 2, and [x] is rounding function.
+//
+//   (2 ^ [Log2(n) - 1]) <= N < (2 ^ [Log2(n)])
+//
+template <typename SizeType>
+inline SizeType round_down_to_pow2(SizeType n) {
+    static_assert(std::is_integral<SizeType>::value,
+                  "Error: round_down_to_pow2(SizeType n) -- SizeType must be a integral type.");
+    if (n != 0)
+        return round_to_power2<SizeType>(n - 1);
+    else
+        return 0;
 }
 
 //
@@ -265,15 +265,6 @@ struct is_power2 {
 
 //////////////////////////////////////////////////////////////////////////////////
 
-// struct round_down_to_pow2<N>
-
-template <std::size_t N>
-struct round_down_to_pow2 {
-    static const std::size_t value = (N != 0) ? round_to_pow2<N - 1>::value : 0;
-};
-
-//////////////////////////////////////////////////////////////////////////////////
-
 // struct round_to_pow2<N>
 
 template <std::size_t N, std::size_t Power2>
@@ -298,6 +289,15 @@ struct round_to_pow2_impl<N, 0> {
 template <std::size_t N>
 struct round_to_pow2 {
     static const std::size_t value = is_power2<N>::value ? N : round_to_pow2_impl<N, 1>::value;
+};
+
+//////////////////////////////////////////////////////////////////////////////////
+
+// struct round_down_to_pow2<N>
+
+template <std::size_t N>
+struct round_down_to_pow2 {
+    static const std::size_t value = (N != 0) ? round_to_pow2<N - 1>::value : 0;
 };
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -370,13 +370,6 @@ struct next_pow2<0> {
 
 //////////////////////////////////////////////////////////////////////////////////
 
-// struct round_down_to_power2<N>
-
-template <std::size_t N>
-struct round_down_to_power2 {
-    static const std::size_t value = (N != 0) ? round_to_power2<N - 1>::value : 0;
-};
-
 //////////////////////////////////////////////////////////////////////////////////
 
 // struct round_to_power2_impl<N>
@@ -403,6 +396,13 @@ struct round_to_power2_impl {
 template <std::size_t N>
 struct round_to_power2 {
     static const std::size_t value = is_power2<N>::value ? N : round_to_power2_impl<N>::value;
+};
+
+// struct round_down_to_power2<N>
+
+template <std::size_t N>
+struct round_down_to_power2 {
+    static const std::size_t value = (N != 0) ? round_to_power2<N - 1>::value : 0;
 };
 
 //////////////////////////////////////////////////////////////////////////////////
