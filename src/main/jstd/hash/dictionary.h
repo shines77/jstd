@@ -213,7 +213,7 @@ protected:
     // Minimum capacity is 8.
     static const size_type kMinimumCapacity = 8;
     // Maximum capacity is 1 << 31.
-    static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2;
+    static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2 + 1;
 
     // The maximum entry's chunk bytes, default is 8 MB bytes.
     static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
@@ -275,7 +275,7 @@ public:
     entry_type *  entries() const { return this->entries_; }
 
     size_type max_bucket_capacity() const {
-        return ((std::numeric_limits<size_type>::max)() / 2);
+        return ((std::numeric_limits<size_type>::max)() / 2 + 1);
     }
     size_type max_size() const {
         return this->max_bucket_capacity();

@@ -41,7 +41,6 @@
 //
 
 namespace jstd {
-
 namespace crc32 {
 
 static uint32_t crc32c_x86(const char * data, size_t length)
@@ -226,7 +225,9 @@ static uint32_t crc32c_hw_u32(const char * data, size_t length)
 }
 
 } // namespace crc32
+} // namespace jstd
 
+namespace jstd {
 namespace sha1 {
 
 static uint32_t sha1_msg2_x86(const char * data, size_t length)

@@ -21,7 +21,9 @@
 #include "jstd/string/string_utils.h"
 #include "jstd/support/PowerOf2.h"
 
+#ifndef USE_SSE42_STRING_COMPARE
 #define USE_SSE42_STRING_COMPARE    1
+#endif
 
 namespace jstd {
 
