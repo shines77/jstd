@@ -19,9 +19,12 @@
 #include <assert.h>
 
 #include <cstdint>
-#include <cstddef>
+#include <cstddef>      // For std::size_t
 #include <cassert>
 #include <type_traits>
+
+/* Undefine the max() macro first. */
+#undef max
 #include <limits>       // For std::numeric_limits<T>::max()
 
 namespace jstd {
@@ -50,10 +53,14 @@ inline SizeType verify_pow2(SizeType n) {
 static inline
 std::size_t round_down_to_pow2(std::size_t n)
 {
+    if (n <= 1) {
+        return 0;
+    }
+
     unsigned long index;
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
-    unsigned char nonZero = __BitScanReverse64(index, n + 1);
+    unsigned char nonZero = __BitScanReverse64(index, n - 1);
     return (std::size_t(1) << index);
 #else
     unsigned char nonZero = __BitScanReverse(index, n);
@@ -82,7 +89,7 @@ std::size_t round_up_to_pow2(std::size_t n)
         return n;
     }
 
-    if (n < std::numeric_limits<std::size_t>::max() / 2) {
+    if (n <= (std::numeric_limits<std::size_t>::max() / 2 + 1)) {
         unsigned long index;
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
@@ -101,7 +108,7 @@ std::size_t round_up_to_pow2(std::size_t n)
 static inline
 std::size_t next_pow2(std::size_t n)
 {
-    if (n < std::numeric_limits<std::size_t>::max() / 2) {
+    if (n < (std::numeric_limits<std::size_t>::max() / 2 + 1)) {
         unsigned long index;
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
@@ -118,6 +125,11 @@ std::size_t next_pow2(std::size_t n)
 }
 
 #else // !JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION
+
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4293)
+#endif
 
 //
 // N is power of 2, and [x] is rounding function.
@@ -221,6 +233,10 @@ inline SizeType next_pow2(SizeType n) {
     else
         return n;
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 
 #endif // JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION
 
