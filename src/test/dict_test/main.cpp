@@ -35,6 +35,9 @@
 
 #define STRING_COMPARE_MODE     STRING_COMPARE_SSE42
 
+// Use in <jstd/support/PowerOf2.h>
+#define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
+
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
 #include <jstd/basic/inttypes.h>
