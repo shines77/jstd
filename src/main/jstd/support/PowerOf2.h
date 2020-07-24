@@ -228,9 +228,15 @@ inline SizeType next_pow2(SizeType n) {
 } // namespace jstd
 
 //////////////////////////////////////////////////////////////////////////////////
+//
+// Msvc compiler: Maxinum recursive depth is about 497 layer.
+//
+//////////////////////////////////////////////////////////////////////////////////
 
 namespace jstd {
 namespace compile_time {
+
+//////////////////////////////////////////////////////////////////////////////////
 
 //
 // is_power2 = (N && ((N & (N - 1)) == 0);
@@ -240,12 +246,6 @@ template <std::size_t N>
 struct is_power2 {
     static const bool value = ((N & (N - 1)) == 0);
 };
-
-//////////////////////////////////////////////////////////////////////////////////
-//
-// Msvc compiler: Maxinum recursive depth is about 497 layer.
-//
-//////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -353,9 +353,9 @@ struct round_up_to_pow2<0> {
 
 // struct round_down_to_power2<N>
 
-template <size_t N>
+template <std::size_t N>
 struct round_down_to_power2 {
-    static const size_t value = (N != 0) ? round_to_power2<N - 1>::value : 0;
+    static const std::size_t value = (N != 0) ? round_to_power2<N - 1>::value : 0;
 };
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -366,20 +366,19 @@ template <std::size_t N>
 struct round_to_power2_impl {
     static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
     static const std::size_t max_power2 = jstd::integral_utils<std::size_t>::max_power2;
-    static const size_t N1 = N - 1;
-    static const size_t N2 = N1 | (N1 >> 1);
-    static const size_t N3 = N2 | (N2 >> 2);
-    static const size_t N4 = N3 | (N3 >> 4);
-    static const size_t N5 = N4 | (N4 >> 8);
-    static const size_t N6 = N5 | (N5 >> 16);
-    static const size_t N7 = N6 | (N6 >> 32);
-    static const size_t N8 = N7 | (N7 >> 64);
-    static const size_t value = (N8 != max_num) ? ((N8 + 1) / 2) : max_power2;
+    static const std::size_t N1 = N - 1;
+    static const std::size_t N2 = N1 | (N1 >> 1);
+    static const std::size_t N3 = N2 | (N2 >> 2);
+    static const std::size_t N4 = N3 | (N3 >> 4);
+    static const std::size_t N5 = N4 | (N4 >> 8);
+    static const std::size_t N6 = N5 | (N5 >> 16);
+    static const std::size_t N7 = N6 | (N6 >> 32);
+    static const std::size_t value = (N7 != max_num) ? ((N7 + 1) / 2) : max_power2;
 };
 
 template <std::size_t N>
 struct round_to_power2 {
-    static const std::size_t value = is_power2<N>::value ? N : round_to_power2_impl<N, 1>::value;
+    static const std::size_t value = is_power2<N>::value ? N : round_to_power2_impl<N>::value;
 };
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -389,31 +388,29 @@ struct round_to_power2 {
 template <std::size_t N>
 struct round_up_to_power2_impl {
     static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
-    static const size_t N1 = N - 1;
-    static const size_t N2 = N1 | (N1 >> 1);
-    static const size_t N3 = N2 | (N2 >> 2);
-    static const size_t N4 = N3 | (N3 >> 4);
-    static const size_t N5 = N4 | (N4 >> 8);
-    static const size_t N6 = N5 | (N5 >> 16);
-    static const size_t N7 = N6 | (N6 >> 32);
-    static const size_t N8 = N7 | (N7 >> 64);
-    static const size_t value = (N8 != max_num) ? (N8 + 1) : max_num;
+    static const std::size_t N1 = N - 1;
+    static const std::size_t N2 = N1 | (N1 >> 1);
+    static const std::size_t N3 = N2 | (N2 >> 2);
+    static const std::size_t N4 = N3 | (N3 >> 4);
+    static const std::size_t N5 = N4 | (N4 >> 8);
+    static const std::size_t N6 = N5 | (N5 >> 16);
+    static const std::size_t N7 = N6 | (N6 >> 32);
+    static const std::size_t value = (N7 != max_num) ? (N7 + 1) : max_num;
 };
 
 template <std::size_t N>
 struct round_up_to_power2 {
-    static const std::size_t value = is_power2<N>::value ? N : round_up_to_power2_impl<N, 1>::value;
+    static const std::size_t value = is_power2<N>::value ? N : round_up_to_power2_impl<N>::value;
 };
 
 //////////////////////////////////////////////////////////////////////////////////
 
 // struct next_power2<N>
 
-template <size_t N>
+template <std::size_t N>
 struct next_power2 {
-    static const size_t max_power2 = jstd::integral_utils<size_t>::max_power2;
-    static const size_t max_num = jstd::integral_utils<size_t>::max_num;
-    static const size_t value = (N < max_num) ? round_up_to_power2<N + 1>::value : max_num;
+    static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
+    static const std::size_t value = (N < max_num) ? round_up_to_power2<N + 1>::value : max_num;
 };
 
 #if defined(_MSC_VER)

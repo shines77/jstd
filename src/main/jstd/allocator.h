@@ -127,7 +127,7 @@ struct allocator_base {
     typedef true_type       is_always_equal;
 
     static const size_type kAlignOf = Alignment;
-    static const size_type kAlignment = compile_time::round_up_to_pow2<Alignment>::value;
+    static const size_type kAlignment = compile_time::round_up_to_power2<Alignment>::value;
 
     size_type align_of() const { return kAlignOf; }
     size_type alignment() const { return kAlignment; }

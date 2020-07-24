@@ -9,7 +9,6 @@
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
-#include "jstd/allocator.h"
 
 #include <memory.h>
 #include <assert.h>
@@ -37,10 +36,10 @@
 #undef  JSTD_USE_NOTHROW_NEW
 #define JSTD_USE_NOTHROW_NEW        1
 
+#include "jstd/nothrow_new.h"
 #include "jstd/hash/hash_helper.h"
 #include "jstd/hash/dictionary_traits.h"
-#include "jstd/nothrow_new.h"
-#include "jstd/support/Power2.h"
+#include "jstd/allocator.h"
 #include "jstd/support/PowerOf2.h"
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
@@ -220,7 +219,7 @@ protected:
     static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
     // The entry's block size per chunk (entry_type).
     static const size_type kEntryChunkSize =
-            compile_time::round_up_to_pow2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
+            compile_time::round_up_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
 
     // The threshold of treeify to red-black tree.
     static const size_type kTreeifyThreshold = 8;
@@ -297,13 +296,13 @@ protected:
     inline size_type calc_capacity(size_type capacity) const {
         capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
         capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-        capacity = detail::round_up_to_pow2(capacity);
+        capacity = run_time::round_up_to_pow2(capacity);
         return capacity;
     }
 
     inline size_type calc_shrink_capacity(size_type capacity) {
         capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-        capacity = detail::round_up_to_pow2(capacity);
+        capacity = run_time::round_up_to_pow2(capacity);
         return capacity;
     }
 
@@ -327,7 +326,7 @@ protected:
     }
 
     void initialize(size_type init_capacity) {
-        size_type entry_capacity = detail::round_up_to_pow2(init_capacity);
+        size_type entry_capacity = run_time::round_up_to_pow2(init_capacity);
         assert(entry_capacity > 0);
         assert((entry_capacity & (entry_capacity - 1)) == 0);
 

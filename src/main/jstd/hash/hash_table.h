@@ -116,7 +116,7 @@ public:
 
 private:
     void initialize(size_type new_buckets) {
-        new_buckets = detail::round_up_to_pow2(new_buckets);
+        new_buckets = run_time::round_up_to_pow2(new_buckets);
         assert(new_buckets > 0);
         assert((new_buckets & (new_buckets - 1)) == 0);
         data_type * new_table = new data_type[new_buckets];
@@ -173,7 +173,7 @@ private:
         // The maximum bucket is kMaximumCapacity = 1 << 30.
         new_buckets = (new_buckets <= kMaximumCapacity) ? new_buckets : kMaximumCapacity;
         // Round up the new_buckets to power 2.
-        new_buckets = detail::round_up_to_pow2(new_buckets);
+        new_buckets = run_time::round_up_to_pow2(new_buckets);
         return new_buckets;
     }
 
@@ -184,7 +184,7 @@ private:
         // The maximum bucket is kMaximumCapacity = 1 << 30.
         new_buckets = (new_buckets <= kMaximumCapacity) ? new_buckets : kMaximumCapacity;
         // Round up the new_buckets to power 2.
-        new_buckets = detail::round_up_to_pow2(new_buckets);
+        new_buckets = run_time::round_up_to_pow2(new_buckets);
         return new_buckets;
     }
 
@@ -212,7 +212,7 @@ private:
             data_type * new_table = new data_type[new_buckets];
             if (new_table != nullptr) {
                 // Initialize the table data.
-                memset(new_table, 0, sizeof(data_type) * new_buckets);
+                ::memset(new_table, 0, sizeof(data_type) * new_buckets);
                 if (likely(this->table_ != nullptr)) {
                     delete[] this->table_;
                 }
