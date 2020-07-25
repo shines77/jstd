@@ -353,9 +353,9 @@ void cpu_warmup(int delayMillsecs)
 
     printf("CPU warm-up begin ...\n");
     fflush(stdout);
-    high_resolution_clock::time_point startTime, endTime;
-    duration<double, std::ratio<1, 1000>> elapsedTime;
-    startTime = high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point startTime, endTime;
+    std::chrono::duration<double, std::ratio<1, 1000>> elapsedTime;
+    startTime = std::chrono::high_resolution_clock::now();
     do {
         for (int i = 0; i < 500; ++i) {
             sum += i;
@@ -363,7 +363,7 @@ void cpu_warmup(int delayMillsecs)
                 sum -= j;
             }
         }
-        endTime = high_resolution_clock::now();
+        endTime = std::chrono::high_resolution_clock::now();
         elapsedTime = endTime - startTime;
     } while (elapsedTime.count() < delayTimeLimit);
 
