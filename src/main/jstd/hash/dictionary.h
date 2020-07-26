@@ -432,6 +432,12 @@ protected:
             prev--;
         }
 
+#if 1
+        entry_type * last_entry = entries + capacity - 1;
+        last_entry->next = this->freelist_.head();
+        this->freelist_.set_head(entries);
+        this->freelist_.inflate(capacity);
+#else
         entry_type * last_entry = entries + capacity - 1;
         last_entry->next = nullptr;
 
@@ -443,6 +449,7 @@ protected:
             tail->next = entries;
             this->freelist_.inflate(capacity);
         }
+#endif
     }
 
     size_type count_entries_size() {
