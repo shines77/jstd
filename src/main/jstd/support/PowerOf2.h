@@ -153,15 +153,15 @@ inline SizeType round_to_pow2(SizeType n) {
         u = u | (u >> 4);
         u = u | (u >> 8);
         u = u | (u >> 16);
-        if (jstd::integral_utils<unsigned_type>::bits >= 64) {
+        if (jstd::integral_traits<unsigned_type>::bits >= 64) {
             u = u | (u >> 32);
         }
-        if (jstd::integral_utils<unsigned_type>::bits >= 128) {
+        if (jstd::integral_traits<unsigned_type>::bits >= 128) {
             u = u | (u >> 64);
         }
-        return (u != jstd::integral_utils<unsigned_type>::max_num) ?
+        return (u != jstd::integral_traits<unsigned_type>::max_num) ?
                 static_cast<SizeType>((u + 1) / 2) :
-                static_cast<SizeType>(jstd::integral_utils<unsigned_type>::max_power2);
+                static_cast<SizeType>(jstd::integral_traits<unsigned_type>::max_power2);
     }
 }
 
@@ -205,13 +205,13 @@ inline SizeType round_up_to_pow2(SizeType n) {
         u = u | (u >> 4);
         u = u | (u >> 8);
         u = u | (u >> 16);
-        if (jstd::integral_utils<unsigned_type>::bits >= 64) {
+        if (jstd::integral_traits<unsigned_type>::bits >= 64) {
             u = u | (u >> 32);
         }
-        if (jstd::integral_utils<unsigned_type>::bits >= 128) {
+        if (jstd::integral_traits<unsigned_type>::bits >= 128) {
             u = u | (u >> 64);
         }
-        return (u != jstd::integral_utils<unsigned_type>::max_num) ?
+        return (u != jstd::integral_traits<unsigned_type>::max_num) ?
                 static_cast<SizeType>(u + 1) : static_cast<SizeType>(u);
     }
 }
@@ -266,8 +266,8 @@ struct is_power2 {
 
 template <std::size_t N, std::size_t Power2>
 struct round_to_pow2_impl {
-    static const std::size_t max_power2 = jstd::integral_utils<std::size_t>::max_power2;
-    static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
+    static const std::size_t max_power2 = jstd::integral_traits<std::size_t>::max_power2;
+    static const std::size_t max_num = jstd::integral_traits<std::size_t>::max_num;
     static const std::size_t next_power2 = (Power2 < max_power2) ? (Power2 << 1) : 0;
 
     static const bool too_large = (N > max_power2);
@@ -280,7 +280,7 @@ struct round_to_pow2_impl {
 
 template <std::size_t N>
 struct round_to_pow2_impl<N, 0> {
-    static const std::size_t value = jstd::integral_utils<size_t>::max_power2;
+    static const std::size_t value = jstd::integral_traits<size_t>::max_power2;
 };
 
 template <std::size_t N>
@@ -303,8 +303,8 @@ struct round_down_to_pow2 {
 
 template <std::size_t N, std::size_t Power2>
 struct round_up_to_pow2_impl {
-    static const std::size_t max_power2 = jstd::integral_utils<std::size_t>::max_power2;
-    static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
+    static const std::size_t max_power2 = jstd::integral_traits<std::size_t>::max_power2;
+    static const std::size_t max_num = jstd::integral_traits<std::size_t>::max_num;
     static const std::size_t next_power2 = (Power2 < max_power2) ? (Power2 << 1) : 0;
 
     static const bool too_large = (N >= max_power2);
@@ -317,7 +317,7 @@ struct round_up_to_pow2_impl {
 
 template <std::size_t N>
 struct round_up_to_pow2_impl<N, 0> {
-    static const std::size_t value = jstd::integral_utils<std::size_t>::max_num;
+    static const std::size_t value = jstd::integral_traits<std::size_t>::max_num;
 };
 
 template <std::size_t N>
@@ -331,8 +331,8 @@ struct round_up_to_pow2 {
 
 template <std::size_t N, std::size_t Power2>
 struct next_pow2_impl {
-    static const std::size_t max_power2 = jstd::integral_utils<std::size_t>::max_power2;
-    static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
+    static const std::size_t max_power2 = jstd::integral_traits<std::size_t>::max_power2;
+    static const std::size_t max_num = jstd::integral_traits<std::size_t>::max_num;
     static const std::size_t next_power2 = (Power2 < max_power2) ? (Power2 << 1) : 0;
 
     static const bool too_large = (N >= max_power2);
@@ -345,7 +345,7 @@ struct next_pow2_impl {
 
 template <std::size_t N>
 struct next_pow2_impl<N, 0> {
-    static const std::size_t value = jstd::integral_utils<size_t>::max_num;
+    static const std::size_t value = jstd::integral_traits<size_t>::max_num;
 };
 
 template <std::size_t N>
@@ -373,8 +373,8 @@ struct next_pow2<0> {
 
 template <std::size_t N>
 struct round_to_power2_impl {
-    static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
-    static const std::size_t max_power2 = jstd::integral_utils<std::size_t>::max_power2;
+    static const std::size_t max_num = jstd::integral_traits<std::size_t>::max_num;
+    static const std::size_t max_power2 = jstd::integral_traits<std::size_t>::max_power2;
     static const std::size_t N1 = N - 1;
     static const std::size_t N2 = N1 | (N1 >> 1);
     static const std::size_t N3 = N2 | (N2 >> 2);
@@ -408,7 +408,7 @@ struct round_down_to_power2 {
 
 template <std::size_t N>
 struct round_up_to_power2_impl {
-    static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
+    static const std::size_t max_num = jstd::integral_traits<std::size_t>::max_num;
     static const std::size_t N1 = N - 1;
     static const std::size_t N2 = N1 | (N1 >> 1);
     static const std::size_t N3 = N2 | (N2 >> 2);
@@ -435,7 +435,7 @@ struct round_up_to_power2 {
 
 template <std::size_t N>
 struct next_power2 {
-    static const std::size_t max_num = jstd::integral_utils<std::size_t>::max_num;
+    static const std::size_t max_num = jstd::integral_traits<std::size_t>::max_num;
     static const std::size_t value = (N < max_num) ? round_up_to_power2<N + 1>::value : max_num;
 };
 

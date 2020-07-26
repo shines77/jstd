@@ -40,11 +40,12 @@ struct boolean_if {
 };
 
 template <typename T>
-struct integral_utils {
-    typedef typename std::make_unsigned<T>::type unsigned_type;
+struct integral_traits {
+    typedef typename std::make_signed<T>::type      signed_type;
+    typedef typename std::make_unsigned<T>::type    unsigned_type;
 
     static_assert(std::is_integral<T>::value,
-        "Error: integral_utils<T> -- T must be a integral type.");
+        "Error: integral_traits<T> -- T must be a integral type.");
 
     // max bits
     static const size_t bits = sizeof(T) * 8;
