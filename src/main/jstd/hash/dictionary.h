@@ -158,6 +158,15 @@ public:
             --(this->size_);
         }
 
+        void inflate(size_type size) {
+            this->size_ += size;
+        }
+
+        void deflate(size_type size) {
+            assert(this->size_ >= size);
+            this->size_ -= size;
+        }
+
         void push_front(node_type * node) {
             assert(node != nullptr);
             node->next = this->head_;
@@ -172,6 +181,20 @@ public:
             assert(this->size_ > 0);
             --(this->size_);
             return node;
+        }
+
+        node_type * front() {
+            return this->head();
+        }
+
+        node_type * back() {
+            node_type * prev = nullptr;
+            node_type * node = this->head_;
+            while (node != nullptr) {
+                prev = node;
+                node = node->next;
+            }
+            return prev;
         }
 
         void swap(free_list & right) {
@@ -398,7 +421,6 @@ protected:
 
     // Append all the entries to the free list.
     void add_entries_to_freelist(entry_type * entries, size_type capacity) {
-        assert(this->freelist_.size() == 0);
         assert(entries != nullptr);
         assert(capacity > 0);
         entry_type * entry = entries + capacity - 1;
@@ -413,7 +435,14 @@ protected:
         entry_type * last_entry = entries + capacity - 1;
         last_entry->next = nullptr;
 
-        this->freelist_.set_list(entries, capacity);
+        entry_type * tail = this->freelist_.back();
+        if (likely(tail == nullptr)) {
+            this->freelist_.set_list(entries, capacity);
+        }
+        else {
+            tail->next = entries;
+            this->freelist_.inflate(capacity);
+        }
     }
 
     size_type count_entries_size() {
@@ -444,13 +473,11 @@ protected:
         else {
             if (likely(this->entry_size_ >= this->entry_capacity_)) {
                 size_type old_size = this->size();
-                size_type old_size2 = this->count_entries_size();
 
                 // Resize the buckets and the entries.
                 this->rehash(this->entry_size_ + 1);
 
                 size_type new_size = this->count_entries_size();
-                assert(new_size == old_size2);
                 assert(new_size == old_size);
 
                 // Recalculate the bucket index.
@@ -510,6 +537,7 @@ protected:
             entry_type * entry = this->buckets_[index];
             entry_type * first_entry = nullptr;
             entry_type * prev_entry = nullptr;
+            entry_type * new_entry = nullptr;
             while (likely(entry != nullptr)) {
                 hash_code_t hash_code = entry->hash_code;
                 index_type new_index = this->index_of(hash_code, new_bucket_mask);
@@ -519,8 +547,8 @@ protected:
                     }
                     entry_type * next_entry = entry->next;
 
-                    entry->next = new_buckets[new_index];
-                    new_buckets[new_index] = entry;
+                    entry->next = new_entry;
+                    new_entry = entry;
 
                     entry = next_entry;
                 }
@@ -541,6 +569,15 @@ protected:
                     new_index = this->index_of(index, new_bucket_mask);
 
                 new_buckets[new_index] = first_entry;
+            }
+
+            if (likely(new_entry != nullptr)) {
+                index_type new_index = index + new_bucket_capacity / 2;
+                if (likely(new_bucket_capacity < this->bucket_capacity_)) {
+                    new_index = this->index_of(new_index, new_bucket_mask);
+                }
+
+                new_buckets[new_index] = new_entry;
             }
         }
     }
@@ -594,7 +631,7 @@ protected:
             }
         }
         else {
-            assert(false);
+            //assert(false);
         }
     }
 

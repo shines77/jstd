@@ -431,10 +431,6 @@ public:
         // Not implemented
     }
 
-    void resize(size_type new_capacity) {
-        // Not implemented
-    }
-
     void rehash(size_type new_capacity) {
         // Not implemented
     }
@@ -531,10 +527,6 @@ public:
         this->map_.reserve(max_count);
     }
 
-    void resize(size_type new_buckets) {
-        this->map_.rehash(new_buckets);
-    }
-
     void rehash(size_type new_buckets) {
         this->map_.rehash(new_buckets);
     }
@@ -628,10 +620,6 @@ public:
 
     void reserve(size_type new_buckets) {
         this->map_.reserve(new_buckets);
-    }
-
-    void resize(size_type new_buckets) {
-        this->map_.resize(new_buckets);
     }
 
     void rehash(size_type new_buckets) {
