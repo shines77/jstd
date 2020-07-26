@@ -253,10 +253,10 @@ public:
     }
 
     iterator unsafe_begin() const {
-        return (iterator)&this->entries_[0];
+        return (iterator)&this->buckets_[0];
     }
     iterator unsafe_end() const {
-        return (iterator)&this->entries_[this->entry_capacity_];
+        return (iterator)&this->buckets_[this->bucket_capacity_];
     }
 
     size_type __size() const {
@@ -267,7 +267,7 @@ public:
         assert(this->entry_size_ == __size());
         return this->entry_size_;
     }
-    size_type capacity() const { return this->entry_capacity_; }
+    size_type capacity() const { return this->bucket_capacity_; }
 
     size_type bucket_mask() const { return this->bucket_mask_; }
     size_type bucket_count() const { return this->bucket_capacity_; }
@@ -397,21 +397,42 @@ protected:
     }
 
     // Append all the entries to the free list.
-    void add_entries_to_freelist(free_list_t & freelist, entry_type * entries, size_type capacity) {
-        assert(freelist.size() == 0);
+    void add_entries_to_freelist(entry_type * entries, size_type capacity) {
+        assert(this->freelist_.size() == 0);
         assert(entries != nullptr);
         assert(capacity > 0);
         entry_type * entry = entries + capacity - 1;
         entry_type * prev = entries + capacity;
-        entry_type * last_entry = entry;
         for (size_type i = 0; i < capacity; i++) {
             entry->next = prev;
             entry->flags = 0;
-            prev--;
             entry--;
+            prev--;
         }
+
+        entry_type * last_entry = entries + capacity - 1;
         last_entry->next = nullptr;
-        freelist.set_list(entries, capacity);
+
+        this->freelist_.set_list(entries, capacity);
+    }
+
+    size_type count_entries_size() {
+        size_type entry_size = 0;
+        for (size_type index = 0; index < this->bucket_capacity_; index++) {
+            size_type list_size = 0;
+            entry_type * entry = this->buckets_[index];
+            while (likely(entry != nullptr)) {
+                hash_code_t hash_code = entry->hash_code;
+                index_type now_index = this->index_of(hash_code, this->bucket_mask_);
+                assert(now_index == index);
+                assert(entry->flags == 1);
+
+                list_size++;
+                entry = entry->next;
+            }
+            entry_size += list_size;
+        }
+        return entry_size;
     }
 
     JSTD_FORCEINLINE
@@ -422,8 +443,16 @@ protected:
         }
         else {
             if (likely(this->entry_size_ >= this->entry_capacity_)) {
+                size_type old_size = this->size();
+                size_type old_size2 = this->count_entries_size();
+
                 // Resize the buckets and the entries.
                 this->rehash(this->entry_size_ + 1);
+
+                size_type new_size = this->count_entries_size();
+                assert(new_size == old_size2);
+                assert(new_size == old_size);
+
                 // Recalculate the bucket index.
                 index = this->index_of(hash_code, this->bucket_mask_);
             }
@@ -462,9 +491,9 @@ protected:
                 this->entries_list_.clear();
                 this->entries_list_.emplace_back(new_entries, entry_capacity);
 
-                // Linked all new entries to the free list.
+                // Append all new entries to the free list.
                 this->freelist_.clear();
-                add_entries_to_freelist(this->freelist_, new_entries, entry_capacity);
+                add_entries_to_freelist(new_entries, entry_capacity);
             }
         }
     }
@@ -477,9 +506,8 @@ protected:
 
         size_type new_bucket_mask = new_bucket_capacity - 1;
 
-        entry_type ** bucket = this->buckets_;
         for (size_type index = 0; index < this->bucket_capacity_; index++) {
-            entry_type * entry = *bucket;
+            entry_type * entry = this->buckets_[index];
             entry_type * first_entry = nullptr;
             entry_type * prev_entry = nullptr;
             while (likely(entry != nullptr)) {
@@ -489,18 +517,20 @@ protected:
                     if (prev_entry != nullptr) {
                         prev_entry->next = entry->next;
                     }
-                    entry_type ** insert_bucket = &new_buckets[new_index];
-                    entry->next = *insert_bucket;
-                    *insert_bucket = entry;
+                    entry_type * next_entry = entry->next;
+
+                    entry->next = new_buckets[new_index];
+                    new_buckets[new_index] = entry;
+
+                    entry = next_entry;
                 }
                 else {
                     prev_entry = entry;
+                    entry = entry->next;
                     if (unlikely(first_entry == nullptr)) {
-                        first_entry = entry;
+                        first_entry = prev_entry;
                     }
                 }
-                // Next entry
-                entry = entry->next;
             }
 
             if (likely(first_entry != nullptr)) {
@@ -509,13 +539,9 @@ protected:
                     new_index = index;
                 else
                     new_index = this->index_of(index, new_bucket_mask);
-                entry_type ** new_bucket = &new_buckets[new_index];
-                first_entry->next = *new_bucket;
-                *new_bucket = first_entry;
-            }
 
-            // Next bucket
-            bucket++;
+                new_buckets[new_index] = first_entry;
+            }
         }
     }
 
@@ -543,7 +569,7 @@ protected:
                     //init_entries_chunk(new_entries, new_entry_chunksize);
 
                     // Append all new entries to the free list.
-                    add_entries_to_freelist(this->freelist_, new_entries, new_entry_chunksize);
+                    add_entries_to_freelist(new_entries, new_entry_chunksize);
 
                     // Push the new entries pointer to entries list.
                     this->entries_list_.emplace_back(new_entries, new_entry_chunksize);
@@ -567,6 +593,9 @@ protected:
                 }
             }
         }
+        else {
+            assert(false);
+        }
     }
 
     JSTD_FORCEINLINE
@@ -589,21 +618,21 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    entry_type * find_before(const key_type & key, entry_type *& before_out, size_type & index) {
+    entry_type * find_before(const key_type & key, entry_type *& before, size_type & index) {
         hash_code_t hash_code = this->get_hash(key);
         index = this->index_of(hash_code, this->bucket_mask_);
 
         assert(this->buckets() != nullptr);
-        entry_type * before = nullptr;
+        entry_type * prev = nullptr;
         entry_type * entry = this->buckets_[index];
         while (likely(entry != nullptr)) {
             if (likely(entry->hash_code != hash_code)) {
-                before = entry;
+                prev = entry;
                 entry = entry->next;
             }
             else {
                 if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    before_out = before;
+                    before = prev;
                     return entry;
                 }
                 entry = entry->next;
@@ -685,6 +714,8 @@ public:
             entry_type * entry = this->find_internal(key, hash_code, index);
             if (likely(entry == nullptr)) {
                 entry_type * new_entry = this->get_free_entry(hash_code, index);
+                assert(new_entry != nullptr);
+                assert(new_entry->flags == 0);
 
                 new_entry->next = this->buckets_[index];
                 new_entry->hash_code = hash_code;
@@ -714,6 +745,8 @@ public:
             entry_type * entry = this->find_internal(std::forward<key_type>(key), hash_code, index);
             if (likely(entry == nullptr)) {
                 entry_type * new_entry = this->get_free_entry(hash_code, index);
+                assert(new_entry != nullptr);
+                assert(new_entry->flags == 0);
 
                 new_entry->next = this->buckets_[index];
                 new_entry->hash_code = hash_code;
@@ -773,8 +806,6 @@ public:
             hash_code_t hash_code = this->get_hash(key);
             size_type index = this->index_of(hash_code, this->bucket_mask_);
 
-            assert(this->buckets() != nullptr);
-            assert(this->entries() != nullptr);
             entry_type * prev = nullptr;
             entry_type * entry = this->buckets_[index];
             while (likely(entry != nullptr)) {
@@ -789,7 +820,7 @@ public:
                         else
                             this->buckets_[index] = entry->next;
 
-                        entry->hash_code = kInvalidHash;
+                        assert(entry->flags == 1);
                         entry->flags = 0;
                         this->freelist_.push_front(entry);
 

@@ -88,7 +88,7 @@ static const char * header_fields[] = {
     "Content-Length",
     "Content-MD5",
     "Content-Type",
-    "Date",
+    "Date",  // <-- repeat
     "DNT",
     "From",
     "Front-End-Https",
@@ -105,7 +105,7 @@ static const char * header_fields[] = {
     "Referer",
     "User-Agent",
     "Upgrade",
-    "Via",
+    "Via",  // <-- repeat
     "Warning",
     "X-ATT-DeviceId",
     "X-Content-Type-Options",
@@ -129,7 +129,7 @@ static const char * header_fields[] = {
     //"Content-MD5",
     "Content-Range",
     //"Content-Type",
-    "Date",
+    "Date",  // <-- repeat
     "ETag",
     "Expires",
     "Last-Modified",
@@ -145,7 +145,7 @@ static const char * header_fields[] = {
     "Trailer",
     "Transfer-Encoding",
     "Vary",
-    "Via",
+    "Via",  // <-- repeat
     "WWW-Authenticate",
     //"X-Content-Type-Options",
     //"X-Powered-By",
@@ -557,7 +557,7 @@ public:
     }
 
     void emplace(const key_type & key, const value_type & value) {
-        this->map_.emplace(key, value);
+        std::pair<iterator, bool> result = this->map_.emplace(key, value);
     }
 
     void emplace(key_type && key, value_type && value) {
@@ -958,7 +958,6 @@ void hashtable_erase_benchmark_impl()
             sw.start();
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
                 size_t counts = algorithm.erase(field_str[j]);
-                assert(counts == 0);
             }
             sw.stop();
 
@@ -1594,8 +1593,8 @@ void run_hashtable_benchmark()
     run_hashtable_insert_erase_benchmark();
     run_hashtable_ref_insert_erase_benchmark();
 
-    //run_hashtable_rehash_benchmark();
-    //run_hashtable_rehash2_benchmark();
+    run_hashtable_rehash_benchmark();
+    run_hashtable_rehash2_benchmark();
 }
 
 int main(int argc, char *argv[])
