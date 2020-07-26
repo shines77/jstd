@@ -465,8 +465,8 @@ public:
                            std::forward<value_type>(value));
     }
 
-    void erase(const key_type & key) {
-        this->map_.erase(key);
+    size_type erase(const key_type & key) {
+        return this->map_.erase(key);
     }
 };
 
@@ -565,8 +565,8 @@ public:
                            std::forward<value_type>(value));
     }
 
-    void erase(const key_type & key) {
-        this->map_.erase(key);
+    size_type erase(const key_type & key) {
+        return this->map_.erase(key);
     }
 };
 
@@ -664,8 +664,8 @@ public:
                            std::forward<value_type>(value));
     }
 
-    void erase(const key_type & key) {
-        this->map_.erase(key);
+    size_type erase(const key_type & key) {
+        return this->map_.erase(key);
     }
 };
 
@@ -957,7 +957,8 @@ void hashtable_erase_benchmark_impl()
 
             sw.start();
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
-                algorithm.erase(field_str[j]);
+                size_t counts = algorithm.erase(field_str[j]);
+                assert(counts == 0);
             }
             sw.stop();
 

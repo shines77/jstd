@@ -554,7 +554,7 @@ public:
                                      std::forward<mapped_type>(value)));
     }
 
-    void erase(const key_type & key) {
+    size_type erase(const key_type & key) {
         if (likely(this->table_ != nullptr)) {
             iterator iter = this->find(key);
             if (likely(iter != this->end())) {
@@ -565,6 +565,7 @@ public:
                         *iter = nullptr;
                         assert(this->size_ > 0);
                         --(this->size_);
+                        return size_type(1);
                     }
                 }
             }
@@ -572,6 +573,7 @@ public:
                 // Not found the key
             }
         }
+        return size_type(0);
     }
 
     static const char * name() {
