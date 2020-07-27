@@ -704,7 +704,7 @@ public:
             if (likely(iter == this->unsafe_end())) {
                 entry_type * new_entry;
                 if (likely(this->freelist_.is_empty())) {
-                    if (likely(this->entry_size_ >= this->entry_capacity_)) {
+                    if (unlikely(this->entry_size_ >= this->entry_capacity_)) {
                         // Resize the buckets and the entries.
                         this->resize(this->entry_size_ + 1);
                         // Recalculate the bucket index.

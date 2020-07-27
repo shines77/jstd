@@ -24,6 +24,14 @@
 #include <type_traits>
 #include <limits>       // For std::numeric_limits<T>::max()
 
+//////////////////////////////////////////////////////////////////////////
+//
+// Bit Twiddling Hacks
+//
+// http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+//
+//////////////////////////////////////////////////////////////////////////
+
 namespace jstd {
 namespace run_time {
 

@@ -42,11 +42,6 @@
 #include "jstd/allocator.h"
 #include "jstd/support/PowerOf2.h"
 
-#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
- || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-// is __amd64__
-#endif
-
 namespace jstd {
 
 template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
@@ -149,11 +144,11 @@ public:
             this->size_ = 0;
         }
 
-        void inc() {
+        void increase() {
             ++(this->size_);
         }
 
-        void dec() {
+        void decrease() {
             assert(this->size_ > 0);
             --(this->size_);
         }
@@ -210,7 +205,75 @@ public:
         lhs.swap(rhs);
     }
 
-    typedef free_list<entry_type> free_list_t;
+    template <typename T>
+    class entry_chunk {
+    public:
+        typedef T                               node_type;
+        typedef typename this_type::size_type   size_type;
+
+    protected:
+        node_type *  entries_;
+        size_type    size_;
+        size_type    capacity_;
+
+    public:
+        entry_chunk() : entries_(nullptr), size_(0), capacity_(0) {}
+        ~entry_chunk() {}
+
+        node_type * entries() const { return this->entries_; }
+        size_type size() const { return this->size_; }
+        size_type capacity() const { return this->capacity_; }
+
+        size_type is_full() const { return (this->size_ >= this->capacity_); }
+
+        void set_entries(node_type * entries) {
+            this->entries_ = entries;
+        }
+
+        void set_size(size_type size) {
+            this->size_ = size;
+        }
+
+        void set_capacity(size_type capacity) {
+            this->capacity_ = capacity;
+        }
+
+        void init(node_type * entries, size_type size, size_type capacity) {
+            this->entries_ = entries;
+            this->size_ = size;
+            this->capacity_ = capacity;
+        }
+
+        void clear() {
+            this->entries_ = nullptr;
+            this->size_ = 0;
+            this->capacity_ = 0;
+        }
+
+        void reset() {
+            this->size_ = 0;
+        }
+
+        void increase() {
+            ++(this->size_);
+        }
+
+        void decrease() {
+            --(this->size_);
+        }
+
+        void inflate(size_type size) {
+            this->size_ += size;
+        }
+
+        void deflate(size_type size) {
+            assert(this->size_ >= size);
+            this->size_ -= size;
+        }
+    };
+
+    typedef free_list<entry_type>   free_list_t;
+    typedef entry_chunk<entry_type> entry_chunk_t;
 
 protected:
     entry_type **           buckets_;
@@ -219,6 +282,7 @@ protected:
     size_type               bucket_capacity_;
     size_type               entry_size_;
     size_type               entry_capacity_;
+    entry_chunk_t           entry_chunk_;
     free_list_t             freelist_;
 #if DICTIONARY_SUPPORT_VERSION
     size_type               version_;
@@ -411,6 +475,7 @@ protected:
         this->freelist_.clear();
     }
 
+    // Init the new entries's status.
     void init_entries_chunk(entry_type * entries, size_type capacity) {
         entry_type * entry = entries;
         for (size_type i = 0; i < capacity; i++) {
@@ -473,16 +538,12 @@ protected:
 
     JSTD_FORCEINLINE
     entry_type * get_free_entry(hash_code_t & hash_code, index_type & index) {
-        if (likely(!this->freelist_.is_empty())) {
-            // Pop a free entry from freelist.
-            return this->freelist_.pop_front();
-        }
-        else {
-            if (likely(this->entry_size_ >= this->entry_capacity_)) {
+        if (likely(this->freelist_.is_empty())) {
+            if (unlikely(this->entry_chunk_.is_full())) {
                 size_type old_size = this->size();
 
-                // Resize the buckets and the entries.
-                this->rehash(this->entry_size_ + 1);
+                // Inflate the entry for 1.
+                this->inflate_entries(1);
 
                 size_type new_size = this->count_entries_size();
                 assert(new_size == old_size);
@@ -491,6 +552,13 @@ protected:
                 index = this->index_of(hash_code, this->bucket_mask_);
             }
 
+            // Get a unused entry.
+            entry_type * new_entry = &this->entries_[this->entry_chunk_.size()];
+            assert(new_entry != nullptr);
+            this->entry_chunk_.increase();
+            return new_entry;
+        }
+        else {
             // Pop a free entry from freelist.
             return this->freelist_.pop_front();
         }
@@ -519,15 +587,76 @@ protected:
             if (likely(entry_allocator_.is_ok(new_entries))) {
                 // Initialize the entries info.
                 this->entries_ = new_entries;
+
                 this->entry_size_ = 0;
                 this->entry_capacity_ = entry_capacity;
 
-                this->entries_list_.clear();
+                this->entries_list_.reserve(4);
                 this->entries_list_.emplace_back(new_entries, entry_capacity);
+
+                this->entry_chunk_.init(new_entries, 0, entry_capacity);
 
                 // Append all new entries to the free list.
                 this->freelist_.clear();
-                add_entries_to_freelist(new_entries, entry_capacity);
+            }
+        }
+    }
+
+    void rehash_all_entries_2x(entry_type ** new_buckets, size_type new_bucket_capacity) {
+        assert(this->buckets_ != nullptr);
+        assert(new_buckets != nullptr);
+        assert(new_bucket_capacity > 0);
+        assert(run_time::is_pow2(new_bucket_capacity));
+
+        size_type new_bucket_mask = new_bucket_capacity - 1;
+
+        for (size_type index = 0; index < this->bucket_capacity_; index++) {
+            entry_type * entry = this->buckets_[index];
+            if (likely(entry != nullptr)) {
+                entry_type * first_entry = nullptr;
+                entry_type * prev_entry = nullptr;
+                entry_type * new_entry = nullptr;
+                do {
+                    hash_code_t hash_code = entry->hash_code;
+                    index_type new_index = this->index_of(hash_code, new_bucket_mask);
+                    if (likely(new_index != index)) {
+                        if (prev_entry != nullptr) {
+                            prev_entry->next = entry->next;
+                        }
+                        entry_type * next_entry = entry->next;
+
+                        entry->next = new_entry;
+                        new_entry = entry;
+
+                        entry = next_entry;
+                    }
+                    else {
+                        prev_entry = entry;
+                        entry = entry->next;
+                        if (unlikely(first_entry == nullptr)) {
+                            first_entry = prev_entry;
+                        }
+                    }
+                } while (likely(entry != nullptr));
+
+                if (likely(first_entry != nullptr)) {
+                    index_type new_index;
+                    if (likely(new_bucket_capacity >= this->bucket_capacity_))
+                        new_index = index;
+                    else
+                        new_index = this->index_of(index, new_bucket_mask);
+
+                    new_buckets[new_index] = first_entry;
+                }
+
+                if (likely(new_entry != nullptr)) {
+                    index_type new_index = index + new_bucket_capacity / 2;
+                    if (likely(new_bucket_capacity < this->bucket_capacity_)) {
+                        new_index = this->index_of(new_index, new_bucket_mask);
+                    }
+
+                    new_buckets[new_index] = new_entry;
+                }
             }
         }
     }
@@ -542,103 +671,181 @@ protected:
 
         for (size_type index = 0; index < this->bucket_capacity_; index++) {
             entry_type * entry = this->buckets_[index];
-            entry_type * first_entry = nullptr;
-            entry_type * prev_entry = nullptr;
-            entry_type * new_entry = nullptr;
-            while (likely(entry != nullptr)) {
-                hash_code_t hash_code = entry->hash_code;
-                index_type new_index = this->index_of(hash_code, new_bucket_mask);
-                if (likely(new_index != index)) {
-                    if (prev_entry != nullptr) {
-                        prev_entry->next = entry->next;
+            if (likely(entry != nullptr)) {
+                entry_type * first_entry = nullptr;
+                entry_type * prev_entry = nullptr;
+                do {
+                    hash_code_t hash_code = entry->hash_code;
+                    index_type new_index = this->index_of(hash_code, new_bucket_mask);
+                    if (likely(new_index != index)) {
+                        if (prev_entry != nullptr) {
+                            prev_entry->next = entry->next;
+                        }
+                        entry_type * next_entry = entry->next;
+
+                        entry->next = new_buckets[new_index];
+                        new_buckets[new_index] = entry;
+
+                        entry = next_entry;
                     }
-                    entry_type * next_entry = entry->next;
-
-                    entry->next = new_entry;
-                    new_entry = entry;
-
-                    entry = next_entry;
-                }
-                else {
-                    prev_entry = entry;
-                    entry = entry->next;
-                    if (unlikely(first_entry == nullptr)) {
-                        first_entry = prev_entry;
+                    else {
+                        prev_entry = entry;
+                        entry = entry->next;
+                        if (unlikely(first_entry == nullptr)) {
+                            first_entry = prev_entry;
+                        }
                     }
+                } while (likely(entry != nullptr));
+
+                if (likely(first_entry != nullptr)) {
+                    index_type new_index;
+                    if (likely(new_bucket_capacity >= this->bucket_capacity_))
+                        new_index = index;
+                    else
+                        new_index = this->index_of(index, new_bucket_mask);
+
+                    new_buckets[new_index] = first_entry;
                 }
-            }
-
-            if (likely(first_entry != nullptr)) {
-                index_type new_index;
-                if (likely(new_bucket_capacity >= this->bucket_capacity_))
-                    new_index = index;
-                else
-                    new_index = this->index_of(index, new_bucket_mask);
-
-                new_buckets[new_index] = first_entry;
-            }
-
-            if (likely(new_entry != nullptr)) {
-                index_type new_index = index + new_bucket_capacity / 2;
-                if (likely(new_bucket_capacity < this->bucket_capacity_)) {
-                    new_index = this->index_of(new_index, new_bucket_mask);
-                }
-
-                new_buckets[new_index] = new_entry;
             }
         }
     }
 
-    template <bool force_shrink = false>
-    void rehash_internal(size_type new_entry_capacity) {
+    void rehash_buckets(size_type new_bucket_capacity) {
+        assert(new_bucket_capacity > 0);
+        assert(run_time::is_pow2(new_bucket_capacity));
+        assert(new_bucket_capacity > this->bucket_capacity_);
+        assert(this->entry_size_ <= this->bucket_capacity_);
+
+        entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
+        if (likely(bucket_allocator_.is_ok(new_buckets))) {
+            // Initialize the bucket list's data.
+            ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
+
+            if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
+                this->rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+            else
+                this->rehash_all_entries(new_buckets, new_bucket_capacity);
+
+            this->free_buckets_impl();
+
+            this->buckets_ = new_buckets;
+            this->bucket_mask_ = new_bucket_capacity - 1;
+            this->bucket_capacity_ = new_bucket_capacity;
+
+            this->updateVersion();
+        }
+    }
+
+    void rehash_buckets_and_entries(size_type new_entry_capacity, size_type new_bucket_capacity) {
         assert(new_entry_capacity > 0);
-        assert((new_entry_capacity & (new_entry_capacity - 1)) == 0);
+        assert(new_bucket_capacity > 0);
+        assert(run_time::is_pow2(new_entry_capacity));
+        assert(run_time::is_pow2(new_bucket_capacity));
+        assert(new_bucket_capacity > this->bucket_capacity_);
 
-        size_type new_bucket_capacity = new_entry_capacity;
+        entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
+        if (likely(bucket_allocator_.is_ok(new_buckets))) {
+            // Initialize the bucket list's data.
+            ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
 
-        if (likely(new_entry_capacity > this->entry_capacity_)) {
-            // The the array of bucket's first entry.
-            entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
-            if (likely(bucket_allocator_.is_ok(new_buckets))) {
-                // Initialize the buckets's data.
-                ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
+            // Only allocate a chunk size we need.
+            assert(new_entry_capacity > this->entry_capacity_);
+            size_type new_entry_size = new_entry_capacity - this->entry_capacity_;
 
-                // Only allocate a chunk size we need.
-                assert(new_entry_capacity > this->entry_capacity_);
-                size_type new_entry_chunksize = new_entry_capacity - this->entry_capacity_;
+            entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
+            if (likely(entry_allocator_.is_ok(new_entries))) {
+                // Push the new entries pointer to entries list.
+                this->entries_list_.emplace_back(new_entries, new_entry_size);
 
-                entry_type * new_entries = entry_allocator_.allocate(new_entry_chunksize);
-                if (likely(entry_allocator_.is_ok(new_entries))) {
-                    // Init the new entries's status.
-                    //init_entries_chunk(new_entries, new_entry_chunksize);
+                assert(this->entry_chunk_.is_full());
+                this->entry_chunk_.init(new_entries, 0, new_entry_size);
 
-                    // Append all new entries to the free list.
-                    add_entries_to_freelist(new_entries, new_entry_chunksize);
-
-                    // Push the new entries pointer to entries list.
-                    this->entries_list_.emplace_back(new_entries, new_entry_chunksize);
-
+                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
+                    this->rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+                else
                     this->rehash_all_entries(new_buckets, new_bucket_capacity);
 
-                    this->free_buckets_impl();
+                this->free_buckets_impl();
 
-                    this->buckets_ = new_buckets;
-                    this->entries_ = new_entries;
-                    this->bucket_mask_ = new_bucket_capacity - 1;
-                    this->bucket_capacity_ = new_bucket_capacity;
-                    // Here, the entry_size_ doesn't change.
-                    this->entry_capacity_ = new_entry_capacity;
+                this->buckets_ = new_buckets;
+                this->entries_ = new_entries;
+                this->bucket_mask_ = new_bucket_capacity - 1;
+                this->bucket_capacity_ = new_bucket_capacity;
+                // Here, the entry_size_ doesn't change.
+                this->entry_capacity_ = new_entry_capacity;
 
-                    this->updateVersion();
-                }
-                else {
-                    // Failed to allocate new_entries, processing the abnormal exit.
-                    bucket_allocator_.deallocate(new_buckets, new_bucket_capacity);
-                }
+                this->updateVersion();
+            }
+            else {
+                // Failed to allocate new_entries, processing the abnormal exit.
+                bucket_allocator_.deallocate(new_buckets, new_bucket_capacity);
+            }
+        }
+    }
+
+    template <bool need_shrink = false>
+    void rehash_internal(size_type new_bucket_capacity) {
+        assert(new_bucket_capacity > 0);
+        assert((new_bucket_capacity & (new_bucket_capacity - 1)) == 0);
+
+        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + 1);
+        if (likely(new_bucket_capacity > this->bucket_capacity_)) {
+            // Is infalte
+        }
+        else if (likely(new_bucket_capacity < this->bucket_capacity_)) {
+            if (likely(new_entry_capacity > new_bucket_capacity)) {
+                new_bucket_capacity = new_entry_capacity;
+            }
+            if (likely(new_bucket_capacity > this->bucket_capacity_)) {
+                // Is infalte
+            }
+            else {
+                // We need to shrink the bucket list capacity.
             }
         }
         else {
-            //assert(false);
+            // The bucket capacity is unchanged.
+            return;
+        }
+
+        if (likely(new_entry_capacity <= this->entry_capacity_)) {
+            return this->rehash_buckets(new_bucket_capacity);
+        }
+        else {
+            return this->rehash_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
+        }
+    }
+
+    void inflate_entries(size_type size = 1) {
+        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + size);
+
+        // If new entry capacity is too small, exit directly.
+        if (likely(new_entry_capacity > this->entry_capacity_)) {
+            // Most of the time, we don't need to reallocate buckets list.
+            if (likely(new_entry_capacity <= this->bucket_capacity_)) {
+                assert(this->freelist_.is_empty());
+
+                size_type new_entry_size = new_entry_capacity - this->entry_capacity_;
+                entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
+                if (likely(entry_allocator_.is_ok(new_entries))) {
+                    // Push the new entries pointer to entries list.
+                    this->entries_list_.emplace_back(new_entries, new_entry_size);
+
+                    assert(this->entry_chunk_.is_full());
+                    this->entry_chunk_.init(new_entries, 0, new_entry_size);
+
+                    this->entries_ = new_entries;
+                    this->entry_capacity_ = new_entry_capacity;
+                }
+            }
+            else {
+                // The bucket list capacity is full, need to reallocate.
+                this->rehash_buckets_and_entries(new_entry_capacity, new_entry_capacity);
+            }
+        }
+        else {
+            // this->entry_capacity_ = this->bucket_capacity_ ?
+            assert(new_entry_capacity <= this->bucket_capacity_);
         }
     }
 
@@ -702,24 +909,27 @@ public:
         // Clear settings
         this->entry_size_ = 0;
         this->freelist_.clear();
+        this->entry_chunk_.clear();
     }
 
-    void rehash(size_type new_size) {
-        assert(new_size > 0);
-        size_type new_capacity = this->calc_capacity(new_size);
-        this->rehash_internal<false>(new_capacity);
+    void rehash(size_type bucket_count) {
+        assert(bucket_count > 0);
+        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
+        this->rehash_internal<false>(new_bucket_capacity);
     }
 
-    void reserve(size_type capacity) {
-        this->rehash(capacity);
+    void reserve(size_type bucket_count) {
+        this->rehash(bucket_count);
     }
 
-    void shrink_to_fit(size_type new_size = 0) {
-        // Choose the maximum size of new size and now entry size.
-        new_size = (this->entry_size_ >= new_size) ? this->entry_size_ : new_size;
+    void shrink_to_fit(size_type bucket_count = 0) {
+        size_type entry_capacity = run_time::round_up_to_pow2(this->entry_size_);
 
-        size_type new_capacity = this->calc_shrink_capacity(new_size);
-        this->rehash_internal<true>(new_capacity);
+        // Choose the maximum size of new bucket capacity and now entry capacity.
+        bucket_count = (entry_capacity >= bucket_count) ? entry_capacity : bucket_count;
+
+        size_type new_bucket_capacity = this->calc_shrink_capacity(bucket_count);
+        this->rehash_internal<true>(new_bucket_capacity);
     }
 
     iterator find(const key_type & key) {
@@ -752,7 +962,7 @@ public:
     }
 
     void insert(const key_type & key, const mapped_type & value) {
-        if (likely(this->buckets_ != nullptr)) {
+        if (likely(this->buckets() != nullptr)) {
             hash_code_t hash_code = this->get_hash(key);
             index_type index = this->index_of(hash_code, this->bucket_mask_);
             entry_type * entry = this->find_internal(key, hash_code, index);
@@ -783,7 +993,7 @@ public:
     }
 
     void insert(key_type && key, mapped_type && value) {
-        if (likely(this->buckets_ != nullptr)) {
+        if (likely(this->buckets() != nullptr)) {
             hash_code_t hash_code = this->get_hash(std::forward<key_type>(key));
             index_type index = this->index_of(hash_code, this->bucket_mask_);
             entry_type * entry = this->find_internal(std::forward<key_type>(key), hash_code, index);
