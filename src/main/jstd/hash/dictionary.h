@@ -351,7 +351,6 @@ public:
         return (this->entry_capacity_ - this->freelist_.size());
     }
     size_type size() const {
-        assert(this->entry_size_ == __size());
         return this->entry_size_;
     }
     size_type capacity() const { return this->bucket_capacity_; }
@@ -577,7 +576,7 @@ protected:
             // Initialize the buckets's data.
             ::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
-            // Initialize the buckets info.
+            // Save the buckets info.
             this->buckets_ = new_buckets;
             this->bucket_mask_ = bucket_capacity - 1;
             this->bucket_capacity_ = bucket_capacity;
@@ -585,9 +584,8 @@ protected:
             // The array of entries.
             entry_type * new_entries = entry_allocator_.allocate(entry_capacity);
             if (likely(entry_allocator_.is_ok(new_entries))) {
-                // Initialize the entries info.
+                // Save the entries info.
                 this->entries_ = new_entries;
-
                 this->entry_size_ = 0;
                 this->entry_capacity_ = entry_capacity;
 
@@ -596,7 +594,8 @@ protected:
 
                 this->entry_chunk_.init(new_entries, 0, entry_capacity);
 
-                // Append all new entries to the free list.
+                this->init_entries_chunk(new_entries, entry_capacity);
+
                 this->freelist_.clear();
             }
         }
@@ -713,7 +712,7 @@ protected:
     void rehash_buckets(size_type new_bucket_capacity) {
         assert(new_bucket_capacity > 0);
         assert(run_time::is_pow2(new_bucket_capacity));
-        assert(new_bucket_capacity > this->bucket_capacity_);
+        //assert(new_bucket_capacity > this->bucket_capacity_);
         assert(this->entry_size_ <= this->bucket_capacity_);
 
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
@@ -754,12 +753,6 @@ protected:
 
             entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
             if (likely(entry_allocator_.is_ok(new_entries))) {
-                // Push the new entries pointer to entries list.
-                this->entries_list_.emplace_back(new_entries, new_entry_size);
-
-                assert(this->entry_chunk_.is_full());
-                this->entry_chunk_.init(new_entries, 0, new_entry_size);
-
                 if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
                     this->rehash_all_entries_2x(new_buckets, new_bucket_capacity);
                 else
@@ -773,6 +766,14 @@ protected:
                 this->bucket_capacity_ = new_bucket_capacity;
                 // Here, the entry_size_ doesn't change.
                 this->entry_capacity_ = new_entry_capacity;
+
+                // Push the new entries pointer to entries list.
+                this->entries_list_.emplace_back(new_entries, new_entry_size);
+
+                assert(this->entry_chunk_.is_full());
+                this->entry_chunk_.init(new_entries, 0, new_entry_size);
+
+                this->init_entries_chunk(new_entries, new_entry_size);
 
                 this->updateVersion();
             }
@@ -828,14 +829,16 @@ protected:
                 size_type new_entry_size = new_entry_capacity - this->entry_capacity_;
                 entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
                 if (likely(entry_allocator_.is_ok(new_entries))) {
+                    this->entries_ = new_entries;
+                    this->entry_capacity_ = new_entry_capacity;
+
                     // Push the new entries pointer to entries list.
                     this->entries_list_.emplace_back(new_entries, new_entry_size);
 
                     assert(this->entry_chunk_.is_full());
                     this->entry_chunk_.init(new_entries, 0, new_entry_size);
 
-                    this->entries_ = new_entries;
-                    this->entry_capacity_ = new_entry_capacity;
+                    this->init_entries_chunk(new_entries, new_entry_size);
                 }
             }
             else {
