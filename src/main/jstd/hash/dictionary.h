@@ -392,20 +392,10 @@ protected:
         return capacity;
     }
 
-    inline size_type calc_shrink_capacity(size_type capacity) {
-        capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-        capacity = run_time::round_up_to_pow2(capacity);
-        return capacity;
-    }
-
     inline hash_code_t get_hash(const key_type & key) const {
         hash_code_t hash_code = this->hasher_(key);
-        return hash_traits<hash_code_t>::filter(hash_code);
-    }
-
-    inline hash_code_t get_hash(key_type && key) const {
-        hash_code_t hash_code = this->hasher_(std::forward<key_type>(key));
-        return hash_traits<hash_code_t>::filter(hash_code);
+        //return hash_traits<hash_code_t>::filter(hash_code);
+        return hash_code;
     }
 
     inline index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
@@ -433,22 +423,49 @@ protected:
     }
 
     void destroy_entries() {
-        for (size_type i = 0; i < this->entries_list_.size(); i++) {
-            entry_type * entries = this->entries_list_[i].entries;
-            size_type   capacity = this->entries_list_[i].capacity;
-            entry_type * entry = entries;
-            for (size_type j = 0; j < capacity; j++) {
+        if (likely(this->entries_list_.size() > 0)) {
+            size_type last_index = this->entries_list_.size() - 1;
+            for (size_type i = 0; i < last_index; i++) {
+                entry_type * entries = this->entries_list_[i].entries;
+                size_type   capacity = this->entries_list_[i].capacity;
+                entry_type * entry = entries;
                 assert(entry != nullptr);
-                if (likely(entry->flags != 0)) {
-                    value_type * pair_ptr = &entry->value;
-                    assert(pair_ptr != nullptr);
-                    allocator_.destructor(pair_ptr);
+                for (size_type j = 0; j < capacity; j++) {
+                    if (likely(entry->flags != 0)) {
+                        value_type * pair_ptr = &entry->value;
+                        assert(pair_ptr != nullptr);
+                        allocator_.destructor(pair_ptr);
+                    }
+                    ++entry;
                 }
-                ++entry;
+
+                // Free the entries buffer.
+                entry_allocator_.deallocate(entries, capacity);
             }
 
-            // Free the entries buffer.
-            entry_allocator_.deallocate(entries, capacity);
+            // last_index
+            {
+                entry_type *    entries = this->entries_list_[last_index].entries;
+                size_type      capacity = this->entries_list_[last_index].capacity;
+                size_type last_capacity = this->entry_chunk_.capacity();
+                size_type     last_size = this->entry_chunk_.size();
+                assert(entries == this->entries_);
+                assert(last_size <= capacity);
+                assert(last_capacity == capacity);
+                entry_type * entry = entries;
+                assert(entry != nullptr);
+                for (size_type j = 0; j < last_size; j++) {
+                    if (likely(entry->flags != 0)) {
+                        value_type * pair_ptr = &entry->value;
+                        assert(pair_ptr != nullptr);
+                        allocator_.destructor(pair_ptr);
+                    }
+                    ++entry;
+                }
+
+                // Free the entries buffer.
+                entry_allocator_.deallocate(entries, capacity);
+            }
         }
     }
 
@@ -459,6 +476,9 @@ protected:
                 // Destroy all entries.
                 this->destroy_entries();
                 this->entries_ = nullptr;
+#ifndef NDEBUG
+                this->entries_list_.clear();
+#endif
             }
 
             // Free the array of bucket.
@@ -595,7 +615,7 @@ protected:
 
                 this->entry_chunk_.init(new_entries, 0, entry_capacity);
 
-                this->init_entries_chunk(new_entries, entry_capacity);
+                //this->init_entries_chunk(new_entries, entry_capacity);
 
                 this->freelist_.clear();
             }
@@ -774,7 +794,7 @@ protected:
                 assert(this->entry_chunk_.is_full());
                 this->entry_chunk_.init(new_entries, 0, new_entry_size);
 
-                this->init_entries_chunk(new_entries, new_entry_size);
+                //this->init_entries_chunk(new_entries, new_entry_size);
 
                 this->updateVersion();
             }
@@ -839,7 +859,7 @@ protected:
                     assert(this->entry_chunk_.is_full());
                     this->entry_chunk_.init(new_entries, 0, new_entry_size);
 
-                    this->init_entries_chunk(new_entries, new_entry_size);
+                    //this->init_entries_chunk(new_entries, new_entry_size);
                 }
             }
             else {
@@ -932,7 +952,7 @@ public:
         // Choose the maximum size of new bucket capacity and now entry capacity.
         bucket_count = (entry_capacity >= bucket_count) ? entry_capacity : bucket_count;
 
-        size_type new_bucket_capacity = this->calc_shrink_capacity(bucket_count);
+        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
         this->rehash_internal<true>(new_bucket_capacity);
     }
 
@@ -973,7 +993,7 @@ public:
             if (likely(entry == nullptr)) {
                 entry_type * new_entry = this->get_free_entry(hash_code, index);
                 assert(new_entry != nullptr);
-                assert(new_entry->flags == 0);
+                //assert(new_entry->flags == 0);
 
                 new_entry->next = this->buckets_[index];
                 new_entry->hash_code = hash_code;
@@ -1004,7 +1024,7 @@ public:
             if (likely(entry == nullptr)) {
                 entry_type * new_entry = this->get_free_entry(hash_code, index);
                 assert(new_entry != nullptr);
-                assert(new_entry->flags == 0);
+                //assert(new_entry->flags == 0);
 
                 new_entry->next = this->buckets_[index];
                 new_entry->hash_code = hash_code;
