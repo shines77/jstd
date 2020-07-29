@@ -993,7 +993,6 @@ public:
             if (likely(entry == nullptr)) {
                 entry_type * new_entry = this->get_free_entry(hash_code, index);
                 assert(new_entry != nullptr);
-                //assert(new_entry->flags == 0);
 
                 new_entry->next = this->buckets_[index];
                 new_entry->hash_code = hash_code;
@@ -1024,7 +1023,6 @@ public:
             if (likely(entry == nullptr)) {
                 entry_type * new_entry = this->get_free_entry(hash_code, index);
                 assert(new_entry != nullptr);
-                //assert(new_entry->flags == 0);
 
                 new_entry->next = this->buckets_[index];
                 new_entry->hash_code = hash_code;

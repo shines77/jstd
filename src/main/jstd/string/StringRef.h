@@ -8,6 +8,7 @@
 
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
+#include "jstd/basic/stdsize.h"
 
 #include <string.h>
 #include <cstdint>  // for std::intptr_t
@@ -15,7 +16,6 @@
 #include <string>
 #include <type_traits>
 
-#include "jstd/basic/stddef.h"
 #include "jstd/string/string_iterator.h"
 #include "jstd/string/string_utils.h"
 #include "jstd/string/strlen.h"
@@ -64,9 +64,26 @@ public:
     }
     BasicStringRef(this_type && src)
         : data_(src.data()), length_(src.length()) {
-        src.reset();
+        //src.reset();
     }
     ~BasicStringRef() { /* Do nothing! */ }
+
+    const char_type * data() const { return this->data_; }
+    size_t length() const { return this->length_; }
+
+    const char_type * c_str() const { return this->data(); }
+    size_t size() const { return this->length(); }
+
+    char_type * data() { return const_cast<char_type *>(this->data_); }
+    char_type * c_str() { return const_cast<char_type *>(this->data()); }
+
+    bool empty() const { return (this->length() == 0); }
+
+    iterator begin() const { return iterator(this->data_); }
+    iterator end() const { return iterator(this->data_ + this->length_); }
+
+    const_iterator cbegin() const { return const_iterator(this->data_); }
+    const_iterator cend() const { return const_iterator(this->data_ + this->length_); }
 
     BasicStringRef & operator = (const char_type * data) {
         this->data_ = data;
@@ -85,27 +102,6 @@ public:
         this->length_ = rhs.length();
         return *this;
     }
-
-    char_type operator [] (size_t index) const {
-        return (char_type)(this->data_[index]);
-    }
-
-    const char_type * data() const { return this->data_; }
-    size_t length() const { return this->length_; }
-
-    const char_type * c_str() const { return this->data(); }
-    size_t size() const { return this->length(); }
-
-    char_type * data() { return const_cast<char_type *>(this->data_); }
-    char_type * c_str() { return const_cast<char_type *>(this->data()); }
-
-    bool empty() const { return (this->length() == 0); }
-
-    iterator begin() const { return iterator(this->data_); }
-    iterator end() const { return iterator(this->data_ + this->length_); }
-
-    const_iterator cbegin() const { return const_iterator(this->data_); }
-    const_iterator cend() const { return const_iterator(this->data_ + this->length_); }
 
     void reset() {
         this->data_ = nullptr;
@@ -180,6 +176,28 @@ public:
 
     char_type at(size_t index) const {
         return (char_type)(this->data_[index]);
+    }
+
+    char_type operator [] (size_t index) const {
+        return (char_type)(this->data_[index]);
+    }
+
+    bool is_equal(const this_type & rhs) const {
+        if (likely(&rhs != this)) {
+            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
+                return jstd::StrUtils::is_equals(*this, rhs);
+            }
+        }
+        return true;
+    }
+
+    int compare(const this_type & rhs) const {
+        if (likely(&rhs != this)) {
+            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
+                return jstd::StrUtils::compare(*this, rhs);
+            }
+        }
+        return jstd::StrUtils::IsEqual;
     }
 
     string_type toString() const {
@@ -265,19 +283,19 @@ void swap(BasicStringRef<CharTy> & lhs, BasicStringRef<CharTy> & rhs) {
 template <typename CharTy>
 inline
 bool operator == (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy> & rhs) {
-    return jstd::StrUtils::is_equals(lhs, rhs);
+    return lhs.is_equal(rhs);
 }
 
 template <typename CharTy>
 inline
 bool operator < (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy> & rhs) {
-    return (jstd::StrUtils::compare(lhs, rhs) == jstd::StrUtils::IsSmaller);
+    return (lhs.compare(rhs) == jstd::StrUtils::IsSmaller);
 }
 
 template <typename CharTy>
 inline
 bool operator > (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy> & rhs) {
-    return (jstd::StrUtils::compare(lhs, rhs) == jstd::StrUtils::IsBigger);
+    return (lhs.compare(rhs) == jstd::StrUtils::IsBigger);
 }
 
 template <typename StringTy, typename CharTy>
