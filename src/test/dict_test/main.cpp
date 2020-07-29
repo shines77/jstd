@@ -417,7 +417,7 @@ int get_current_process_mem_info(std::string & mem_size)
 // See: https://blog.csdn.net/weiyuefei/article/details/52281312
 //
 
-int get_current_process_mem_info(std::string & mem_size)
+int get_current_process_mem_info(std::string & str_mem_size)
 {
     pid_t pid = getpid();
 
@@ -438,7 +438,7 @@ int get_current_process_mem_info(std::string & mem_size)
     while (ifs.getline(buf, sizeof(buf) - 1)) {
         if (::strncmp(buf, "VmRSS:", 6) == 0) {
             ::sscanf(buf + 6, "%s%s", mem_size, mem_unit);
-            mem_size = std::string(mem_size) + " " + std::string(mem_unit);
+            str_mem_size = std::string(mem_size) + " " + std::string(mem_unit);
             break;
         }
     }
