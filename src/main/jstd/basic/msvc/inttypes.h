@@ -40,7 +40,7 @@
 #pragma once
 #endif
 
-#include "jimi/basic/msvc/stdint.h"
+#include "jstd/basic/msvc/stdint.h"
 
 #define __STDC_FORMAT_MACROS
 

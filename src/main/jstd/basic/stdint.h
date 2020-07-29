@@ -12,7 +12,7 @@
 // (stdint.h defined from visual studio 2010)
 //
 #if defined(_MSC_VER) && (_MSC_VER < 1700)
-#include "kvdb/basic/msvc/stdint.h"
+#include "jstd/basic/msvc/stdint.h"
 #else
 // Compilers supporting C99 or C++0x have stdint.h defining these integer types
 #include <stdint.h>
