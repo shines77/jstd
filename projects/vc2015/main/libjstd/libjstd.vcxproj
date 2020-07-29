@@ -160,6 +160,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\stddef.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\stdint.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\stdsize.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\unistd.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\crc32c.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_traits.h" />

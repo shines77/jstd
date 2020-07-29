@@ -145,6 +145,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_v2.h">
       <Filter>src\hash</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\unistd.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">

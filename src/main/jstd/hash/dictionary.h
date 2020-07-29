@@ -44,10 +44,11 @@
 
 namespace jstd {
 
-template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
+template < typename Key, typename Value,
+           std::size_t HashFunc = HashFunc_Default,
+           std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
            typename Hasher = hash<Key, HashFunc>,
            typename KeyEqual = equal_to<Key>,
-           std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
            typename Allocator = allocator<std::pair<const Key, Value>, Alignment> >
 class BasicDictionary {
 public:
@@ -63,7 +64,7 @@ public:
     typedef std::size_t                     size_type;
     typedef std::size_t                     index_type;
     typedef typename Hasher::result_type    hash_code_t;
-    typedef BasicDictionary<Key, Value, HashFunc, Hasher, KeyEqual>
+    typedef BasicDictionary<Key, Value, HashFunc, Alignment, Hasher, KeyEqual, Allocator>
                                             this_type;
 
     struct hash_entry {
@@ -307,7 +308,7 @@ protected:
     static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
     // The entry's block size per chunk (entry_type).
     static const size_type kEntryChunkSize =
-            compile_time::round_up_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
+            compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
 
     // The threshold of treeify to red-black tree.
     static const size_type kTreeifyThreshold = 8;
@@ -1122,21 +1123,21 @@ public:
     }
 }; // BasicDictionary<K, V>
 
-template <typename Key, typename Value>
-using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31>;
+template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, Alignment>;
 
-template <typename Key, typename Value>
-using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std>;
+template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, Alignment>;
 
 #if SUPPORT_SSE42_CRC32C
-template <typename Key, typename Value>
-using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C>;
+template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment>;
 
-template <typename Key, typename Value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C>;
+template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment>;
 #else
-template <typename Key, typename Value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31>;
+template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, Alignment>;
 #endif // SUPPORT_SSE42_CRC32C
 
 } // namespace jstd

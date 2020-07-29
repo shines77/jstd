@@ -50,6 +50,7 @@
 #include <jstd/all.h>
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -61,6 +62,15 @@
 #include <utility>
 #include <map>
 #include <unordered_map>
+
+#if defined(_MSC_VER)
+#include <io.h>
+#include <process.h>
+#include <psapi.h>
+#else
+// defined(__linux__) || defined(__clang__) || defined(__FreeBSD__) || (defined(__GNUC__) && defined(__cygwin__))
+#include <unistd.h>
+#endif // _MSC_VER
 
 using namespace jstd;
 
@@ -372,6 +382,72 @@ void cpu_warmup(int delayMillsecs)
     fflush(stdout);
 #endif // !_DEBUG
 }
+
+#if defined(_MSC_VER)
+
+//
+// See: https://www.cnblogs.com/talenth/p/9762528.html
+// See: https://blog.csdn.net/springontime/article/details/80625850
+//
+
+int get_current_process_mem_info(std::string & mem_size)
+{
+    HANDLE handle = ::GetCurrentProcess();
+
+    PROCESS_MEMORY_COUNTERS_EX pmc = { 0 };
+    if (!::GetProcessMemoryInfo(handle, (PROCESS_MEMORY_COUNTERS *)&pmc, sizeof(pmc))) {
+        DWORD errCode = ::GetLastError();
+        printf("GetProcessMemoryInfo() failed, lastErrorCode: %d\n\n", errCode);
+        return -1;
+    }
+
+    char buf[256];
+
+    // Physical memory currently occupied
+    // WorkingSetSize: %d (KB)
+    ::snprintf(buf, sizeof(buf), "%" PRIuPTR " KB\n", pmc.WorkingSetSize / 1024);
+    mem_size = buf;
+
+    return 0;
+}
+
+#else
+
+//
+// See: https://blog.csdn.net/weiyuefei/article/details/52281312
+//
+
+int get_current_process_mem_info(std::string & mem_size)
+{
+    pid_t pid = getpid();
+
+    char filename[128];
+    ::snprintf(filename, sizeof(filename), "/proc/%d/status", pid);
+
+    std::ifstream ifs;
+    ifs.open(filename, std::ios::in);
+    if (!ifs.is_open()) {
+        std::cout << "open " << filename << " error!" << std::endl << std::endl;
+        return (-1);
+    }
+
+    char buf[512];
+    char mem_size[64];
+    char mem_unit[64];
+
+    while (ifs.getline(buf, sizeof(buf) - 1)) {
+        if (::strncmp(buf, "VmRSS:", 6) == 0) {
+            ::sscanf(buf + 6, "%s%s", mem_size, mem_unit);
+            mem_size = std::string(mem_size) + " " + std::string(mem_unit);
+            break;
+        }
+    }
+
+    ifs.close();
+    return 0;
+}
+
+#endif // _MSC_VER
 
 template <typename Key, typename Value>
 class std_map {
@@ -1380,7 +1456,7 @@ void hashtable_rehash_benchmark_impl()
         size_t checksum = 0;
         size_t buckets = 128;
 
-        AlgorithmTy algorithm;
+        AlgorithmTy algorithm(kInitCapacity);
         algorithm.reserve(buckets);
 
         for (size_t i = 0; i < kHeaderFieldSize; ++i) {
@@ -1490,7 +1566,7 @@ void hashtable_rehash2_benchmark_impl()
 
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
-            AlgorithmTy algorithm;
+            AlgorithmTy algorithm(kInitCapacity);
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
                 algorithm.emplace(field_str[j], index_str[j]);
             }
