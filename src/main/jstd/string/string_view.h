@@ -13,6 +13,7 @@
 #include <string.h>
 #include <cstdint>  // for std::intptr_t
 #include <cstddef>  // for std::ptrdiff_t
+#include <cstring>
 #include <string>
 #include <type_traits>
 

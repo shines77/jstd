@@ -6,12 +6,18 @@
 #pragma once
 #endif
 
+#include "jstd/basic/stddef.h"
+#include "jstd/basic/stdint.h"
+#include "jstd/basic/stdsize.h"
+
 #include <string.h>
-#include <wchar.h>
+#include <memory.h>
 #include <assert.h>
 
 #include <cstdint>
 #include <cstddef>      // For std::size_t
+#include <cstring>
+#include <string>
 
 #include "jstd/string/string_libc.h"
 
@@ -31,7 +37,7 @@ bool StrEqual(const CharTy * str1, const CharTy * str2) {
 template <typename CharTy>
 inline
 bool StrEqual(const CharTy * str1, const CharTy * str2, std::size_t count) {
-    return (::memcmp((const void *)str1, (const void *)str2, count * sizeof(CharTy)) == 0);
+    return (std::memcmp((const void *)str1, (const void *)str2, count * sizeof(CharTy)) == 0);
 }
 
 template <typename CharTy>
@@ -62,7 +68,7 @@ int StrCmp(const CharTy * str1, const CharTy * str2) {
 template <typename CharTy>
 inline
 int StrCmp(const CharTy * str1, const CharTy * str2, std::size_t count) {
-    return ::memcmp((const void *)str1, (const void *)str2, count * sizeof(CharTy));
+    return std::memcmp((const void *)str1, (const void *)str2, count * sizeof(CharTy));
 }
 
 template <typename CharTy>

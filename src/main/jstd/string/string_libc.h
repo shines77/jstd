@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <cstddef>      // For std::size_t
+#include <cstring>
 #include <string>
 
 namespace jstd {
