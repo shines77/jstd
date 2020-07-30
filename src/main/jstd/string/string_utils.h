@@ -20,135 +20,11 @@
 #include <string>
 
 #include "jstd/string/char_traits.h"
-#include "jstd/string/strlen.h"
+#include "jstd/string/string_libc.h"
+#include "jstd/string/string_stl.h"
 #include "jstd/support/SSEHelper.h"
 
 namespace jstd {
-
-namespace libc {
-
-// StrEqual()
-
-template <typename CharTy>
-inline
-bool StrEqual(const CharTy * str1, const CharTy * str2) {
-    return (::strcmp((const char *)str1, (const char *)str2) == 0);
-}
-
-#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
-
-inline
-bool StrEqual(const wchar_t * str1, const wchar_t * str2) {
-    return (::wcscmp(str1, str2) == 0);
-}
-
-#else
-
-template <>
-inline
-bool StrEqual(const wchar_t * str1, const wchar_t * str2) {
-    while (*str1 == *str2) {
-        if (((*str1) & (*str2)) == 0) {
-            return true;
-        }
-        str1++;
-        str2++;
-    }
-
-    return false;
-}
-
-#endif // _WIN32
-
-template <typename CharTy>
-inline
-bool StrEqual(const CharTy * str1, const CharTy * str2, size_t len) {
-    assert(libc::StrLen(str1) == len);
-    assert(libc::StrLen(str2) == len);
-    return StrEqual(str1, str2);
-}
-
-template <>
-inline
-bool StrEqual(const wchar_t * str1, const wchar_t * str2, size_t len) {
-    assert(libc::StrLen(str1) == len);
-    assert(libc::StrLen(str2) == len);
-    return (::memcmp((const void *)str1, (const void *)str2, len * sizeof(wchar_t)) == 0);
-}
-
-template <typename CharTy>
-inline
-bool StrEqual(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2) {
-    if (len1 == len2)
-        return StrEqual(str1, str2);
-    else
-        return false;
-}
-
-template <>
-inline
-bool StrEqual(const wchar_t * str1, size_t len1, const wchar_t * str2, size_t len2) {
-    if (len1 == len2)
-        return StrEqual(str1, str2, len1);
-    else
-        return false;
-}
-
-template <typename StringTy>
-inline
-bool StrEqual(const StringTy & str1, const StringTy & str2) {
-    return StrEqual(str1.c_str(), str1.size(), str2.c_str(), str2.size());
-}
-
-// StrCmp()
-
-template <typename CharTy>
-inline
-int StrCmp(const CharTy * str1, const CharTy * str2) {
-    return ::strcmp((const char *)str1, (const char *)str2);
-}
-
-template <>
-inline
-int StrCmp(const wchar_t * str1, const wchar_t * str2) {
-    return ::memcmp((const void *)str1, (const void *)str2, libc::StrLen(str1) * sizeof(wchar_t));
-}
-
-template <typename CharTy>
-inline
-int StrCmp(const CharTy * str1, const CharTy * str2, size_t len) {
-    assert(libc::StrLen(str1) == len);
-    assert(libc::StrLen(str2) == len);
-    return StrCmp(str1, str2);
-}
-
-template <>
-inline
-int StrCmp(const wchar_t * str1, const wchar_t * str2, size_t len) {
-    assert(libc::StrLen(str1) == len);
-    assert(libc::StrLen(str2) == len);
-    return ::memcmp((const void *)str1, (const void *)str2, len * sizeof(wchar_t));
-}
-
-template <typename CharTy>
-inline
-int StrCmp(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2) {
-    return StrCmp(str1, str2);
-}
-
-template <>
-inline
-int StrCmp(const wchar_t * str1, size_t len1, const wchar_t * str2, size_t len2) {
-    return StrCmp(str1, str2);
-}
-
-template <typename StringTy>
-inline
-int StrCmp(const StringTy & str1, const StringTy & str2) {
-    return StrCmp(str1.c_str(), str1.size(), str2.c_str(), str2.size());
-}
-
-} // namespace libc
 
 namespace StrUtils {
 
@@ -303,7 +179,7 @@ static inline
 bool is_equals_flat(const CharTy * str1, const CharTy * str2, size_t length)
 {
 #if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
-    return libc::StrEqual(str1, str2, length);
+    return stl::StrEqual(str1, str2, length);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
@@ -413,7 +289,14 @@ template <typename CharTy>
 static inline
 int compare(const CharTy * str1, const CharTy * str2)
 {
-    return libc::StrCmp(str1, str2);
+    return stl::StrCmp(str1, str2);
+}
+
+template <typename CharTy>
+static inline
+int compare(const CharTy * str1, const CharTy * str2, size_t count)
+{
+    return stl::StrCmp(str1, str2, count);
 }
 
 template <typename CharTy>
@@ -421,7 +304,7 @@ static inline
 int compare(const CharTy * str1, size_t length1, const CharTy * str2, size_t length2)
 {
 #if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
-    return libc::StrCmp(str1, length1, str2, length2);
+    return stl::StrCmp(str1, length1, str2, length2);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);

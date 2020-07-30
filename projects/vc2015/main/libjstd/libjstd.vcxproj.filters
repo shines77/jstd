@@ -121,9 +121,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\string\char_traits.h">
       <Filter>src\string</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\string\strlen.h">
-      <Filter>src\string</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_v1.h">
       <Filter>src\hash</Filter>
     </ClInclude>
@@ -147,6 +144,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\unistd.h">
       <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_view.h">
+      <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_traits.h">
+      <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_libc.h">
+      <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_stl.h">
+      <Filter>src\string</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

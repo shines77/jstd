@@ -108,7 +108,9 @@ std::size_t aligned_to(std::size_t size, std::size_t alignment)
 
 template <typename T>
 struct align_of {
-    static const std::size_t value = alignof(T);
+    static const std::size_t value =
+        (alignof(T) > alignof(std::max_align_t)) ?
+         alignof(T) : alignof(std::max_align_t);
 };
 
 template <class Derive, class T, std::size_t Alignment = align_of<T>::value>
@@ -144,7 +146,7 @@ struct allocator_base {
 
     size_type max_size() const {
         // Estimate maximum array size
-        return (std::numeric_limits<std::size_t>::max() / sizeof(T));
+        return ((std::numeric_limits<std::size_t>::max)() / sizeof(T));
     }
 
     pointer address(reference value) const noexcept {
@@ -288,10 +290,22 @@ struct allocator_base {
     }
 };
 
-template <class T, std::size_t Alignment = align_of<T>::value>
+template <class DeriverT, class DeriverU, class T, class U, std::size_t AlignmentT, std::size_t AlignmentU>
+inline bool operator == (const allocator_base<DeriverT, T, AlignmentT> & lhs,
+                         const allocator_base<DeriverU, U, AlignmentU> & rhs) {
+    return (std::is_same<DeriverT, DeriverU>::value && (AlignmentT == AlignmentU));
+}
+
+template <class DeriverT, class DeriverU, class T, class U, std::size_t AlignmentT, std::size_t AlignmentU>
+inline bool operator != (const allocator_base<DeriverT, T, AlignmentT> & lhs,
+                         const allocator_base<DeriverU, U, AlignmentU> & rhs) {
+    return !(std::is_same<DeriverT, DeriverU>::value && (AlignmentT == AlignmentU));
+}
+
+template <class T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = false>
 struct allocator : public allocator_base<
-            allocator<T, Alignment>, T, Alignment> {
-    typedef allocator<T, Alignment>                 this_type;
+            allocator<T, Alignment, ThrowEx>, T, Alignment> {
+    typedef allocator<T, Alignment, ThrowEx>        this_type;
     typedef allocator_base<this_type, T, Alignment> base_type;
 
     typedef typename base_type::value_type          value_type;
@@ -309,13 +323,13 @@ struct allocator : public allocator_base<
     allocator() noexcept {}
     allocator(const this_type & other) noexcept {}
     template <typename U>
-    allocator(const allocator<U, Alignment> & other) noexcept {}
+    allocator(const allocator<U, Alignment, ThrowEx> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;
     }
     template <typename U>
-    this_type & operator = (const allocator<U, Alignment> & other) noexcept {
+    this_type & operator = (const allocator<U, Alignment, ThrowEx> & other) noexcept {
         return *this;
     }
 
@@ -327,6 +341,9 @@ struct allocator : public allocator_base<
             ptr = static_cast<pointer>(_AlignedAllocate(count * sizeof(value_type), kAlignment));
         else
             ptr = static_cast<pointer>(_Allocate(count * sizeof(value_type)));
+        if (ThrowEx && (ptr == nullptr)) {
+            throw std::bad_alloc();
+        }
         return ptr;
     }
 
@@ -337,6 +354,9 @@ struct allocator : public allocator_base<
             new_ptr = static_cast<pointer>(_AlignedReallocate((void *)ptr, count * sizeof(value_type), kAlignment));
         else
             new_ptr = static_cast<pointer>(_Reallocate((void *)ptr, count * sizeof(value_type)));
+        if (ThrowEx && (new_ptr == nullptr)) {
+            throw std::bad_alloc();
+        }
         return new_ptr;
     }
 
@@ -350,23 +370,23 @@ struct allocator : public allocator_base<
     }
 
     bool is_auto_release() { return true; }
-    bool is_nothrow() { return true; }
+    bool is_nothrow() { return !ThrowEx; }
 };
 
 template <class T, std::size_t Alignment = align_of<T>::value>
 struct std_new_allocator : public allocator_base<
             std_new_allocator<T, Alignment>, T, Alignment> {
-    typedef std_new_allocator<T, Alignment>         this_type;
-    typedef allocator_base<this_type, T, Alignment> base_type;
+    typedef std_new_allocator<T, Alignment>             this_type;
+    typedef allocator_base<this_type, T, Alignment>     base_type;
 
-    typedef typename base_type::value_type          value_type;
-    typedef typename base_type::pointer             pointer;
-    typedef typename base_type::const_pointer       const_pointer;
-    typedef typename base_type::reference           reference;
-    typedef typename base_type::reference           const_reference;
+    typedef typename base_type::value_type              value_type;
+    typedef typename base_type::pointer                 pointer;
+    typedef typename base_type::const_pointer           const_pointer;
+    typedef typename base_type::reference               reference;
+    typedef typename base_type::reference               const_reference;
 
-    typedef typename base_type::difference_type     difference_type;
-    typedef typename base_type::size_type           size_type;
+    typedef typename base_type::difference_type         difference_type;
+    typedef typename base_type::size_type               size_type;
 
     std_new_allocator() noexcept {}
     std_new_allocator(const this_type & other) noexcept {}
@@ -384,12 +404,14 @@ struct std_new_allocator : public allocator_base<
     ~std_new_allocator() {}
 
     pointer allocate(size_type count = 1) {
+        // ::operator new[](size_type n) maybe throw a std::bad_alloc() exception.
         pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type)));
         return ptr;
     }
 
     template <typename U>
     pointer reallocate(U * ptr, size_type count = 1) {
+        // ::operator new[](size_type n) maybe throw a std::bad_alloc() exception.
         pointer new_ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type)));
         return new_ptr;
     }
@@ -404,31 +426,31 @@ struct std_new_allocator : public allocator_base<
     bool is_nothrow() { return false; }
 };
 
-template <class T, std::size_t Alignment = align_of<T>::value>
+template <class T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = false>
 struct nothrow_allocator : public allocator_base<
-            nothrow_allocator<T, Alignment>, T, Alignment> {
-    typedef nothrow_allocator<T, Alignment>         this_type;
-    typedef allocator_base<this_type, T, Alignment> base_type;
+            nothrow_allocator<T, Alignment, ThrowEx>, T, Alignment> {
+    typedef nothrow_allocator<T, Alignment, ThrowEx>    this_type;
+    typedef allocator_base<this_type, T, Alignment>     base_type;
 
-    typedef typename base_type::value_type          value_type;
-    typedef typename base_type::pointer             pointer;
-    typedef typename base_type::const_pointer       const_pointer;
-    typedef typename base_type::reference           reference;
-    typedef typename base_type::reference           const_reference;
+    typedef typename base_type::value_type              value_type;
+    typedef typename base_type::pointer                 pointer;
+    typedef typename base_type::const_pointer           const_pointer;
+    typedef typename base_type::reference               reference;
+    typedef typename base_type::reference               const_reference;
 
-    typedef typename base_type::difference_type     difference_type;
-    typedef typename base_type::size_type           size_type;
+    typedef typename base_type::difference_type         difference_type;
+    typedef typename base_type::size_type               size_type;
 
     nothrow_allocator() noexcept {}
     nothrow_allocator(const this_type & other) noexcept {}
     template <typename U>
-    nothrow_allocator(const nothrow_allocator<U, Alignment> & other) noexcept {}
+    nothrow_allocator(const nothrow_allocator<U, Alignment, ThrowEx> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;
     }
     template <typename U>
-    this_type & operator = (const nothrow_allocator<U, Alignment> & other) noexcept {
+    this_type & operator = (const nothrow_allocator<U, Alignment, ThrowEx> & other) noexcept {
         return *this;
     }
 
@@ -436,12 +458,18 @@ struct nothrow_allocator : public allocator_base<
 
     pointer allocate(size_type count = 1) {
         pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type), std::nothrow));
+        if (ThrowEx && (ptr == nullptr)) {
+            throw std::bad_alloc();
+        }
         return ptr;
     }
 
     template <typename U>
     pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type), std::nothrow));
+        if (ThrowEx && (new_ptr == nullptr)) {
+            throw std::bad_alloc();
+        }
         return new_ptr;
     }
 
@@ -452,13 +480,13 @@ struct nothrow_allocator : public allocator_base<
     }
 
     bool is_auto_release() { return true; }
-    bool is_nothrow() { return true; }
+    bool is_nothrow() { return !ThrowEx; }
 };
 
-template <typename T, std::size_t Alignment = align_of<T>::value>
+template <typename T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = false>
 struct malloc_allocator : public allocator_base<
-            malloc_allocator<T, Alignment>, T, Alignment> {
-    typedef malloc_allocator<T, Alignment>          this_type;
+            malloc_allocator<T, Alignment, ThrowEx>, T, Alignment> {
+    typedef malloc_allocator<T, Alignment, ThrowEx> this_type;
     typedef allocator_base<this_type, T, Alignment> base_type;
 
     typedef typename base_type::value_type          value_type;
@@ -473,13 +501,13 @@ struct malloc_allocator : public allocator_base<
     malloc_allocator() noexcept {}
     malloc_allocator(const this_type & other) noexcept {}
     template <typename U>
-    malloc_allocator(const malloc_allocator<U, Alignment> & other) noexcept {}
+    malloc_allocator(const malloc_allocator<U, Alignment, ThrowEx> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;
     }
     template <typename U>
-    this_type & operator = (const malloc_allocator<U, Alignment> & other) noexcept {
+    this_type & operator = (const malloc_allocator<U, Alignment, ThrowEx> & other) noexcept {
         return *this;
     }
 

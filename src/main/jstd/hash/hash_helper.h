@@ -15,7 +15,8 @@
 #include <string>
 #include <type_traits>
 
-#include "jstd/string/strlen.h"
+#include "jstd/string/string_libc.h"
+#include "jstd/string/string_stl.h"
 #include "jstd/hash/hash.h"
 #include "jstd/hash/crc32c.h"
 

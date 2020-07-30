@@ -49,7 +49,7 @@ template < typename Key, typename Value,
            std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
            typename Hasher = hash<Key, HashFunc>,
            typename KeyEqual = equal_to<Key>,
-           typename Allocator = allocator<std::pair<const Key, Value>, Alignment> >
+           typename Allocator = allocator<std::pair<const Key, Value>, Alignment, false> >
 class BasicDictionary {
 public:
     typedef Key                             key_type;

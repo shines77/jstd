@@ -1,6 +1,6 @@
 
-#ifndef JSTD_STRINGREF_H
-#define JSTD_STRINGREF_H
+#ifndef JSTD_STRING_VIEW_H
+#define JSTD_STRING_VIEW_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -16,56 +16,58 @@
 #include <string>
 #include <type_traits>
 
+#include "jstd/string/string_traits.h"
 #include "jstd/string/string_iterator.h"
 #include "jstd/string/string_utils.h"
+#include "jstd/string/string_libc.h"
 
 namespace jstd {
 
-template <typename CharTy>
-class BasicStringRef {
+template <typename CharTy, typename Traits = jstd::string_traits<CharTy>>
+class basic_string_view {
 public:
-    typedef CharTy          char_type;
-    typedef std::size_t     size_type;
-    typedef std::ptrdiff_t  difference_type;
-    typedef CharTy *        pointer;
-    typedef const CharTy *  const_pointer;
-    typedef CharTy &        reference;
-    typedef const CharTy &  const_reference;
+    typedef CharTy              char_type;
+    typedef std::size_t         size_type;
+    typedef std::ptrdiff_t      difference_type;
+    typedef CharTy *            pointer;
+    typedef const CharTy *      const_pointer;
+    typedef CharTy &            reference;
+    typedef const CharTy &      const_reference;
 
-    typedef jstd::string_iterator<BasicStringRef<CharTy>>       iterator;
-    typedef jstd::const_string_iterator<BasicStringRef<CharTy>> const_iterator;
+    typedef jstd::string_iterator<basic_string_view<CharTy>>       iterator;
+    typedef jstd::const_string_iterator<basic_string_view<CharTy>> const_iterator;
 
-    typedef std::basic_string<char_type>    string_type;
-    typedef BasicStringRef<char_type>       this_type;
+    typedef std::basic_string<char_type>        string_type;
+    typedef basic_string_view<char_type>        this_type;
 
 private:
     const char_type * data_;
     size_type         length_;
 
 public:
-    BasicStringRef() : data_(nullptr), length_(0) {}
-    BasicStringRef(const char_type * data)
+    basic_string_view() : data_(nullptr), length_(0) {}
+    basic_string_view(const char_type * data)
         : data_(data), length_(libc::StrLen(data)) {}
-    BasicStringRef(const char_type * data, size_type length)
+    basic_string_view(const char_type * data, size_type length)
         : data_(data), length_(length) {}
-    BasicStringRef(const char_type * first, const char_type * last)
+    basic_string_view(const char_type * first, const char_type * last)
         : data_(first), length_(size_type(last - first)) {}
     template <size_type N>
-    BasicStringRef(const char_type(&data)[N])
+    basic_string_view(const char_type(&data)[N])
         : data_(data), length_(N - 1) {}
-    BasicStringRef(const string_type & src)
+    basic_string_view(const string_type & src)
         : data_(src.c_str()), length_(src.size()) {}
-    BasicStringRef(const this_type & src)
+    basic_string_view(const this_type & src)
         : data_(src.data()), length_(src.length()) {}
-    BasicStringRef(string_type && src)
+    basic_string_view(string_type && src)
         : data_(src.c_str()), length_(src.size()) {
         // Only reference from src string
     }
-    BasicStringRef(this_type && src)
+    basic_string_view(this_type && src)
         : data_(src.data()), length_(src.length()) {
         //src.reset();
     }
-    ~BasicStringRef() { /* Do nothing! */ }
+    ~basic_string_view() { /* Do nothing! */ }
 
     const char_type * data() const { return this->data_; }
     const char_type * c_str() const { return this->data(); }
@@ -83,31 +85,31 @@ public:
     const_iterator cbegin() const { return const_iterator(this->data_); }
     const_iterator cend() const { return const_iterator(this->data_ + this->length_); }
 
-    BasicStringRef & operator = (const char_type * data) {
+    basic_string_view & operator = (const char_type * data) {
         this->data_ = data;
         this->length_ = libc::StrLen(data);
         return *this;
     }
 
-    BasicStringRef & operator = (const string_type & rhs) {
+    basic_string_view & operator = (const string_type & rhs) {
         this->data_ = rhs.c_str();
         this->length_ = rhs.size();
         return *this;
     }
 
-    BasicStringRef & operator = (string_type && rhs) {
+    basic_string_view & operator = (string_type && rhs) {
         this->data_ = rhs.c_str();
         this->length_ = rhs.size();
         return *this;
     }
 
-    BasicStringRef & operator = (const this_type & rhs) {
+    basic_string_view & operator = (const this_type & rhs) {
         this->data_ = rhs.data();
         this->length_ = rhs.length();
         return *this;
     }
 
-    BasicStringRef & operator = (this_type && rhs) {
+    basic_string_view & operator = (this_type && rhs) {
         this->data_ = rhs.data();
         this->length_ = rhs.length();
         return *this;
@@ -213,28 +215,28 @@ public:
     string_type toString() const {
         return std::move(string_type(this->data_, this->length_));
     }
-}; // class BasicStringRef<CharTy>
+}; // class basic_string_view<CharTy>
 
 template <typename StringTy, typename CharTy>
-class BasicStringHelper {
+class basic_string_helper {
 public:
-    typedef BasicStringHelper<StringTy, CharTy>
+    typedef basic_string_helper<StringTy, CharTy>
                                 this_type;
     typedef StringTy            string_type;
     typedef CharTy              char_type;
 
 private:
     string_type str_;
-    bool truncated_;
-    char_type save_char_;
+    bool        truncated_;
+    char_type   save_char_;
 
 public:
-    BasicStringHelper()
+    basic_string_helper()
         : truncated_(false),
           save_char_(static_cast<char_type>('\0')) {
         (void)save_char_;
     }
-    ~BasicStringHelper() { detach(); }
+    ~basic_string_helper() { detach(); }
 
     bool attach(const string_type & str) {
         // If the string reference don't recover the truncated char,
@@ -286,43 +288,43 @@ public:
 
 template <typename CharTy>
 inline
-void swap(BasicStringRef<CharTy> & lhs, BasicStringRef<CharTy> & rhs) {
+void swap(basic_string_view<CharTy> & lhs, basic_string_view<CharTy> & rhs) {
     lhs.swap(rhs);
 }
 
 template <typename CharTy>
 inline
-bool operator == (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy> & rhs) {
+bool operator == (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
     return lhs.is_equal(rhs);
 }
 
 template <typename CharTy>
 inline
-bool operator < (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy> & rhs) {
+bool operator < (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
     return (lhs.compare(rhs) == jstd::StrUtils::IsSmaller);
 }
 
 template <typename CharTy>
 inline
-bool operator > (const BasicStringRef<CharTy> & lhs, const BasicStringRef<CharTy> & rhs) {
+bool operator > (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
     return (lhs.compare(rhs) == jstd::StrUtils::IsBigger);
 }
 
 template <typename StringTy, typename CharTy>
 inline
-void swap(BasicStringHelper<StringTy, CharTy> & lhs,
-          BasicStringHelper<StringTy, CharTy> & rhs) {
+void swap(basic_string_helper<StringTy, CharTy> & lhs,
+          basic_string_helper<StringTy, CharTy> & rhs) {
     lhs.swap(rhs);
 }
 
-typedef BasicStringRef<char>                        StringRef;
-typedef BasicStringRef<wchar_t>                     StringRefW;
+typedef basic_string_view<char>                         string_view;
+typedef basic_string_view<wchar_t>                      wstring_view;
 
-typedef BasicStringHelper<std::string, char>        StringHelper;
-typedef BasicStringHelper<std::wstring, wchar_t>    StringHelperW;
+typedef basic_string_helper<std::string, char>          string_helper;
+typedef basic_string_helper<std::wstring, wchar_t>      wstring_helper;
 
-typedef BasicStringHelper<StringRef, char>          StringRefHelper;
-typedef BasicStringHelper<StringRefW, wchar_t>      StringRefHelperW;
+typedef basic_string_helper<string_view, char>          string_view_helper;
+typedef basic_string_helper<wstring_view, wchar_t>      wstring_view_helper;
 
 } // namespace jstd
 
@@ -330,17 +332,17 @@ namespace std {
 
 template <typename CharTy>
 inline
-void swap(jstd::BasicStringRef<CharTy> & lhs, jstd::BasicStringRef<CharTy> & rhs) {
+void swap(jstd::basic_string_view<CharTy> & lhs, jstd::basic_string_view<CharTy> & rhs) {
     lhs.swap(rhs);
 }
 
 template <typename StringTy, typename CharTy>
 inline
-void swap(jstd::BasicStringHelper<StringTy, CharTy> & lhs,
-          jstd::BasicStringHelper<StringTy, CharTy> & rhs) {
+void swap(jstd::basic_string_helper<StringTy, CharTy> & lhs,
+          jstd::basic_string_helper<StringTy, CharTy> & rhs) {
     lhs.swap(rhs);
 }
 
 } // namespace std
 
-#endif // JSTD_STRINGREF_H
+#endif // JSTD_STRING_VIEW_H
