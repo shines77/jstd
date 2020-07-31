@@ -42,9 +42,9 @@
 #include <jstd/basic/stdint.h>
 #include <jstd/basic/inttypes.h>
 
-#include <jstd/string/StringRef.h>
 #include <jstd/hash/hash_table.h>
 #include <jstd/hash/dictionary.h>
+#include <jstd/string/string_view.h>
 #include <jstd/support/StopWatch.h>
 
 #include <jstd/all.h>

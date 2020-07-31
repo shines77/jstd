@@ -16,7 +16,6 @@
 #include <cstring>
 #include <string>
 #include <type_traits>
-#include <exception>
 #include <stdexcept>
 
 #include "jstd/string/string_traits.h"
@@ -150,14 +149,14 @@ public:
         if (pos < this->size())
             return this->data_[pos];
         else
-            throw std::out_of_range;
+            throw std::out_of_range("basic_string_view<T>::at(pos): out of range.");
     }
 
     const_reference at(size_t pos) const {
         if (pos < this->size())
             return this->data_[pos];
         else
-            throw std::out_of_range;
+            throw std::out_of_range("basic_string_view<T>::at(pos): out of range.");
     }
 
     reference operator [] (size_t pos) {
@@ -311,6 +310,9 @@ void swap(basic_string_helper<StringTy, CharTy> & lhs,
 
 typedef basic_string_view<char>                         string_view;
 typedef basic_string_view<wchar_t>                      wstring_view;
+
+typedef basic_string_view<char>                         StringRef;
+typedef basic_string_view<wchar_t>                      StringRefW;
 
 typedef basic_string_helper<std::string, char>          string_helper;
 typedef basic_string_helper<std::wstring, wchar_t>      wstring_helper;

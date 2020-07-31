@@ -14,7 +14,6 @@
 #include "jstd/iterator.h"
 #include "jstd/allocator.h"
 #include "jstd/string/string_view.h"
-#include "jstd/string/StringRef.h"
 #include "jstd/memory/onetime_ptr.h"
 #include "jstd/hash/hash_table.h"
 #include "jstd/hash/dictionary.h"
