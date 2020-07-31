@@ -29,11 +29,11 @@
 #endif // __SSE4_2__
 
 // String compare mode
-#define STRING_COMPARE_LIBC     0
-#define STRING_COMPARE_U64      1
-#define STRING_COMPARE_SSE42    2
+#define STRING_UTILS_LIBC     0
+#define STRING_UTILS_U64      1
+#define STRING_UTILS_SSE42    2
 
-#define STRING_COMPARE_MODE     STRING_COMPARE_SSE42
+#define STRING_UTILS_MODE     STRING_UTILS_SSE42
 
 // Use in <jstd/support/PowerOf2.h>
 #define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
@@ -1267,7 +1267,7 @@ void hashtable_ref_find_benchmark()
     StringRef field_str[kHeaderFieldSize];
     StringRef index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
-        field_str[i].assign(header_fields[i]);
+        field_str[i].attach(header_fields[i]);
         char buf[16];
 #ifdef _MSC_VER
         ::_itoa_s((int)i, buf, 10);
@@ -1355,7 +1355,7 @@ void hashtable_ref_emplace_benchmark_impl()
     StringRef field_str[kHeaderFieldSize];
     StringRef index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
-        field_str[i].assign(header_fields[i]);
+        field_str[i].attach(header_fields[i]);
         char buf[16];
 #ifdef _MSC_VER
         ::_itoa_s((int)i, buf, 10);
@@ -1440,7 +1440,7 @@ void hashtable_ref_insert_erase_benchmark_impl()
     StringRef field_str[kHeaderFieldSize];
     StringRef index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
-        field_str[i].assign(header_fields[i]);
+        field_str[i].attach(header_fields[i]);
         char buf[16];
 #ifdef _MSC_VER
         ::_itoa_s((int)i, buf, 10);

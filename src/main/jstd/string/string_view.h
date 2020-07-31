@@ -28,6 +28,7 @@ template <typename CharTy, typename Traits = jstd::string_traits<CharTy>>
 class basic_string_view {
 public:
     typedef CharTy              char_type;
+    typedef CharTy              value_type;
     typedef std::size_t         size_type;
     typedef std::ptrdiff_t      difference_type;
     typedef CharTy *            pointer;
@@ -60,14 +61,6 @@ public:
         : data_(src.c_str()), length_(src.size()) {}
     basic_string_view(const this_type & src)
         : data_(src.data()), length_(src.length()) {}
-    basic_string_view(string_type && src)
-        : data_(src.c_str()), length_(src.size()) {
-        // Only reference from src string
-    }
-    basic_string_view(this_type && src)
-        : data_(src.data()), length_(src.length()) {
-        //src.reset();
-    }
     ~basic_string_view() { /* Do nothing! */ }
 
     const char_type * data() const { return this->data_; }
@@ -78,13 +71,16 @@ public:
     size_t length() const { return this->length_; }
     size_t size() const { return this->length(); }
 
-    bool empty() const { return (this->length() == 0); }
+    bool empty() const { return (this->size() == 0); }
 
-    iterator begin() const { return iterator(this->data_); }
-    iterator end() const { return iterator(this->data_ + this->length_); }
+    iterator begin() const { return iterator(this->data()); }
+    iterator end() const { return iterator(this->data() + this->size()); }
 
-    const_iterator cbegin() const { return const_iterator(this->data_); }
-    const_iterator cend() const { return const_iterator(this->data_ + this->length_); }
+    const_iterator cbegin() const { return const_iterator(this->data()); }
+    const_iterator cend() const { return const_iterator(this->data() + this->size()); }
+
+    const_reference front() const { return this->data_[0]; }
+    const_reference back() const { return this->data_[this->size() - 1]; }
 
     basic_string_view & operator = (const char_type * data) {
         this->data_ = data;
@@ -98,56 +94,47 @@ public:
         return *this;
     }
 
-    basic_string_view & operator = (string_type && rhs) {
-        this->data_ = rhs.c_str();
-        this->length_ = rhs.size();
-        return *this;
-    }
-
     basic_string_view & operator = (const this_type & rhs) {
         this->data_ = rhs.data();
         this->length_ = rhs.length();
         return *this;
     }
 
-    basic_string_view & operator = (this_type && rhs) {
-        this->data_ = rhs.data();
-        this->length_ = rhs.length();
-        return *this;
+    void attach(const char_type * data, size_t length) {
+        this->data_ = data;
+        this->length_ = length;
     }
 
-    void reset() {
-        this->data_ = nullptr;
-        this->length_ = 0;
+    void attach(const char_type * data) {
+        this->attach(data, libc::StrLen(data));
+    }
+
+    void attach(const char_type * first, const char_type * last) {
+        assert(last >= first);
+        this->attach(first, size_type(last - first));
+    }
+
+    void attach(const char_type * data, size_type first, size_type last) {
+        assert(last >= first);
+        this->attach(data + first, size_type(last - first));
+    }
+
+    template <size_t N>
+    void attach(const char_type(&data)[N]) {
+        this->attach(data, N - 1);
+    }
+
+    void attach(const string_type & src) {
+        this->attach(src.c_str(), src.size());
+    }
+
+    void attach(const this_type & src) {
+        this->attach(src.data(), src.length());
     }
 
     void clear() {
-        this->reset();
-    }
-
-    void assign(const char_type * data) {
-        this->set_data(data, libc::StrLen(data));
-    }
-
-    void assign(const char_type * data, size_type length) {
-        this->set_data(data, length);
-    }
-
-    void assign(const char_type * first, const char_type * last) {
-        this->set_data(first, size_type(last - first));
-    }
-
-    template <size_type N>
-    void assign(const char_type (&data)[N]) {
-        this->set_data(data, N - 1);
-    }
-
-    void assign(const string_type & src) {
-        this->set_data(src.c_str(), src.size());
-    }
-
-    void assign(const this_type & src) {
-        this->set_data(src.data(), src.length());
+        this->data_ = nullptr;
+        this->length_ = 0;
     }
 
     void swap(this_type & right) {
@@ -157,42 +144,26 @@ public:
         }
     }
 
-    void set_data(const char_type * data, size_t length) {
-        this->data_ = data;
-        this->length_ = length;
+    reference at(size_t pos) {
+        if (pos < this->size())
+            return this->data_[pos];
+        else
+            throw std::out_of_range;
     }
 
-    void set_data(const char_type * data) {
-        this->set_data(data, libc::StrLen(data));
+    const_reference at(size_t pos) const {
+        if (pos < this->size())
+            return this->data_[pos];
+        else
+            throw std::out_of_range;
     }
 
-    void set_data(const char_type * first, const char_type * last) {
-        this->set_data(first, size_type(last - first));
+    reference operator [] (size_t pos) {
+        return this->data_[pos];
     }
 
-    void set_data(const char_type * data, size_type first, size_type last) {
-        this->set_data(data + first, size_type(last - first));
-    }
-
-    template <size_t N>
-    void set_data(const char_type(&data)[N]) {
-        this->set_data(data, N - 1);
-    }
-
-    void set_data(const string_type & src) {
-        this->set_data(src.c_str(), src.size());
-    }
-
-    void set_data(const this_type & src) {
-        this->set_data(src.data(), src.length());
-    }
-
-    char_type at(size_t index) const {
-        return (char_type)(this->data_[index]);
-    }
-
-    char_type operator [] (size_t index) const {
-        return (char_type)(this->data_[index]);
+    const_reference operator [] (size_t pos) const {
+        return this->data_[pos];
     }
 
     bool is_equal(const this_type & rhs) const {
@@ -204,10 +175,28 @@ public:
         return true;
     }
 
+    bool is_equal(const string_type & rhs) const {
+        if (likely(&rhs != this)) {
+            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
+                return jstd::StrUtils::is_equals(this->data(), this->size(), rhs.data(), rhs.size());
+            }
+        }
+        return true;
+    }
+
     int compare(const this_type & rhs) const {
         if (likely(&rhs != this)) {
             if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
                 return jstd::StrUtils::compare(*this, rhs);
+            }
+        }
+        return jstd::StrUtils::IsEqual;
+    }
+
+    int compare(const string_type & rhs) const {
+        if (likely(&rhs != this)) {
+            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
+                return jstd::StrUtils::compare(this->data(), this->size(), rhs.data(), rhs.size());
             }
         }
         return jstd::StrUtils::IsEqual;

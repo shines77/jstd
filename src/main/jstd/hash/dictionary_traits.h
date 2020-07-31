@@ -14,6 +14,7 @@
 #include <string>
 
 #include "jstd/hash/hash_helper.h"
+#include "jstd/string/string_stl.h"
 #include "jstd/string/string_utils.h"
 
 namespace jstd {
@@ -61,7 +62,7 @@ struct DefaultDictionaryComparer {
     DefaultDictionaryComparer() {}
     ~DefaultDictionaryComparer() {}
 
-#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
+#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
 
     bool key_is_equals(const key_type & key1, const key_type & key2) const {
         return (::strcmp(key1.c_str(), key2. c_str()) == 0);
@@ -79,7 +80,7 @@ struct DefaultDictionaryComparer {
         return ::strcmp(value1.c_str(), value2. c_str());
     }
 
-#else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
+#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
 
     bool key_is_equals(const key_type & key1, const key_type & key2) const {
         return StrUtils::is_equals(key1, key2);
@@ -97,7 +98,7 @@ struct DefaultDictionaryComparer {
         return StrUtils::compare(value1, value2);
     }
 
-#endif // STRING_COMPARE_MODE
+#endif // STRING_UTILS_MODE
 };
 
 //
@@ -165,11 +166,11 @@ struct equal_to<std::string> {
     equal_to() {}
     ~equal_to() {}
 
-#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
+#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return libc::StrEqual(key1, key2);
+        return stl::StrEqual(key1, key2);
     }
-#else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
+#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
         return StrUtils::is_equals(key1, key2);
     }
@@ -183,11 +184,11 @@ struct equal_to<std::wstring> {
     equal_to() {}
     ~equal_to() {}
 
-#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
+#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return libc::StrEqual(key1, key2);
+        return stl::StrEqual(key1, key2);
     }
-#else // (STRING_COMPARE_MODE != STRING_COMPARE_LIBC)
+#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
         return StrUtils::is_equals(key1, key2);
     }

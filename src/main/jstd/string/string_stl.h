@@ -37,6 +37,8 @@ bool StrEqual(const CharTy * str1, const CharTy * str2) {
 template <typename CharTy>
 inline
 bool StrEqual(const CharTy * str1, const CharTy * str2, std::size_t count) {
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
     return (std::memcmp((const void *)str1, (const void *)str2, count * sizeof(CharTy)) == 0);
 }
 
@@ -68,6 +70,8 @@ int StrCmp(const CharTy * str1, const CharTy * str2) {
 template <typename CharTy>
 inline
 int StrCmp(const CharTy * str1, const CharTy * str2, std::size_t count) {
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
     return std::memcmp((const void *)str1, (const void *)str2, count * sizeof(CharTy));
 }
 

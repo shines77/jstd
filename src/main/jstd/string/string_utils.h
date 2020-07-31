@@ -75,7 +75,7 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
     return true;
 }
 
-#elif (STRING_COMPARE_MODE == STRING_COMPARE_SSE42)
+#elif (STRING_UTILS_MODE == STRING_UTILS_SSE42)
 
 template <typename CharTy>
 static inline
@@ -113,7 +113,7 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
     return true;
 }
 
-#elif (STRING_COMPARE_MODE == STRING_COMPARE_U64)
+#elif (STRING_UTILS_MODE == STRING_UTILS_U64)
 
 template <typename CharTy>
 static inline
@@ -172,13 +172,13 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
     return true;
 }
 
-#endif // STRING_COMPARE_MODE
+#endif // STRING_UTILS_MODE
 
 template <typename CharTy>
 static inline
 bool is_equals_flat(const CharTy * str1, const CharTy * str2, size_t length)
 {
-#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
+#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
     return stl::StrEqual(str1, str2, length);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
@@ -194,7 +194,7 @@ bool is_equals_flat(const CharTy * str1, const CharTy * str2, size_t length)
         assert(str1 == nullptr && str2 == nullptr);
         return true;
     }
-#endif // STRING_COMPARE_MODE
+#endif // STRING_UTILS_MODE
 }
 
 template <typename StringType>
@@ -303,7 +303,7 @@ template <typename CharTy>
 static inline
 int compare(const CharTy * str1, size_t length1, const CharTy * str2, size_t length2)
 {
-#if (STRING_COMPARE_MODE == STRING_COMPARE_LIBC)
+#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
     return stl::StrCmp(str1, length1, str2, length2);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
@@ -322,7 +322,7 @@ int compare(const CharTy * str1, size_t length1, const CharTy * str2, size_t len
         assert(str1 == nullptr && str2 == nullptr);
         return StrUtils::IsEqual;
     }
-#endif // STRING_COMPARE_MODE
+#endif // STRING_UTILS_MODE
 }
 
 template <typename StringType>

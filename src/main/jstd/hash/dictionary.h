@@ -402,9 +402,12 @@ protected:
         return (index_type)((size_type)hash_code & capacity_mask);
     }
 
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
     inline index_type index_of(size_type hash_code, size_type capacity_mask) const {
         return (index_type)(hash_code & capacity_mask);
     }
+#endif // __amd64__
 
     inline index_type next_index(index_type index, size_type capacity_mask) const {
         ++index;

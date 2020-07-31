@@ -17,7 +17,12 @@
 #include <cstdint>
 #include <cstddef>      // For std::size_t
 #include <cstring>
+#include <cwchar>
 #include <string>
+
+#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
+// TODO:
+#endif // _WIN32
 
 namespace jstd {
 namespace libc {
@@ -36,17 +41,13 @@ inline std::size_t StrLen(const CharTy * str) {
 
 template <>
 inline std::size_t StrLen(const char * str) {
-    return (std::size_t)std::strlen(str);
+    return std::strlen(str);
 }
-
-#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
 
 template <>
 inline std::size_t StrLen(const wchar_t * str) {
-    return (std::size_t)std::wcslen((const wchar_t *)str);
+    return std::wcslen(str);
 }
-
-#endif // _WIN32
 
 ///////////////////////////////////////////////////////////////////////////////
 // libc::StrEqual<CharTy>()
@@ -69,18 +70,16 @@ bool StrEqual(const CharTy * str1, const CharTy * str2) {
 template <>
 inline
 bool StrEqual(const char * str1, const char * str2) {
-    return (::strcmp(str1, str2) == 0);
+    return (std::strcmp(str1, str2) == 0);
 }
-
-#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
 
 template <>
 inline
 bool StrEqual(const wchar_t * str1, const wchar_t * str2) {
-    return (::wcscmp(str1, str2) == 0);
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
+    return (std::wcscmp(str1, str2) == 0);
 }
-
-#endif // _WIN32
 
 template <typename CharTy>
 inline
@@ -103,18 +102,14 @@ bool StrEqual(const CharTy * str1, const CharTy * str2, std::size_t count) {
 template <>
 inline
 bool StrEqual(const char * str1, const char * str2, std::size_t count) {
-    return (::strncmp(str1, str2, count) == 0);
+    return (std::strncmp(str1, str2, count) == 0);
 }
-
-#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
 
 template <>
 inline
 bool StrEqual(const wchar_t * str1, const wchar_t * str2, std::size_t count) {
-    return (::wcsncmp(str1, str2, count) == 0);
+    return (std::wcsncmp(str1, str2, count) == 0);
 }
-
-#endif // _WIN32
 
 template <typename CharTy>
 inline
@@ -158,15 +153,11 @@ int StrCmp(const char * str1, const char * str2) {
     return std::strcmp(str1, str2);
 }
 
-#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
-
 template <>
 inline
 int StrCmp(const wchar_t * str1, const wchar_t * str2) {
     return std::wcscmp(str1, str2);
 }
-
-#endif // _WIN32
 
 template <typename CharTy>
 inline
@@ -195,15 +186,11 @@ int StrCmp(const char * str1, const char * str2, std::size_t count) {
     return std::strncmp(str1, str2, count);
 }
 
-#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
-
 template <>
 inline
 int StrCmp(const wchar_t * str1, const wchar_t * str2, std::size_t count) {
     return std::wcsncmp(str1, str2, count);
 }
-
-#endif // _WIN32
 
 template <typename CharTy>
 inline
