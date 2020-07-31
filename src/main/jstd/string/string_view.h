@@ -16,6 +16,7 @@
 #include <cstring>
 #include <string>
 #include <type_traits>
+#include <exception>
 
 #include "jstd/string/string_traits.h"
 #include "jstd/string/string_iterator.h"
