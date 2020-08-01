@@ -317,9 +317,9 @@ int compare_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
         assert((str1 == nullptr && str2 != nullptr) ||
                (str1 != nullptr && str2 == nullptr));
         if (likely(str1 != nullptr))
-            return ((len1 != 0) ? CompareResult::IsBigger : CompareResult::IsEqual);
+            return ((count != 0) ? CompareResult::IsBigger : CompareResult::IsEqual);
         else
-            return ((len2 != 0) ? CompareResult::IsSmaller : CompareResult::IsEqual);
+            return ((count != 0) ? CompareResult::IsSmaller : CompareResult::IsEqual);
     }
     else {
         assert(str1 == nullptr && str2 == nullptr);

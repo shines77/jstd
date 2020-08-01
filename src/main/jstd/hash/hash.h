@@ -149,7 +149,7 @@ uint64_t DecodeFixed64(const CharTy * ptr) {
 
 template <typename CharTy>
 static uint32_t Hash(const CharTy * data, size_t n, uint32_t seed) {
-    typedef typename jstd::schar_traits<CharTy>::type SCharTy;
+    typedef typename jstd::char_traits<CharTy>::schar_type SCharTy;
 
     // Similar to murmur hash
     static const uint32_t m = 0xc6a4a793;
@@ -233,7 +233,7 @@ namespace hashes {
 template <typename CharTy>
 static std::uint32_t OpenSSL_Hash(const CharTy * key, std::size_t len)
 {
-    typedef typename jstd::uchar_traits<CharTy>::type UCharTy;
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
@@ -269,7 +269,7 @@ static std::uint32_t BKDRHash(const CharTy * key, std::size_t len)
     static const std::uint32_t seed_3 = seed_2 * seed;
     static const std::uint32_t seed_4 = seed_2 * seed_2;
 
-    typedef typename jstd::uchar_traits<CharTy>::type UCharTy;
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
