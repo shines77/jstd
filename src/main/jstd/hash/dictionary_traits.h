@@ -91,11 +91,11 @@ struct DefaultDictionaryComparer {
     }
 
     int key_compare(const key_type & key1, const key_type & key2) const {
-        return str_utils::compare(key1, key2);
+        return str_utils::compare_safe(key1, key2);
     }
 
     int value_compare(const value_type & value1, const value_type & value2) const {
-        return str_utils::compare(value1, value2);
+        return str_utils::compare_safe(value1, value2);
     }
 
 #endif // STRING_UTILS_MODE

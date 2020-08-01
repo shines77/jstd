@@ -38,7 +38,7 @@ typedef _W64 signed int     ssize_t;
 #ifndef _SIZE_T_DEFINED_
 #ifndef _SIZE_T_DEFINED
 #ifndef _BSD_SIZE_T_DEFINED_	/* Darwin */
-#ifndef _SIZE_T_DECLARED	/* FreeBSD 5 */
+#ifndef _SIZE_T_DECLARED	    /* FreeBSD 5 */
 #ifndef ___int_size_t_h
 #ifndef _GCC_SIZE_T
 #ifndef _SIZET_
@@ -72,5 +72,31 @@ typedef signed int          ssize_t;
 #endif // defined(_WIN32) || defined(_WIN64)
 #define _SSIZE_T_DEFINED
 #endif // _SSIZE_T_DEFINED
+
+/////////////////////////////////////////////////////////////////////////
+// For std::ssize_t
+/////////////////////////////////////////////////////////////////////////
+
+#if defined(_MSC_VER) && (_MSC_VER < 1700)
+
+    #include "jstd/basic/msvc/stdint.h"
+
+    #ifdef __cplusplus
+    namespace std {
+        typedef ptrdiff_t   ssize_t;
+    }
+    #endif // __cplusplus
+
+#else
+
+    #include <cstdint>
+
+    #ifdef __cplusplus
+    namespace std {
+        typedef std::ptrdiff_t   ssize_t;
+    }
+    #endif // __cplusplus
+
+#endif // _MSC_VER
 
 #endif // JSTD_BASIC_STDSIZE_H

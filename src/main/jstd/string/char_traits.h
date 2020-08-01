@@ -6,81 +6,9 @@
 #pragma once
 #endif
 
+#include <type_traits>
+
 namespace jstd {
-
-// jstd::uchar_traits<T>
-
-template <typename CharTy>
-struct uchar_traits {
-    typedef CharTy type;
-};
-
-template <>
-struct uchar_traits<char> {
-    typedef unsigned char type;
-};
-
-template <>
-struct uchar_traits<short> {
-    typedef unsigned short type;
-};
-
-template <>
-struct uchar_traits<int> {
-    typedef unsigned int type;
-};
-
-template <>
-struct uchar_traits<long> {
-    typedef unsigned long type;
-};
-
-// jstd::schar_traits<T>
-
-template <typename CharTy>
-struct schar_traits {
-    typedef CharTy type;
-};
-
-template <>
-struct schar_traits<char> {
-    typedef signed char type;
-};
-
-template <>
-struct schar_traits<short> {
-    typedef signed short type;
-};
-
-template <>
-struct schar_traits<int> {
-    typedef signed int type;
-};
-
-template <>
-struct schar_traits<long> {
-    typedef signed long type;
-};
-
-template <>
-struct schar_traits<unsigned char> {
-    typedef signed char type;
-};
-
-template <>
-struct schar_traits<unsigned short> {
-    typedef signed short type;
-};
-
-template <>
-struct schar_traits<unsigned int> {
-    typedef signed int type;
-};
-
-template <>
-struct schar_traits<unsigned long> {
-    typedef signed long type;
-};
 
 // jstd::is_char8<T>
 
@@ -104,6 +32,23 @@ struct is_char8<unsigned char> {
     static const bool value = true;
 };
 
+// jstd::is_char16<T>
+
+template <typename CharTy>
+struct is_char16 {
+    static const bool value = false;
+};
+
+template <>
+struct is_char16<signed short> {
+    static const bool value = true;
+};
+
+template <>
+struct is_char16<unsigned short> {
+    static const bool value = true;
+};
+
 // jstd::is_wchar<T>
 
 template <typename CharTy>
@@ -124,6 +69,31 @@ struct is_wchar<unsigned short> {
 template <>
 struct is_wchar<wchar_t> {
     static const bool value = true;
+};
+
+template <typename CharTy>
+struct make_unsigned_char {
+    typedef std::make_unsigned_t<char_type> type;
+};
+
+template <typename CharTy>
+using make_unsigned_char_t = typename make_unsigned_char<CharTy>::value;
+
+template <typename CharTy>
+struct make_signed_char {
+    typedef std::make_signed_t<char_type> type;
+};
+
+template <typename CharTy>
+using make_signed_char_t = typename make_signed_char<CharTy>::value;
+
+// jstd::char_traits<T>
+
+template <typename CharTy>
+struct char_traits {
+    typedef CharTy                                  char_type;
+    typedef std::make_unsigned_char_t<char_type>    uchar_type;
+    typedef std::make_signed_char_t<char_type>      schar_type;
 };
 
 } // namespace jstd

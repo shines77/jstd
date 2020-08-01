@@ -34,7 +34,7 @@ namespace str_utils {
 
 template <typename CharTy>
 static inline
-bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
+bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -44,11 +44,11 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
                                 | _SIDD_NEGATIVE_POLARITY | _SIDD_LEAST_SIGNIFICANT;
 
     if (likely(length > 0)) {
-        ssize_t nlength = (ssize_t)length;
+        std::ssize_t slength = (std::ssize_t)length;
         do {
             __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
             __m128i __str2 = _mm_loadu_si128((const __m128i *)str2);
-            int len = ((int)nlength >= kMaxSize) ? kMaxSize : (int)nlength;
+            int len = ((int)slength >= kMaxSize) ? kMaxSize : (int)slength;
             assert(len > 0);
 
             int full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
@@ -56,13 +56,13 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
                 // Full matched, continue match next kMaxSize bytes.
                 str1 += kMaxSize;
                 str2 += kMaxSize;
-                nlength -= kMaxSize;
+                slength -= kMaxSize;
             }
             else {
                 // It's dismatched.
                 return false;
             }
-        } while (nlength > 0);
+        } while (slength > 0);
     }
 
     // It's matched, or the length is equal 0.
@@ -73,7 +73,7 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
 
 template <typename CharTy>
 static inline
-bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
+bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -82,17 +82,17 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
     static const int kEqualEach = _SIDD_CHAR_OPS | _SIDD_CMP_EQUAL_EACH
                                 | _SIDD_NEGATIVE_POLARITY | _SIDD_LEAST_SIGNIFICANT;
     
-    ssize_t nlength = (ssize_t)length;
-    while (likely(nlength > 0)) {
+    std::ssize_t slength = (std::ssize_t)length;
+    while (likely(slength > 0)) {
         __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
         __m128i __str2 = _mm_loadu_si128((const __m128i *)str2);
-        int len = ((int)nlength >= kMaxSize) ? kMaxSize : (int)nlength;
+        int len = ((int)slength >= kMaxSize) ? kMaxSize : (int)slength;
         assert(len > 0);
 
         int full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
         str1 += kMaxSize;
         str2 += kMaxSize;
-        nlength -= kMaxSize;
+        slength -= kMaxSize;
         if (likely(full_matched == 0)) {
             // Full matched, continue match next kMaxSize bytes.
             continue;
@@ -111,11 +111,11 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
 
 template <typename CharTy>
 static inline
-bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
+bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
-    static const size_t kMaxSize = sizeof(uint64_t);
+    static const std::size_t kMaxSize = sizeof(uint64_t);
     static const uint64_t kMaskOne64 = 0xFFFFFFFFFFFFFFFFULL;
 
     uint64_t * __str1 = (uint64_t * )str1;
@@ -166,23 +166,32 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, size_t length)
     return true;
 }
 
+#else
+
+template <typename CharTy>
+static inline
+bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t count)
+{
+    return stl::StrEqual(str1, str2, count);
+}
+
 #endif // STRING_UTILS_MODE
 
 template <typename CharTy>
 static inline
-bool is_equals_flat(const CharTy * str1, const CharTy * str2, size_t length)
+bool is_equals_flat(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
-#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
-    return stl::StrEqual(str1, str2, length);
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
+    return stl::StrEqual(str1, str2, count);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return str_utils::is_equals_unsafe(str1, str2, length);
+        return str_utils::is_equals_unsafe(str1, str2, count);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
                (str1 != nullptr && str2 == nullptr));
-        return (length == 0);
+        return (count == 0);
     }
     else {
         assert(str1 == nullptr && str2 == nullptr);
@@ -201,7 +210,7 @@ bool is_equals_flat(const StringType & str1, const StringType & str2)
 
 template <typename CharTy>
 static inline
-bool is_equals(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2)
+bool is_equals(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
 {
     if (likely(len1 != len2)) {
         // The length of str1 and str2 is different, the string must be not equal.
@@ -236,38 +245,35 @@ int compare(const CharTy * str1, const CharTy * str2)
 
 template <typename CharTy>
 static inline
-int compare(const CharTy * str1, const CharTy * str2, size_t count)
+int compare_unsafe(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
     return stl::StrCmp(str1, str2, count);
-}
-
-template <typename CharTy>
-static inline
-int compare_unsafe(const CharTy * str1, size_t length1, const CharTy * str2, size_t length2)
-{
-    assert(str1 != nullptr && str2 != nullptr);
+#else
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
 
     static const int kMaxSize = jstd::SSEHelper<CharTy>::kMaxSize;
     static const int _SIDD_CHAR_OPS = jstd::SSEHelper<CharTy>::_SIDD_CHAR_OPS;
     static const int kEqualEach = _SIDD_CHAR_OPS | _SIDD_CMP_EQUAL_EACH
                                 | _SIDD_NEGATIVE_POLARITY | _SIDD_LEAST_SIGNIFICANT;
 
-    typedef typename jstd::uchar_traits<CharTy>::type UCharTy;
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
-    size_t length = (length1 <= length2) ? length1 : length2;
-    ssize_t nlength = (ssize_t)length;
+    int slen = (int)count;
+    int len, full_matched, matched_index;
 
-    while (likely(nlength > 0)) {
+    while (likely(slen > 0)) {
         __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
         __m128i __str2 = _mm_loadu_si128((const __m128i *)str2);
-        int len = ((int)nlength >= kMaxSize) ? kMaxSize : (int)nlength;
+        len = (slen >= kMaxSize) ? kMaxSize : slen;
         assert(len > 0);
 
-        int full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
-        int matched_index = _mm_cmpestri(__str1, len, __str2, len, kEqualEach);
+        full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
+        matched_index = _mm_cmpestri(__str1, len, __str2, len, kEqualEach);
         str1 += kMaxSize;
         str2 += kMaxSize;
-        nlength -= kMaxSize;
+        slen -= kMaxSize;
         if (likely(full_matched == 0)) {
             // Full matched, continue match next kMaxSize bytes.
             assert(matched_index >= kMaxSize);
@@ -277,33 +283,121 @@ int compare_unsafe(const CharTy * str1, size_t length1, const CharTy * str2, siz
             // It's dismatched.
             assert(matched_index >= 0 && matched_index < kMaxSize);
             int offset = (kMaxSize - matched_index);
+            assert(offset < len);
             UCharTy ch1 = *((const UCharTy *)str1 - offset);
             UCharTy ch2 = *((const UCharTy *)str2 - offset);
-            if (likely(ch1 > ch2))
+            // The value of ch1 and ch2 must be not equal!
+            assert(ch1 != ch2);
+            if (ch1 > ch2)
                 return CompareResult::IsBigger;
-            else if (likely(ch1 < ch2))
-                return CompareResult::IsSmaller;
             else
-                return CompareResult::IsEqual;
+                return CompareResult::IsSmaller;
         }
     }
 
     // It's matched, or the length is equal 0.
-    UCharTy ch1 = *((const UCharTy *)str1);
-    UCharTy ch2 = *((const UCharTy *)str2);
-    if (likely(ch1 > ch2))
-        return CompareResult::IsBigger;
-    else if (likely(ch1 < ch2))
-        return CompareResult::IsSmaller;
-    else
-        return CompareResult::IsEqual;
+    assert(len == (kMaxSize - matched_index));
+
+    return CompareResult::IsEqual;
+#endif // STRING_UTILS_MODE
 }
 
 template <typename CharTy>
 static inline
-int compare_safe(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2)
+int compare_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
-#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
+    return stl::StrCmpSafe(str1, str2, count);
+#else
+    if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
+        assert(str1 != nullptr && str2 != nullptr);
+        return str_utils::compare_unsafe(str1, str2, count);
+    }
+    else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
+        assert((str1 == nullptr && str2 != nullptr) ||
+               (str1 != nullptr && str2 == nullptr));
+        if (likely(str1 != nullptr))
+            return ((len1 != 0) ? CompareResult::IsBigger : CompareResult::IsEqual);
+        else
+            return ((len2 != 0) ? CompareResult::IsSmaller : CompareResult::IsEqual);
+    }
+    else {
+        assert(str1 == nullptr && str2 == nullptr);
+        return CompareResult::IsEqual;
+    }
+#endif // STRING_UTILS_MODE
+}
+
+template <typename CharTy>
+static inline
+int compare_unsafe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+{
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
+    return stl::StrCmp(str1, len1, str2, len2);
+#else
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
+
+    static const int kMaxSize = jstd::SSEHelper<CharTy>::kMaxSize;
+    static const int _SIDD_CHAR_OPS = jstd::SSEHelper<CharTy>::_SIDD_CHAR_OPS;
+    static const int kEqualEach = _SIDD_CHAR_OPS | _SIDD_CMP_EQUAL_EACH
+                                | _SIDD_NEGATIVE_POLARITY | _SIDD_LEAST_SIGNIFICANT;
+
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
+
+    std::size_t count = (len1 <= len2) ? len1 : len2;
+    int slen = (int)count;
+    int len, full_matched, matched_index;
+
+    while (likely(slen > 0)) {
+        __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
+        __m128i __str2 = _mm_loadu_si128((const __m128i *)str2);
+        len = (slen >= kMaxSize) ? kMaxSize : slen;
+        assert(len > 0);
+
+        full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
+        matched_index = _mm_cmpestri(__str1, len, __str2, len, kEqualEach);
+        str1 += kMaxSize;
+        str2 += kMaxSize;
+        slen -= kMaxSize;
+        if (likely(full_matched == 0)) {
+            // Full matched, continue match next kMaxSize bytes.
+            assert(matched_index >= kMaxSize);
+            continue;
+        }
+        else {
+            // It's dismatched.
+            assert(matched_index >= 0 && matched_index < kMaxSize);
+            int offset = (kMaxSize - matched_index);
+            assert(offset < len);
+            UCharTy ch1 = *((const UCharTy *)str1 - offset);
+            UCharTy ch2 = *((const UCharTy *)str2 - offset);
+            // The value of ch1 and ch2 must be not equal!
+            assert(ch1 != ch2);
+            if (ch1 > ch2)
+                return CompareResult::IsBigger;
+            else
+                return CompareResult::IsSmaller;
+        }
+    }
+
+    // It's matched, or the length is equal 0.
+    assert(len == (kMaxSize - matched_index));
+
+    if (len1 > len2)
+        return CompareResult::IsBigger;
+    else if (len1 < len2)
+        return CompareResult::IsSmaller;
+    else
+        return CompareResult::IsEqual;
+#endif // STRING_UTILS_MODE
+}
+
+template <typename CharTy>
+static inline
+int compare_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+{
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
     return stl::StrCmpSafe(str1, len1, str2, len2);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
