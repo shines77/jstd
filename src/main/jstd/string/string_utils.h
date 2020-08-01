@@ -69,7 +69,7 @@ template <typename CharTy>
 static inline
 CharTy * str_copy(CharTy * dest, const CharTy * src, std::size_t count)
 {
-    typedef char_traits<CharTy>::uchar_type UCharTy;
+    typedef typename char_traits<CharTy>::uchar_type UCharTy;
 
     while (count > 0) {
         if (unlikely((UCharTy(*dest) & UCharTy(*src)) == 0))
