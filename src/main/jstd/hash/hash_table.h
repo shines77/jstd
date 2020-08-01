@@ -360,15 +360,15 @@ public:
                 if (likely(node->hash == hash)) {
                     // If hash value is equal, then compare the key sizes and the strings.
                     if (likely(key.size() == node->pair.first.size())) {
-    #if USE_SSE42_STRING_COMPARE
-                        if (likely(StrUtils::is_equals_flat(key, node->pair.first))) {
+#if USE_SSE42_STRING_COMPARE
+                        if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
                             return (iterator)&this->table_[index];
                         }
-    #else
-                        if (likely(strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
+#else
+                        if (likely(::strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
                             return (iterator)&this->table_[index];
                         }
-    #endif
+#endif
                     }
                 }
             }
@@ -382,15 +382,15 @@ public:
                     if (likely(node->hash == hash)) {
                         // If hash value is equal, then compare the key sizes and the strings.
                         if (likely(key.size() == node->pair.first.size())) {
-    #if USE_SSE42_STRING_COMPARE
-                            if (likely(StrUtils::is_equals_flat(key, node->pair.first))) {
+#if USE_SSE42_STRING_COMPARE
+                            if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
                                 return (iterator)&this->table_[index];
                             }
-    #else
-                            if (likely(strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
+#else
+                            if (likely(::strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
                                 return (iterator)&this->table_[index];
                             }
-    #endif
+#endif
                         }
                     }
                 }
@@ -413,11 +413,11 @@ public:
                 // If hash value is equal, then compare the key sizes and the strings.
                 if (likely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                    if (likely(StrUtils::is_equals_flat(key, node->pair.first))) {
+                    if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
                         return (iterator)&this->table_[index];
                     }
 #else
-                    if (likely(strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
+                    if (likely(::strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
                         return (iterator)&this->table_[index];
                     }
 #endif
@@ -435,11 +435,11 @@ public:
                     // If hash value is equal, then compare the key sizes and the strings.
                     if (likely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                        if (likely(StrUtils::is_equals_flat(key, node->pair.first))) {
+                        if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
                             return (iterator)&this->table_[index];
                         }
 #else
-                        if (likely(strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
+                        if (likely(::strcmp(key.c_str(), node->pair.first.c_str()) == 0)) {
                             return (iterator)&this->table_[index];
                         }
 #endif

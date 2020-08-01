@@ -83,19 +83,19 @@ struct DefaultDictionaryComparer {
 #else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
 
     bool key_is_equals(const key_type & key1, const key_type & key2) const {
-        return StrUtils::is_equals(key1, key2);
+        return str_utils::is_equals(key1, key2);
     }
 
     bool value_is_equals(const value_type & value1, const value_type & value2) const {
-        return StrUtils::is_equals(value1, value2);
+        return str_utils::is_equals(value1, value2);
     }
 
     int key_compare(const key_type & key1, const key_type & key2) const {
-        return StrUtils::compare(key1, key2);
+        return str_utils::compare(key1, key2);
     }
 
     int value_compare(const value_type & value1, const value_type & value2) const {
-        return StrUtils::compare(value1, value2);
+        return str_utils::compare(value1, value2);
     }
 
 #endif // STRING_UTILS_MODE
@@ -145,54 +145,6 @@ struct DefaultDictionaryTraits {
     int value_compare(const value_type & value1, const value_type & value2) const {
         return this->comparer_.value_compare(value1, value2);
     }
-};
-
-template <typename Key>
-struct equal_to {
-    typedef Key key_type;
-
-    equal_to() {}
-    ~equal_to() {}
-
-    bool operator () (const key_type & key1, const key_type & key2) const {
-        return (key1 == key2);
-    }
-};
-
-template <>
-struct equal_to<std::string> {
-    typedef std::string key_type;
-
-    equal_to() {}
-    ~equal_to() {}
-
-#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
-    bool operator () (const key_type & key1, const key_type & key2) const {
-        return stl::StrEqual(key1, key2);
-    }
-#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
-    bool operator () (const key_type & key1, const key_type & key2) const {
-        return StrUtils::is_equals(key1, key2);
-    }
-#endif
-};
-
-template <>
-struct equal_to<std::wstring> {
-    typedef std::wstring key_type;
-
-    equal_to() {}
-    ~equal_to() {}
-
-#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
-    bool operator () (const key_type & key1, const key_type & key2) const {
-        return stl::StrEqual(key1, key2);
-    }
-#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
-    bool operator () (const key_type & key1, const key_type & key2) const {
-        return StrUtils::is_equals(key1, key2);
-    }
-#endif
 };
 
 } // namespace jstd

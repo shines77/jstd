@@ -23,6 +23,7 @@
 #include "jstd/string/string_traits.h"
 #include "jstd/string/string_iterator.h"
 #include "jstd/string/string_libc.h"
+#include "jstd/string/string_stl.h"
 #include "jstd/string/string_utils.h"
 
 namespace jstd {
@@ -170,51 +171,25 @@ public:
     }
 
     bool is_equal(const this_type & rhs) const {
-        if (likely(&rhs != this)) {
-            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
-                return jstd::StrUtils::is_equals(*this, rhs);
-            }
-        }
-        return true;
+        return str_utils::is_equals(*this, rhs);
     }
 
     bool is_equal(const string_type & rhs) const {
-        if (likely(&rhs != this)) {
-            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
-                return jstd::StrUtils::is_equals(this->data(), this->size(), rhs.data(), rhs.size());
-            }
-        }
-        return true;
+        return str_utils::is_equals(this->data(), this->size(), rhs.data(), rhs.size());
     }
 
     int compare(const this_type & rhs) const {
-        if (likely(&rhs != this)) {
-            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
-                return jstd::StrUtils::compare(*this, rhs);
-            }
-        }
-        return jstd::StrUtils::IsEqual;
+        return str_utils::compare_safe(*this, rhs);
     }
 
     int compare(const string_type & rhs) const {
-        if (likely(&rhs != this)) {
-            if (likely(this->data() != rhs.data() && this->size() != rhs.size())) {
-                return jstd::StrUtils::compare(this->data(), this->size(), rhs.data(), rhs.size());
-            }
-        }
-        return jstd::StrUtils::IsEqual;
+        return str_utils::compare_safe(this->data(), this->size(), rhs.data(), rhs.size());
     }
 
     string_type toString() const {
         return std::move(string_type(this->data_, this->length_));
     }
 }; // class basic_string_view<CharTy>
-
-template <typename CharTy>
-inline
-void swap(basic_string_view<CharTy> & lhs, basic_string_view<CharTy> & rhs) {
-    lhs.swap(rhs);
-}
 
 template <typename CharTy>
 inline
@@ -225,13 +200,19 @@ bool operator == (const basic_string_view<CharTy> & lhs, const basic_string_view
 template <typename CharTy>
 inline
 bool operator < (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
-    return (lhs.compare(rhs) == jstd::StrUtils::IsSmaller);
+    return (lhs.compare(rhs) == jstd::CompareResult::IsSmaller);
 }
 
 template <typename CharTy>
 inline
 bool operator > (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
-    return (lhs.compare(rhs) == jstd::StrUtils::IsBigger);
+    return (lhs.compare(rhs) == jstd::CompareResult::IsBigger);
+}
+
+template <typename CharTy>
+inline
+void swap(basic_string_view<CharTy> & lhs, basic_string_view<CharTy> & rhs) {
+    lhs.swap(rhs);
 }
 
 typedef basic_string_view<char>                         string_view;

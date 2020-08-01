@@ -20,6 +20,8 @@
 #include <cwchar>
 #include <string>
 
+#include "jstd/string/string_def.h"
+
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
 // TODO:
 #endif // _WIN32
@@ -114,16 +116,45 @@ bool StrEqual(const wchar_t * str1, const wchar_t * str2, std::size_t count) {
 template <typename CharTy>
 inline
 bool StrEqual(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2) {
-    if (len1 == len2)
-        return StrEqual(str1, str2, len1);
-    else
+    if (likely(len1 != len2)) {
+        // The length of between str1 and str2 is not equal.
         return false;
+    }
+    else {
+        if (likely(str1 != str2)) {
+            return str_utils::StrEqual(str1, str2, len1);
+        }
+        else {
+            // The str1 and str2 is a same string.
+            return true;
+        }
+    }
 }
 
 template <typename StringTy>
 inline
 bool StrEqual(const StringTy & str1, const StringTy & str2) {
-    return StrEqual(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+    typename StringTy::value_type   char_type;
+    typename StringTy::size_type    size_type;
+
+    const char_type * s1 = str1.data();
+    const char_type * s2 = str2.data();
+    size_type len1 = str1.size();
+    size_type len2 = str2.size();
+
+    if (likely(((uintptr_t)s1 & (uintptr_t)s2) != 0)) {
+        assert(s1 != nullptr && s2 != nullptr);
+        return StrEqual(s1, len1, s2, len2);
+    }
+    else if (likely(((uintptr_t)s1 | (uintptr_t)s2) != 0)) {
+        assert((s1 == nullptr && s2 != nullptr) ||
+               (s1 != nullptr && s2 == nullptr));
+        return (len1 == 0 && len2 == 0);
+    }
+    else {
+        assert(s1 == nullptr && s2 == nullptr);
+        return true;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -135,16 +166,16 @@ inline
 int StrCmp(const CharTy * str1, const CharTy * str2) {
     while (*str1 == *str2) {
         if (unlikely(((*str1) & (*str2)) == 0)) {
-            return 0;
+            return CompareResult::IsEqual;
         }
         str1++;
         str2++;
     }
 
     if (*str1 > *str2)
-        return 1;
+        return CompareResult::IsBigger;
     else
-        return -1;
+        return CompareResult::IsSmaller;
 }
 
 template <>
@@ -165,19 +196,19 @@ int StrCmp(const CharTy * str1, const CharTy * str2, std::size_t count) {
     while (*str1 == *str2) {
         count--;
         if (unlikely(count == 0)) {
-            return 0;
+            return CompareResult::IsEqual;
         }
         if (unlikely(((*str1) & (*str2)) == 0)) {
-            return 0;
+            return CompareResult::IsEqual;
         }
         str1++;
         str2++;
     }
 
     if (*str1 > *str2)
-        return 1;
+        return CompareResult::IsBigger;
     else
-        return -1;
+        return CompareResult::IsSmaller;
 }
 
 template <>
@@ -202,18 +233,47 @@ int StrCmp(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size
     }
     else {
         if (len1 > len2)
-            return 1;
+            return CompareResult::IsBigger;
         else if (len1 < len2)
-            return -1;
+            return CompareResult::IsSmaller;
         else
-            return 0;
+            return CompareResult::IsEqual;
     }
 }
 
 template <typename StringTy>
 inline
 int StrCmp(const StringTy & str1, const StringTy & str2) {
-    return StrCmp(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+    return StrCmp(str1.data(), str1.size(), str2.data(), str2.size());
+}
+
+template <typename StringTy>
+inline
+int StrCmpSafe(const StringTy & str1, const StringTy & str2) {
+    typename StringTy::value_type   char_type;
+    typename StringTy::size_type    size_type;
+
+    const char_type * s1 = str1.data();
+    const char_type * s2 = str2.data();
+    size_type len1 = str1.size();
+    size_type len2 = str2.size();
+
+    if (likely(((uintptr_t)s1 & (uintptr_t)s2) != 0)) {
+        assert(s1 != nullptr && s2 != nullptr);
+        return StrCmp(s1, len1, s2, len2);
+    }
+    else if (likely(((uintptr_t)s1 | (uintptr_t)s2) != 0)) {
+        assert((s1 == nullptr && s2 != nullptr) ||
+               (s1 != nullptr && s2 == nullptr));
+        if (likely(s1 != nullptr))
+            return ((len1 != 0) ? CompareResult::IsBigger : CompareResult::IsEqual);
+        else
+            return ((len2 != 0) ? CompareResult::IsSmaller : CompareResult::IsEqual);
+    }
+    else {
+        assert(s1 == nullptr && s2 == nullptr);
+        return CompareResult::IsEqual;
+    }
 }
 
 } // namespace libc

@@ -38,6 +38,7 @@
 
 #include "jstd/nothrow_new.h"
 #include "jstd/hash/hash_helper.h"
+#include "jstd/hash/equal_to.h"
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/allocator.h"
 #include "jstd/support/PowerOf2.h"

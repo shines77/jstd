@@ -19,20 +19,14 @@
 #include <cstddef>      // For std::size_t
 #include <string>
 
-#include "jstd/string/char_traits.h"
+#include "jstd/string/string_def.h"
 #include "jstd/string/string_libc.h"
 #include "jstd/string/string_stl.h"
+#include "jstd/string/char_traits.h"
 #include "jstd/support/SSEHelper.h"
 
 namespace jstd {
-
-namespace StrUtils {
-
-enum CompareResult {
-    IsSmaller = -1,
-    IsEqual = 0,
-    IsBigger = 1
-};
+namespace str_utils {
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -183,7 +177,7 @@ bool is_equals_flat(const CharTy * str1, const CharTy * str2, size_t length)
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return StrUtils::is_equals_unsafe(str1, str2, length);
+        return str_utils::is_equals_unsafe(str1, str2, length);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
@@ -202,19 +196,25 @@ static inline
 bool is_equals_flat(const StringType & str1, const StringType & str2)
 {
     assert(str1.size() == str2.size());
-    return StrUtils::is_equals_flat(str1.c_str(), str2.c_str(), str1.size());   
+    return str_utils::is_equals_flat(str1.c_str(), str2.c_str(), str1.size());   
 }
 
 template <typename CharTy>
 static inline
 bool is_equals(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2)
 {
-    if (likely(len1 == len2)) {
-        return StrUtils::is_equals_flat(str1, str2, len1);
+    if (likely(len1 != len2)) {
+        // The length of str1 and str2 is different, the string must be not equal.
+        return false;
     }
     else {
-        // The length of between str1 and str2 is not equal.
-        return false;
+        if (likely(str1 != str2)) {
+            return str_utils::is_equals_flat(str1, str2, len1);
+        }
+        else {
+            // The str1 and str2 is a same string.
+            return true;
+        }
     }
 }
 
@@ -222,10 +222,24 @@ template <typename StringType>
 static inline
 bool is_equals(const StringType & str1, const StringType & str2)
 {
-    return StrUtils::is_equals(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+    return str_utils::is_equals(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+
+template <typename CharTy>
+static inline
+int compare(const CharTy * str1, const CharTy * str2)
+{
+    return stl::StrCmp(str1, str2);
+}
+
+template <typename CharTy>
+static inline
+int compare(const CharTy * str1, const CharTy * str2, size_t count)
+{
+    return stl::StrCmp(str1, str2, count);
+}
 
 template <typename CharTy>
 static inline
@@ -266,11 +280,11 @@ int compare_unsafe(const CharTy * str1, size_t length1, const CharTy * str2, siz
             UCharTy ch1 = *((const UCharTy *)str1 - offset);
             UCharTy ch2 = *((const UCharTy *)str2 - offset);
             if (likely(ch1 > ch2))
-                return StrUtils::IsBigger;
+                return CompareResult::IsBigger;
             else if (likely(ch1 < ch2))
-                return StrUtils::IsSmaller;
+                return CompareResult::IsSmaller;
             else
-                return StrUtils::IsEqual;
+                return CompareResult::IsEqual;
         }
     }
 
@@ -278,63 +292,56 @@ int compare_unsafe(const CharTy * str1, size_t length1, const CharTy * str2, siz
     UCharTy ch1 = *((const UCharTy *)str1);
     UCharTy ch2 = *((const UCharTy *)str2);
     if (likely(ch1 > ch2))
-        return StrUtils::IsBigger;
+        return CompareResult::IsBigger;
     else if (likely(ch1 < ch2))
-        return StrUtils::IsSmaller;
+        return CompareResult::IsSmaller;
     else
-        return StrUtils::IsEqual;
+        return CompareResult::IsEqual;
 }
 
 template <typename CharTy>
 static inline
-int compare(const CharTy * str1, const CharTy * str2)
-{
-    return stl::StrCmp(str1, str2);
-}
-
-template <typename CharTy>
-static inline
-int compare(const CharTy * str1, const CharTy * str2, size_t count)
-{
-    return stl::StrCmp(str1, str2, count);
-}
-
-template <typename CharTy>
-static inline
-int compare(const CharTy * str1, size_t length1, const CharTy * str2, size_t length2)
+int compare_safe(const CharTy * str1, size_t len1, const CharTy * str2, size_t len2)
 {
 #if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
-    return stl::StrCmp(str1, length1, str2, length2);
+    return stl::StrCmpSafe(str1, len1, str2, len2);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return StrUtils::compare_unsafe(str1, length1, str2, length2);
+        return str_utils::compare_unsafe(str1, len1, str2, len2);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
                (str1 != nullptr && str2 == nullptr));
         if (likely(str1 != nullptr))
-            return ((length1 != 0) ? StrUtils::IsBigger : StrUtils::IsEqual);
+            return ((len1 != 0) ? CompareResult::IsBigger : CompareResult::IsEqual);
         else
-            return ((length2 != 0) ? StrUtils::IsSmaller : StrUtils::IsEqual);
+            return ((len2 != 0) ? CompareResult::IsSmaller : CompareResult::IsEqual);
     }
     else {
         assert(str1 == nullptr && str2 == nullptr);
-        return StrUtils::IsEqual;
+        return CompareResult::IsEqual;
     }
 #endif // STRING_UTILS_MODE
 }
 
 template <typename StringType>
 static inline
-int compare(const StringType & str1, const StringType & str2)
+int compare_unsafe(const StringType & str1, const StringType & str2)
 {
-    return StrUtils::compare(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+    return str_utils::compare_unsafe(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+}
+
+template <typename StringType>
+static inline
+int compare_safe(const StringType & str1, const StringType & str2)
+{
+    return str_utils::compare_safe(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 
-} // namespace StrUtils
+} // namespace str_utils
 } // namespace jstd
 
 #endif // JSTD_STRING_UTILS_H
