@@ -361,7 +361,7 @@ public:
                     // If hash value is equal, then compare the key sizes and the strings.
                     if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                        if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
+                        if (likely(str_utils::is_equal_flat_safe(key, node->pair.first))) {
                             return (iterator)&this->table_[index];
                         }
 #else
@@ -383,7 +383,7 @@ public:
                         // If hash value is equal, then compare the key sizes and the strings.
                         if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                            if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
+                            if (likely(str_utils::is_equal_flat_safe(key, node->pair.first))) {
                                 return (iterator)&this->table_[index];
                             }
 #else
@@ -413,7 +413,7 @@ public:
                 // If hash value is equal, then compare the key sizes and the strings.
                 if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                    if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
+                    if (likely(str_utils::is_equal_flat_safe(key, node->pair.first))) {
                         return (iterator)&this->table_[index];
                     }
 #else
@@ -435,7 +435,7 @@ public:
                     // If hash value is equal, then compare the key sizes and the strings.
                     if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                        if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
+                        if (likely(str_utils::is_equal_flat_safe(key, node->pair.first))) {
                             return (iterator)&this->table_[index];
                         }
 #else

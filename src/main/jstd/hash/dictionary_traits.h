@@ -64,11 +64,11 @@ struct DefaultDictionaryComparer {
 
 #if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
 
-    bool key_is_equals(const key_type & key1, const key_type & key2) const {
+    bool key_is_equal(const key_type & key1, const key_type & key2) const {
         return (::strcmp(key1.c_str(), key2. c_str()) == 0);
     }
 
-    bool value_is_equals(const value_type & value1, const value_type & value2) const {
+    bool value_is_equal(const value_type & value1, const value_type & value2) const {
         return (::strcmp(value1.c_str(), value2. c_str()) == 0);
     }
 
@@ -82,12 +82,12 @@ struct DefaultDictionaryComparer {
 
 #else // (STRING_UTILS_MODE == STRING_UTILS_SSE42)
 
-    bool key_is_equals(const key_type & key1, const key_type & key2) const {
-        return str_utils::is_equals(key1, key2);
+    bool key_is_equal(const key_type & key1, const key_type & key2) const {
+        return str_utils::is_equal(key1, key2);
     }
 
-    bool value_is_equals(const value_type & value1, const value_type & value2) const {
-        return str_utils::is_equals(value1, value2);
+    bool value_is_equal(const value_type & value1, const value_type & value2) const {
+        return str_utils::is_equal(value1, value2);
     }
 
     int key_compare(const key_type & key1, const key_type & key2) const {
@@ -130,12 +130,12 @@ struct DefaultDictionaryTraits {
     //
     // Comparer
     //
-    bool key_is_equals(const key_type & key1, const key_type & key2) const {
-        return this->comparer_.key_is_equals(key1, key2);
+    bool key_is_equal(const key_type & key1, const key_type & key2) const {
+        return this->comparer_.key_is_equal(key1, key2);
     }
 
-    bool value_is_equals(const value_type & value1, const value_type & value2) const {
-        return this->comparer_.value_is_equals(value1, value2);
+    bool value_is_equal(const value_type & value1, const value_type & value2) const {
+        return this->comparer_.value_is_equal(value1, value2);
     }
 
     int key_compare(const key_type & key1, const key_type & key2) const {

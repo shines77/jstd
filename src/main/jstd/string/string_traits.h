@@ -27,11 +27,27 @@ struct string_traits {
     typedef std::ptrdiff_t  difference_type;
     typedef std::int32_t    state_type;
 
-    static int compare(const char_type * s1, const char_type * s2, size_type count) {
+    static constexpr bool is_equal(const char_type * s1, const char_type * s2) {
+        return str_utils::is_equal(s1, s2);
+    }
+
+    static constexpr bool is_equal(const char_type * s1, const char_type * s2, size_type count) {
+        return str_utils::is_equal_safe(s1, s2, count);
+    }
+
+    static constexpr bool is_equal(const char_type * s1, size_type len1, const char_type * s2, size_type len2) {
+        return str_utils::is_equal_safe(s1, len1, s2, len2);
+    }
+
+    static constexpr int compare(const char_type * s1, const char_type * s2) {
+        return str_utils::compare(s1, s2);
+    }
+
+    static constexpr int compare(const char_type * s1, const char_type * s2, size_type count) {
         return str_utils::compare_safe(s1, s2, count);
     }
 
-    static int compare(const char_type * s1, size_type len1, const char_type * s2, size_type len2) {
+    static constexpr int compare(const char_type * s1, size_type len1, const char_type * s2, size_type len2) {
         return str_utils::compare_safe(s1, len1, s2, len2);
     }
 };

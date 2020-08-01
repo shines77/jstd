@@ -170,20 +170,153 @@ public:
         return this->data_[pos];
     }
 
-    bool is_equal(const this_type & rhs) const {
-        return str_utils::is_equals_safe(*this, rhs);
+    // is_equal(rhs)
+
+    constexpr bool is_equal(const char_type * str) const {
+        return Traits::is_equal(this->data(), str);
     }
 
-    bool is_equal(const string_type & rhs) const {
-        return str_utils::is_equals_safe(this->data(), this->size(), rhs.data(), rhs.size());
+    constexpr bool is_equal(const char_type * s1, const char_type * s2, size_type count) const noexcept {
+        return Traits::is_equal(s1, s2, count);
     }
 
-    int compare(const this_type & rhs) const {
-        return str_utils::compare_safe(*this, rhs);
+    constexpr bool is_equal(const char_type * s1, size_type len1, const char_type * s2, size_type len2) const noexcept {
+        return Traits::is_equal(s1, len1, s2, len2);
     }
 
-    int compare(const string_type & rhs) const {
-        return str_utils::compare_safe(this->data(), this->size(), rhs.data(), rhs.size());
+    constexpr bool is_equal(const this_type & rhs) const noexcept {
+        return this->is_equal(this->data(), this->size(), rhs.data(), rhs.size());
+    }
+
+    constexpr bool is_equal(const string_type & rhs) const noexcept {
+        return this->is_equal(this->data(), this->size(), rhs.data(), rhs.size());
+    }
+
+    constexpr bool is_equal(size_type pos, size_type count, const this_type & sv) const {
+        if (pos > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "is_equal(pos, count, sv): pos out_of_range.");
+        }
+        const char_type * s1 = this->data() + pos;
+        return this->is_equal(s1, sv.data(), count);
+    }
+
+    constexpr bool is_equal(size_type pos, size_type count,
+                          const char_type * str) const {
+        if (pos > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "is_equal(pos, count, str): pos out_of_range.");
+        }
+        size_type rcount = ((pos + count) <= this->size()) ? count : (this->size() - pos);
+        const char_type * s1 = this->data() + pos;
+        return this->is_equal(s1, str, rcount);
+    }
+
+    constexpr bool is_equal(size_type pos1, size_type count1,
+                          const char_type * str, size_type count2) const {
+        if (pos1 > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "is_equal(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
+        }
+        constexpr size_type pos2 = 0;
+        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
+        size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
+        const char_type * s1 = this->data() + pos1;
+        const char_type * s2 = str + pos2;
+        return this->is_equal(s1, rcount1, s2, rcount2);
+    }
+
+    constexpr bool is_equal(size_type pos1, size_type count1, const this_type & sv,
+                          size_type pos2, size_type count2) const {
+        if (pos1 > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "is_equal(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
+        }
+        if (pos2 > sv.size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "is_equal(pos1, count1, sv, pos2, count2): pos2 out_of_range.");
+        }
+        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
+        size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
+        const char_type * s1 = this->data() + pos1;
+        const char_type * s2 = sv.data() + pos2;
+        return this->is_equal(s1, rcount1, s2, rcount2);
+    }
+
+    // compare(rhs)
+
+    constexpr int compare(const char_type * str) const {
+        return Traits::compare(this->data(), str);
+    }
+
+    constexpr int compare(const char_type * s1,
+                          const char_type * s2,
+                          size_type count) const noexcept {
+        return Traits::compare(s1, s2, count);
+    }
+
+    constexpr int compare(const char_type * s1, size_type len1,
+                          const char_type * s2, size_type len2) const noexcept {
+        return Traits::compare(s1, len1, s2, len2);
+    }
+
+    constexpr int compare(const this_type & rhs) const noexcept {
+        return this->compare(this->data(), this->size(), rhs.data(), rhs.size());
+    }
+
+    constexpr int compare(const string_type & rhs) const noexcept {
+        return this->compare(this->data(), this->size(), rhs.data(), rhs.size());
+    }
+
+    constexpr int compare(size_type pos, size_type count, const this_type & sv) const {
+        if (pos > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "compare(pos, count, sv): pos out_of_range.");
+        }
+        const char_type * s1 = this->data() + pos;
+        return this->compare(s1, sv.data(), count);
+    }
+
+    constexpr int compare(size_type pos, size_type count,
+                          const char_type * str) const {
+        if (pos > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "compare(pos, count, str): pos out_of_range.");
+        }
+        size_type rcount = ((pos + count) <= this->size()) ? count : (this->size() - pos);
+        const char_type * s1 = this->data() + pos;
+        return this->compare(s1, str, rcount);
+    }
+
+    constexpr int compare(size_type pos1, size_type count1,
+                          const char_type * str, size_type count2) const {
+        if (pos1 > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "compare(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
+        }
+        constexpr size_type pos2 = 0;
+        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
+        size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
+        const char_type * s1 = this->data() + pos1;
+        const char_type * s2 = str + pos2;
+        return this->compare(s1, rcount1, s2, rcount2);
+    }
+
+    constexpr int compare(size_type pos1, size_type count1, const this_type & sv,
+                          size_type pos2, size_type count2) const {
+        if (pos1 > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "compare(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
+        }
+        if (pos2 > sv.size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "compare(pos1, count1, sv, pos2, count2): pos2 out_of_range.");
+        }
+        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
+        size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
+        const char_type * s1 = this->data() + pos1;
+        const char_type * s2 = sv.data() + pos2;
+        return this->compare(s1, rcount1, s2, rcount2);
     }
 
     string_type toString() const {

@@ -34,7 +34,7 @@ namespace str_utils {
 
 template <typename CharTy>
 static inline
-bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
+bool is_equal(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -73,7 +73,7 @@ bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
 
 template <typename CharTy>
 static inline
-bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
+bool is_equal(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -111,7 +111,7 @@ bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
 
 template <typename CharTy>
 static inline
-bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
+bool is_equal(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -170,7 +170,7 @@ bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
 
 template <typename CharTy>
 static inline
-bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t count)
+bool is_equal(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
     return stl::StrEqual(str1, str2, count);
 }
@@ -179,14 +179,14 @@ bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t count)
 
 template <typename CharTy>
 static inline
-bool is_equals_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
+bool is_equal_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
 #if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
     return stl::StrEqualSafe(str1, str2, count);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return str_utils::is_equals(str1, str2, count);
+        return str_utils::is_equal(str1, str2, count);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
@@ -202,23 +202,23 @@ bool is_equals_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
 
 template <typename StringType>
 static inline
-bool is_equals_flat(const StringType & str1, const StringType & str2)
+bool is_equal_flat(const StringType & str1, const StringType & str2)
 {
     assert(str1.size() == str2.size());
-    return str_utils::is_equals(str1.c_str(), str2.c_str(), str1.size());   
+    return str_utils::is_equal(str1.c_str(), str2.c_str(), str1.size());   
 }
 
 template <typename StringType>
 static inline
-bool is_equals_flat_safe(const StringType & str1, const StringType & str2)
+bool is_equal_flat_safe(const StringType & str1, const StringType & str2)
 {
     assert(str1.size() == str2.size());
-    return str_utils::is_equals_safe(str1.c_str(), str2.c_str(), str1.size());   
+    return str_utils::is_equal_safe(str1.c_str(), str2.c_str(), str1.size());   
 }
 
 template <typename CharTy>
 static inline
-bool is_equals(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+bool is_equal(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
 {
     if (likely(len1 != len2)) {
         // The length of str1 and str2 is different, the string must be not equal.
@@ -226,7 +226,7 @@ bool is_equals(const CharTy * str1, std::size_t len1, const CharTy * str2, std::
     }
     else {
         if (likely(str1 != str2)) {
-            return str_utils::is_equals(str1, str2, len1);
+            return str_utils::is_equal(str1, str2, len1);
         }
         else {
             // The str1 and str2 is a same string.
@@ -237,7 +237,7 @@ bool is_equals(const CharTy * str1, std::size_t len1, const CharTy * str2, std::
 
 template <typename CharTy>
 static inline
-bool is_equals_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+bool is_equal_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
 {
     if (likely(len1 != len2)) {
         // The length of str1 and str2 is different, the string must be not equal.
@@ -245,7 +245,7 @@ bool is_equals_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, 
     }
     else {
         if (likely(str1 != str2)) {
-            return str_utils::is_equals_safe(str1, str2, len1);
+            return str_utils::is_equal_safe(str1, str2, len1);
         }
         else {
             // The str1 and str2 is a same string.
@@ -256,11 +256,11 @@ bool is_equals_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, 
 
 template <typename CharTy>
 static inline
-bool is_equals_safe_slowly(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+bool is_equal_slowly(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
 {
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return str_utils::is_equals(str1, len1, str2, len2);
+        return str_utils::is_equal(str1, len1, str2, len2);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
@@ -276,16 +276,16 @@ bool is_equals_safe_slowly(const CharTy * str1, std::size_t len1, const CharTy *
 
 template <typename StringType>
 static inline
-bool is_equals_unsafe(const StringType & str1, const StringType & str2)
+bool is_equal_unsafe(const StringType & str1, const StringType & str2)
 {
-    return str_utils::is_equals(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+    return str_utils::is_equal(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 template <typename StringType>
 static inline
-bool is_equals_safe(const StringType & str1, const StringType & str2)
+bool is_equal_safe(const StringType & str1, const StringType & str2)
 {
-    return str_utils::is_equals_safe(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+    return str_utils::is_equal_safe(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
