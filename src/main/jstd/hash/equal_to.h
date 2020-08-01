@@ -37,9 +37,9 @@ struct equal_to<std::string> {
     equal_to() {}
     ~equal_to() {}
 
-#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return stl::StrEqual(key1, key2);
+        return stl::StrEqualSafe(key1, key2);
     }
 #else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {
@@ -55,9 +55,9 @@ struct equal_to<std::wstring> {
     equal_to() {}
     ~equal_to() {}
 
-#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return stl::StrEqual(key1, key2);
+        return stl::StrEqualSafe(key1, key2);
     }
 #else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
     bool operator () (const key_type & key1, const key_type & key2) const {

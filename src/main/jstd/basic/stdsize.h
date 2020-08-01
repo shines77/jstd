@@ -80,6 +80,7 @@ typedef signed int          ssize_t;
 #if defined(_MSC_VER) && (_MSC_VER < 1700)
 
     #include "jstd/basic/msvc/stdint.h"
+    #include <stddef.h>
 
     #ifdef __cplusplus
     namespace std {
@@ -90,6 +91,7 @@ typedef signed int          ssize_t;
 #else
 
     #include <cstdint>
+    #include <cstddef>  // For std::ptrdiff_t
 
     #ifdef __cplusplus
     namespace std {

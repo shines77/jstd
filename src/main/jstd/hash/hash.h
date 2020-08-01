@@ -304,7 +304,7 @@ static std::uint32_t BKDRHash_31(const CharTy * key, std::size_t len)
     static const std::uint32_t seed_3 = seed_2 * seed;
     static const std::uint32_t seed_4 = seed_2 * seed_2;
 
-    typedef typename jstd::uchar_traits<CharTy>::type UCharTy;
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
@@ -336,7 +336,7 @@ static std::uint32_t BKDRHash_31_std(const CharTy * key, std::size_t len)
 {
     static const std::uint32_t seed = 31U;   // 31, 33, 131, 1313, 13131, 131313, etc ...
 
-    typedef typename jstd::uchar_traits<CharTy>::type UCharTy;
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
@@ -376,7 +376,7 @@ std::uint32_t Times31_std(const CharTy * key, std::size_t len)
 template <typename CharTy>
 static std::uint32_t APHash(const CharTy * key, std::size_t len)
 {
-    typedef typename jstd::uchar_traits<CharTy>::type UCharTy;
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
@@ -417,7 +417,7 @@ static std::uint32_t DJBHash(const CharTy * key, std::size_t len)
 {
     std::uint32_t hash = 5381U;
 
-    typedef typename jstd::uchar_traits<CharTy>::type UCharTy;
+    typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;

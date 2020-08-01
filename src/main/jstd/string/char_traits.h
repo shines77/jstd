@@ -73,27 +73,27 @@ struct is_wchar<wchar_t> {
 
 template <typename CharTy>
 struct make_unsigned_char {
-    typedef std::make_unsigned_t<char_type> type;
+    typedef std::make_unsigned_t<CharTy> type;
 };
 
 template <typename CharTy>
-using make_unsigned_char_t = typename make_unsigned_char<CharTy>::value;
+using make_unsigned_char_t = typename make_unsigned_char<CharTy>::type;
 
 template <typename CharTy>
 struct make_signed_char {
-    typedef std::make_signed_t<char_type> type;
+    typedef std::make_signed_t<CharTy> type;
 };
 
 template <typename CharTy>
-using make_signed_char_t = typename make_signed_char<CharTy>::value;
+using make_signed_char_t = typename make_signed_char<CharTy>::type;
 
 // jstd::char_traits<T>
 
 template <typename CharTy>
 struct char_traits {
     typedef CharTy                                  char_type;
-    typedef std::make_unsigned_char_t<char_type>    uchar_type;
-    typedef std::make_signed_char_t<char_type>      schar_type;
+    typedef jstd::make_unsigned_char_t<char_type>    uchar_type;
+    typedef jstd::make_signed_char_t<char_type>      schar_type;
 };
 
 } // namespace jstd
