@@ -46,7 +46,9 @@ public:
     typedef std::basic_string<char_type>        string_type;
     typedef basic_string_view<char_type>        this_type;
 
-private:
+    static const size_type npos = size_type(-1);
+
+protected:
     const char_type * data_;
     size_type         length_;
 
@@ -170,6 +172,32 @@ public:
         return this->data_[pos];
     }
 
+    // copy(dest, count, pos)
+
+    size_type copy(char_type * dest, size_type count, size_type pos = 0) const {
+        if (pos > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "copy(dest, count, pos): pos out_of_range.");
+        }
+        size_type rcount = ((pos + count) <= this->size()) ? count : (this->size() - pos);
+        return Traits::copy(dest, this->data() + pos, rcount);
+    }
+
+    // substr(pos, count)
+
+    constexpr this_type substr(size_type pos = 0, size_type count = npos) const {
+        if (pos > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "substr(pos, count): pos out_of_range.");
+        }
+        size_type rcount;
+        if (likely(count != npos))
+            rcount = ((pos + count) <= this->size()) ? count : (this->size() - pos);
+        else
+            rcount = this->size() - pos;
+        return this_type(this->data() + pos, rcount);
+    }
+
     // is_equal(rhs)
 
     constexpr bool is_equal(const char_type * str) const {
@@ -207,24 +235,10 @@ public:
             throw std::out_of_range("basic_string_view<T>: "
                     "is_equal(pos, count, str): pos out_of_range.");
         }
+        constexpr size_type len2 = libc::StrLen(str);
         size_type rcount = ((pos + count) <= this->size()) ? count : (this->size() - pos);
         const char_type * s1 = this->data() + pos;
-        return this->is_equal(s1, str, rcount);
-    }
-
-    constexpr bool is_equal(size_type pos1, size_type count1,
-                          const char_type * str, size_type count2) const {
-        if (pos1 > this->size()) {
-            throw std::out_of_range("basic_string_view<T>: "
-                    "is_equal(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
-        }
-        constexpr size_type pos2 = 0;
-        constexpr size_type len2 = libc::StrLen(str);
-        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
-        size_type rcount2 = ((pos2 + count2) <= len2) ? count2 : (len2 - pos2);
-        const char_type * s1 = this->data() + pos1;
-        const char_type * s2 = str + pos2;
-        return this->is_equal(s1, rcount1, s2, rcount2);
+        return this->is_equal(s1, rcount, str, len2);
     }
 
     constexpr bool is_equal(size_type pos1, size_type count1, const this_type & sv,
@@ -241,6 +255,21 @@ public:
         size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
         const char_type * s1 = this->data() + pos1;
         const char_type * s2 = sv.data() + pos2;
+        return this->is_equal(s1, rcount1, s2, rcount2);
+    }
+
+    constexpr bool is_equal(size_type pos1, size_type count1,
+                          const char_type * str, size_type count2) const {
+        if (pos1 > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "is_equal(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
+        }
+        constexpr size_type pos2 = 0;
+        constexpr size_type len2 = libc::StrLen(str);
+        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
+        size_type rcount2 = ((pos2 + count2) <= len2) ? count2 : (len2 - pos2);
+        const char_type * s1 = this->data() + pos1;
+        const char_type * s2 = str + pos2;
         return this->is_equal(s1, rcount1, s2, rcount2);
     }
 
@@ -284,24 +313,10 @@ public:
             throw std::out_of_range("basic_string_view<T>: "
                     "compare(pos, count, str): pos out_of_range.");
         }
+        constexpr size_type len2 = libc::StrLen(str);
         size_type rcount = ((pos + count) <= this->size()) ? count : (this->size() - pos);
         const char_type * s1 = this->data() + pos;
-        return this->compare(s1, str, rcount);
-    }
-
-    constexpr int compare(size_type pos1, size_type count1,
-                          const char_type * str, size_type count2) const {
-        if (pos1 > this->size()) {
-            throw std::out_of_range("basic_string_view<T>: "
-                    "compare(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
-        }
-        constexpr size_type pos2 = 0;
-        constexpr size_type len2 = libc::StrLen(str);
-        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
-        size_type rcount2 = ((pos2 + count2) <= len2) ? count2 : (len2 - pos2);
-        const char_type * s1 = this->data() + pos1;
-        const char_type * s2 = str + pos2;
-        return this->compare(s1, rcount1, s2, rcount2);
+        return this->compare(s1, rcount, str, len2);
     }
 
     constexpr int compare(size_type pos1, size_type count1, const this_type & sv,
@@ -318,6 +333,21 @@ public:
         size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
         const char_type * s1 = this->data() + pos1;
         const char_type * s2 = sv.data() + pos2;
+        return this->compare(s1, rcount1, s2, rcount2);
+    }
+
+    constexpr int compare(size_type pos1, size_type count1,
+                          const char_type * str, size_type count2) const {
+        if (pos1 > this->size()) {
+            throw std::out_of_range("basic_string_view<T>: "
+                    "compare(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
+        }
+        constexpr size_type pos2 = 0;
+        constexpr size_type len2 = libc::StrLen(str);
+        size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
+        size_type rcount2 = ((pos2 + count2) <= len2) ? count2 : (len2 - pos2);
+        const char_type * s1 = this->data() + pos1;
+        const char_type * s2 = str + pos2;
         return this->compare(s1, rcount1, s2, rcount2);
     }
 

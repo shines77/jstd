@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstddef>      // For std::size_t
 #include <string>
+#include <cwchar>       // std::wmemcpy()
 
 #include "jstd/string/string_def.h"
 #include "jstd/string/string_libc.h"
@@ -27,6 +28,71 @@
 
 namespace jstd {
 namespace str_utils {
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+template <typename CharTy>
+static inline
+CharTy * mem_copy(CharTy * dest, const CharTy * src, std::size_t count)
+{
+    while (count > 0) {
+        *dest++ = *src++;
+        count--;
+    }
+    return dest;
+}
+
+template <>
+static inline
+void * mem_copy(void * dest, const void * src, std::size_t count)
+{
+    return std::memcpy(dest, src, count * sizeof(char));
+}
+
+template <>
+static inline
+char * mem_copy(char * dest, const char * src, std::size_t count)
+{
+    return reinterpret_cast<char *>(std::memcpy((void *)dest, (const void *)src, count * sizeof(char)));
+}
+
+template <>
+static inline
+wchar_t * mem_copy(wchar_t * dest, const wchar_t * src, std::size_t count)
+{
+    return std::wmemcpy(dest, src, count * sizeof(wchar_t));
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+template <typename CharTy>
+static inline
+CharTy * str_copy(CharTy * dest, const CharTy * src, std::size_t count)
+{
+    typedef char_traits<CharTy>::uchar_type UCharTy;
+
+    while (count > 0) {
+        if (unlikely((UCharTy(*dest) & UCharTy(*src)) == 0))
+            break;
+        *dest++ = *src++;
+        count--;
+    }
+    return dest;
+}
+
+template <>
+static inline
+char * str_copy(char * dest, const char * src, std::size_t count)
+{
+    return std::strncpy(dest, src, count);
+}
+
+template <>
+static inline
+wchar_t * str_copy(wchar_t * dest, const wchar_t * src, std::size_t count)
+{
+    return std::wcsncpy(dest, src, count);
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 

@@ -27,6 +27,12 @@ struct string_traits {
     typedef std::ptrdiff_t  difference_type;
     typedef std::int32_t    state_type;
 
+    static constexpr size_type copy(char_type * dest, const char_type * src, size_type count) {
+        char_type * result =  str_utils::str_copy(dest, src, count);
+        assert(result >= dest);
+        return size_type(result - dest);
+    }
+
     static constexpr bool is_equal(const char_type * s1, const char_type * s2) {
         return str_utils::is_equal(s1, s2);
     }
