@@ -171,11 +171,11 @@ public:
     }
 
     bool is_equal(const this_type & rhs) const {
-        return str_utils::is_equals(*this, rhs);
+        return str_utils::is_equals_safe(*this, rhs);
     }
 
     bool is_equal(const string_type & rhs) const {
-        return str_utils::is_equals(this->data(), this->size(), rhs.data(), rhs.size());
+        return str_utils::is_equals_safe(this->data(), this->size(), rhs.data(), rhs.size());
     }
 
     int compare(const this_type & rhs) const {

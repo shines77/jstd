@@ -34,7 +34,7 @@ namespace str_utils {
 
 template <typename CharTy>
 static inline
-bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t length)
+bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -73,7 +73,7 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t leng
 
 template <typename CharTy>
 static inline
-bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t length)
+bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -82,11 +82,11 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t leng
     static const int kEqualEach = _SIDD_CHAR_OPS | _SIDD_CMP_EQUAL_EACH
                                 | _SIDD_NEGATIVE_POLARITY | _SIDD_LEAST_SIGNIFICANT;
     
-    std::ssize_t slength = (std::ssize_t)length;
+    int slength = (int)length;
     while (likely(slength > 0)) {
         __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
         __m128i __str2 = _mm_loadu_si128((const __m128i *)str2);
-        int len = ((int)slength >= kMaxSize) ? kMaxSize : (int)slength;
+        int len = (slength >= kMaxSize) ? kMaxSize : slength;
         assert(len > 0);
 
         int full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
@@ -111,7 +111,7 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t leng
 
 template <typename CharTy>
 static inline
-bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t length)
+bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t length)
 {
     assert(str1 != nullptr && str2 != nullptr);
 
@@ -170,7 +170,7 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t leng
 
 template <typename CharTy>
 static inline
-bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t count)
+bool is_equals(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
     return stl::StrEqual(str1, str2, count);
 }
@@ -179,14 +179,14 @@ bool is_equals_unsafe(const CharTy * str1, const CharTy * str2, std::size_t coun
 
 template <typename CharTy>
 static inline
-bool is_equals_flat(const CharTy * str1, const CharTy * str2, std::size_t count)
+bool is_equals_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
 #if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
-    return stl::StrEqual(str1, str2, count);
+    return stl::StrEqualSafe(str1, str2, count);
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return str_utils::is_equals_unsafe(str1, str2, count);
+        return str_utils::is_equals(str1, str2, count);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
@@ -205,7 +205,15 @@ static inline
 bool is_equals_flat(const StringType & str1, const StringType & str2)
 {
     assert(str1.size() == str2.size());
-    return str_utils::is_equals_flat(str1.c_str(), str2.c_str(), str1.size());   
+    return str_utils::is_equals(str1.c_str(), str2.c_str(), str1.size());   
+}
+
+template <typename StringType>
+static inline
+bool is_equals_flat_safe(const StringType & str1, const StringType & str2)
+{
+    assert(str1.size() == str2.size());
+    return str_utils::is_equals_safe(str1.c_str(), str2.c_str(), str1.size());   
 }
 
 template <typename CharTy>
@@ -218,7 +226,7 @@ bool is_equals(const CharTy * str1, std::size_t len1, const CharTy * str2, std::
     }
     else {
         if (likely(str1 != str2)) {
-            return str_utils::is_equals_flat(str1, str2, len1);
+            return str_utils::is_equals(str1, str2, len1);
         }
         else {
             // The str1 and str2 is a same string.
@@ -227,11 +235,38 @@ bool is_equals(const CharTy * str1, std::size_t len1, const CharTy * str2, std::
     }
 }
 
+template <typename CharTy>
+static inline
+bool is_equals_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+{
+    if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
+        assert(str1 != nullptr && str2 != nullptr);
+        return str_utils::is_equals(str1, len1, str2, len2);
+    }
+    else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
+        assert((str1 == nullptr && str2 != nullptr) ||
+               (str1 != nullptr && str2 == nullptr));
+        // For efficiency, use this method faster than (len1 == 0 && len2 == 0).
+        return (len1 == len2);
+    }
+    else {
+        assert(str1 == nullptr && str2 == nullptr);
+        return true;
+    }
+}
+
 template <typename StringType>
 static inline
-bool is_equals(const StringType & str1, const StringType & str2)
+bool is_equals_unsafe(const StringType & str1, const StringType & str2)
 {
     return str_utils::is_equals(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+}
+
+template <typename StringType>
+static inline
+bool is_equals_safe(const StringType & str1, const StringType & str2)
+{
+    return str_utils::is_equals_safe(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -245,7 +280,7 @@ int compare(const CharTy * str1, const CharTy * str2)
 
 template <typename CharTy>
 static inline
-int compare_unsafe(const CharTy * str1, const CharTy * str2, std::size_t count)
+int compare(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
 #if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
     return stl::StrCmp(str1, str2, count);
@@ -277,15 +312,16 @@ int compare_unsafe(const CharTy * str1, const CharTy * str2, std::size_t count)
             // Full matched, continue match next kMaxSize bytes.
             assert(matched_index >= kMaxSize);
             if (slen <= 0) {
-                assert(len == (kMaxSize - matched_index));
+                assert((matched_index == kMaxSize) ||
+                       (len == (matched_index - 1)));
             }
             continue;
         }
         else {
             // It's dismatched.
             assert(matched_index >= 0 && matched_index < kMaxSize);
+            assert(matched_index <= len);
             int offset = (kMaxSize - matched_index);
-            assert(offset < len);
             UCharTy ch1 = *((const UCharTy *)str1 - offset);
             UCharTy ch2 = *((const UCharTy *)str2 - offset);
             // The value of ch1 and ch2 must be not equal!
@@ -312,7 +348,7 @@ int compare_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return str_utils::compare_unsafe(str1, str2, count);
+        return str_utils::compare(str1, str2, count);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
@@ -331,7 +367,7 @@ int compare_safe(const CharTy * str1, const CharTy * str2, std::size_t count)
 
 template <typename CharTy>
 static inline
-int compare_unsafe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+int compare(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
 {
 #if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
     return stl::StrCmp(str1, len1, str2, len2);
@@ -364,15 +400,16 @@ int compare_unsafe(const CharTy * str1, std::size_t len1, const CharTy * str2, s
             // Full matched, continue match next kMaxSize bytes.
             assert(matched_index >= kMaxSize);
             if (slen <= 0) {
-                assert(len == (kMaxSize - matched_index));
+                assert((matched_index == kMaxSize) ||
+                       (len == (matched_index - 1)));
             }
             continue;
         }
         else {
             // It's dismatched.
             assert(matched_index >= 0 && matched_index < kMaxSize);
+            assert(matched_index <= len);
             int offset = (kMaxSize - matched_index);
-            assert(offset < len);
             UCharTy ch1 = *((const UCharTy *)str1 - offset);
             UCharTy ch2 = *((const UCharTy *)str2 - offset);
             // The value of ch1 and ch2 must be not equal!
@@ -403,7 +440,7 @@ int compare_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, std
 #else
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
-        return str_utils::compare_unsafe(str1, len1, str2, len2);
+        return str_utils::compare(str1, len1, str2, len2);
     }
     else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
         assert((str1 == nullptr && str2 != nullptr) ||
@@ -424,7 +461,7 @@ template <typename StringType>
 static inline
 int compare_unsafe(const StringType & str1, const StringType & str2)
 {
-    return str_utils::compare_unsafe(str1.c_str(), str1.size(), str2.c_str(), str2.size());
+    return str_utils::compare(str1.c_str(), str1.size(), str2.c_str(), str2.size());
 }
 
 template <typename StringType>

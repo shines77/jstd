@@ -43,7 +43,7 @@ struct equal_to<std::string> {
     }
 #else
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return str_utils::is_equals(key1, key2);
+        return str_utils::is_equals_safe(key1, key2);
     }
 #endif // STRING_UTILS_MODE
 };
@@ -61,7 +61,7 @@ struct equal_to<std::wstring> {
     }
 #else
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return str_utils::is_equals(key1, key2);
+        return str_utils::is_equals_safe(key1, key2);
     }
 #endif // STRING_UTILS_MODE
 };
