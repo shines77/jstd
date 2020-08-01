@@ -154,6 +154,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_stl.h">
       <Filter>src\string</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_helper.h">
+      <Filter>src\string</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">

@@ -11,6 +11,8 @@
 #include "jstd/basic/stdsize.h"
 
 #include <string.h>
+#include <assert.h>
+
 #include <cstdint>  // for std::intptr_t
 #include <cstddef>  // for std::ptrdiff_t
 #include <cstring>
@@ -20,8 +22,8 @@
 
 #include "jstd/string/string_traits.h"
 #include "jstd/string/string_iterator.h"
-#include "jstd/string/string_utils.h"
 #include "jstd/string/string_libc.h"
+#include "jstd/string/string_utils.h"
 
 namespace jstd {
 
@@ -208,75 +210,6 @@ public:
     }
 }; // class basic_string_view<CharTy>
 
-template <typename StringTy, typename CharTy>
-class basic_string_helper {
-public:
-    typedef basic_string_helper<StringTy, CharTy>
-                                this_type;
-    typedef StringTy            string_type;
-    typedef CharTy              char_type;
-
-private:
-    string_type str_;
-    bool        truncated_;
-    char_type   save_char_;
-
-public:
-    basic_string_helper()
-        : truncated_(false),
-          save_char_(static_cast<char_type>('\0')) {
-        (void)save_char_;
-    }
-    ~basic_string_helper() { detach(); }
-
-    bool attach(const string_type & str) {
-        // If the string reference don't recover the truncated char,
-        // don't accept the new attach.
-        if (likely(!truncated_)) {
-            str_ = str;
-        }
-        return (!truncated_);
-    }
-
-    void detach() {
-        // If have be truncated, recover the saved terminator char first,
-        // and then clear the string reference.
-        if (unlikely(truncated_)) {
-            recover();
-            str_.clear();
-        }
-    }
-
-    void truncate() {
-        if (likely(!truncated_)) {
-            char_type * first = (char_type *)str_.data();
-            char_type * last = first + str_.size();
-            assert(last != nullptr);
-            save_char_ = *last;
-            *last = static_cast<char_type>('\0');
-            truncated_ = true;
-        }
-    }
-
-    void recover() {
-        if (likely(truncated_)) {
-            char_type * first = (char_type *)str_.data();
-            char_type * last = first + str_.size();
-            assert(last != nullptr);
-            *last = save_char_;
-            truncated_ = false;
-        }
-    }
-
-    void swap(this_type & right) {
-        if (&right != this) {
-            this->str_.swap(right.str_);
-            std::swap(this->truncated_, right.truncated_);
-            std::swap(this->save_char_, right.save_char_);
-        }
-    }
-};
-
 template <typename CharTy>
 inline
 void swap(basic_string_view<CharTy> & lhs, basic_string_view<CharTy> & rhs) {
@@ -301,24 +234,11 @@ bool operator > (const basic_string_view<CharTy> & lhs, const basic_string_view<
     return (lhs.compare(rhs) == jstd::StrUtils::IsBigger);
 }
 
-template <typename StringTy, typename CharTy>
-inline
-void swap(basic_string_helper<StringTy, CharTy> & lhs,
-          basic_string_helper<StringTy, CharTy> & rhs) {
-    lhs.swap(rhs);
-}
-
 typedef basic_string_view<char>                         string_view;
 typedef basic_string_view<wchar_t>                      wstring_view;
 
 typedef basic_string_view<char>                         StringRef;
 typedef basic_string_view<wchar_t>                      StringRefW;
-
-typedef basic_string_helper<std::string, char>          string_helper;
-typedef basic_string_helper<std::wstring, wchar_t>      wstring_helper;
-
-typedef basic_string_helper<string_view, char>          string_view_helper;
-typedef basic_string_helper<wstring_view, wchar_t>      wstring_view_helper;
 
 } // namespace jstd
 
@@ -327,13 +247,6 @@ namespace std {
 template <typename CharTy>
 inline
 void swap(jstd::basic_string_view<CharTy> & lhs, jstd::basic_string_view<CharTy> & rhs) {
-    lhs.swap(rhs);
-}
-
-template <typename StringTy, typename CharTy>
-inline
-void swap(jstd::basic_string_helper<StringTy, CharTy> & lhs,
-          jstd::basic_string_helper<StringTy, CharTy> & rhs) {
     lhs.swap(rhs);
 }
 
