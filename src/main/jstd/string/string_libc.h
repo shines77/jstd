@@ -134,8 +134,8 @@ bool StrEqual(const CharTy * str1, std::size_t len1, const CharTy * str2, std::s
 template <typename StringTy>
 inline
 bool StrEqual(const StringTy & str1, const StringTy & str2) {
-    typename StringTy::value_type   char_type;
-    typename StringTy::size_type    size_type;
+    typedef typename StringTy::value_type   char_type;
+    typedef typename StringTy::size_type    size_type;
 
     const char_type * s1 = str1.data();
     const char_type * s2 = str2.data();
@@ -250,8 +250,8 @@ int StrCmp(const StringTy & str1, const StringTy & str2) {
 template <typename StringTy>
 inline
 int StrCmpSafe(const StringTy & str1, const StringTy & str2) {
-    typename StringTy::value_type   char_type;
-    typename StringTy::size_type    size_type;
+    typedef typename StringTy::value_type   char_type;
+    typedef typename StringTy::size_type    size_type;
 
     const char_type * s1 = str1.data();
     const char_type * s2 = str2.data();
