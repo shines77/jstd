@@ -122,7 +122,7 @@ bool StrEqual(const CharTy * str1, std::size_t len1, const CharTy * str2, std::s
     }
     else {
         if (likely(str1 != str2)) {
-            return str_utils::StrEqual(str1, str2, len1);
+            return StrEqual(str1, str2, len1);
         }
         else {
             // The str1 and str2 is a same string.
