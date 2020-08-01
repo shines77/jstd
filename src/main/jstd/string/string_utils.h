@@ -261,22 +261,24 @@ int compare_unsafe(const CharTy * str1, const CharTy * str2, std::size_t count)
     typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
     int slen = (int)count;
-    int len, full_matched, matched_index;
 
     while (likely(slen > 0)) {
         __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
         __m128i __str2 = _mm_loadu_si128((const __m128i *)str2);
-        len = (slen >= kMaxSize) ? kMaxSize : slen;
+        int len = (slen >= kMaxSize) ? kMaxSize : slen;
         assert(len > 0);
 
-        full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
-        matched_index = _mm_cmpestri(__str1, len, __str2, len, kEqualEach);
+        int full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
+        int matched_index = _mm_cmpestri(__str1, len, __str2, len, kEqualEach);
         str1 += kMaxSize;
         str2 += kMaxSize;
         slen -= kMaxSize;
         if (likely(full_matched == 0)) {
             // Full matched, continue match next kMaxSize bytes.
             assert(matched_index >= kMaxSize);
+            if (slen <= 0) {
+                assert(len == (kMaxSize - matched_index));
+            }
             continue;
         }
         else {
@@ -296,9 +298,8 @@ int compare_unsafe(const CharTy * str1, const CharTy * str2, std::size_t count)
     }
 
     // It's matched, or the length is equal 0.
-    assert(len == (kMaxSize - matched_index));
-
     return CompareResult::IsEqual;
+
 #endif // STRING_UTILS_MODE
 }
 
@@ -347,22 +348,24 @@ int compare_unsafe(const CharTy * str1, std::size_t len1, const CharTy * str2, s
 
     std::size_t count = (len1 <= len2) ? len1 : len2;
     int slen = (int)count;
-    int len, full_matched, matched_index;
 
     while (likely(slen > 0)) {
         __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
         __m128i __str2 = _mm_loadu_si128((const __m128i *)str2);
-        len = (slen >= kMaxSize) ? kMaxSize : slen;
+        int len = (slen >= kMaxSize) ? kMaxSize : slen;
         assert(len > 0);
 
-        full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
-        matched_index = _mm_cmpestri(__str1, len, __str2, len, kEqualEach);
+        int full_matched = _mm_cmpestrc(__str1, len, __str2, len, kEqualEach);
+        int matched_index = _mm_cmpestri(__str1, len, __str2, len, kEqualEach);
         str1 += kMaxSize;
         str2 += kMaxSize;
         slen -= kMaxSize;
         if (likely(full_matched == 0)) {
             // Full matched, continue match next kMaxSize bytes.
             assert(matched_index >= kMaxSize);
+            if (slen <= 0) {
+                assert(len == (kMaxSize - matched_index));
+            }
             continue;
         }
         else {
@@ -382,8 +385,6 @@ int compare_unsafe(const CharTy * str1, std::size_t len1, const CharTy * str2, s
     }
 
     // It's matched, or the length is equal 0.
-    assert(len == (kMaxSize - matched_index));
-
     if (len1 > len2)
         return CompareResult::IsBigger;
     else if (len1 < len2)

@@ -41,11 +41,11 @@ struct equal_to<std::string> {
     bool operator () (const key_type & key1, const key_type & key2) const {
         return stl::StrEqualSafe(key1, key2);
     }
-#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
+#else
     bool operator () (const key_type & key1, const key_type & key2) const {
         return str_utils::is_equals(key1, key2);
     }
-#endif
+#endif // STRING_UTILS_MODE
 };
 
 template <>
@@ -59,11 +59,11 @@ struct equal_to<std::wstring> {
     bool operator () (const key_type & key1, const key_type & key2) const {
         return stl::StrEqualSafe(key1, key2);
     }
-#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
+#else
     bool operator () (const key_type & key1, const key_type & key2) const {
         return str_utils::is_equals(key1, key2);
     }
-#endif
+#endif // STRING_UTILS_MODE
 };
 
 } // namespace jstd

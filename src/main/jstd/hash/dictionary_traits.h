@@ -62,7 +62,7 @@ struct DefaultDictionaryComparer {
     DefaultDictionaryComparer() {}
     ~DefaultDictionaryComparer() {}
 
-#if (STRING_UTILS_MODE == STRING_UTILS_LIBC)
+#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
 
     bool key_is_equals(const key_type & key1, const key_type & key2) const {
         return (::strcmp(key1.c_str(), key2. c_str()) == 0);
@@ -80,7 +80,7 @@ struct DefaultDictionaryComparer {
         return ::strcmp(value1.c_str(), value2. c_str());
     }
 
-#else // (STRING_UTILS_MODE != STRING_UTILS_LIBC)
+#else // (STRING_UTILS_MODE == STRING_UTILS_SSE42)
 
     bool key_is_equals(const key_type & key1, const key_type & key2) const {
         return str_utils::is_equals(key1, key2);
