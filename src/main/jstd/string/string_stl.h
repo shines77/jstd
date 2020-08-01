@@ -44,7 +44,6 @@ bool StrEqual(const CharTy * str1, const CharTy * str2, std::size_t count) {
     return (std::memcmp((const void *)str1, (const void *)str2, count * sizeof(CharTy)) == 0);
 }
 
-
 /*********************************************************************
 
 // Maybe this is superfluous -- paint a snake with feet.

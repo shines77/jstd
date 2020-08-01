@@ -239,6 +239,25 @@ template <typename CharTy>
 static inline
 bool is_equals_safe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
 {
+    if (likely(len1 != len2)) {
+        // The length of str1 and str2 is different, the string must be not equal.
+        return false;
+    }
+    else {
+        if (likely(str1 != str2)) {
+            return str_utils::is_equals_safe(str1, str2, len1);
+        }
+        else {
+            // The str1 and str2 is a same string.
+            return true;
+        }
+    }
+}
+
+template <typename CharTy>
+static inline
+bool is_equals_safe_slowly(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
+{
     if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
         assert(str1 != nullptr && str2 != nullptr);
         return str_utils::is_equals(str1, len1, str2, len2);

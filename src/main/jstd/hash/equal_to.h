@@ -37,15 +37,9 @@ struct equal_to<std::string> {
     equal_to() {}
     ~equal_to() {}
 
-#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
-    bool operator () (const key_type & key1, const key_type & key2) const {
-        return stl::StrEqualSafe(key1, key2);
-    }
-#else
     bool operator () (const key_type & key1, const key_type & key2) const {
         return str_utils::is_equals_safe(key1, key2);
     }
-#endif // STRING_UTILS_MODE
 };
 
 template <>
@@ -55,15 +49,9 @@ struct equal_to<std::wstring> {
     equal_to() {}
     ~equal_to() {}
 
-#if (STRING_UTILS_MODE != STRING_UTILS_SSE42)
-    bool operator () (const key_type & key1, const key_type & key2) const {
-        return stl::StrEqualSafe(key1, key2);
-    }
-#else
     bool operator () (const key_type & key1, const key_type & key2) const {
         return str_utils::is_equals_safe(key1, key2);
     }
-#endif // STRING_UTILS_MODE
 };
 
 } // namespace jstd

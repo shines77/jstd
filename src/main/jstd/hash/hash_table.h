@@ -359,9 +359,9 @@ public:
                 // Found, next to check the hash value.
                 if (likely(node->hash == hash)) {
                     // If hash value is equal, then compare the key sizes and the strings.
-                    if (likely(key.size() == node->pair.first.size())) {
+                    if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                        if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
+                        if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
                             return (iterator)&this->table_[index];
                         }
 #else
@@ -381,9 +381,9 @@ public:
                 if (likely(node != nullptr)) {
                     if (likely(node->hash == hash)) {
                         // If hash value is equal, then compare the key sizes and the strings.
-                        if (likely(key.size() == node->pair.first.size())) {
+                        if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                            if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
+                            if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
                                 return (iterator)&this->table_[index];
                             }
 #else
@@ -411,9 +411,9 @@ public:
             // Found, next to check the hash value.
             if (likely(node->hash == hash)) {
                 // If hash value is equal, then compare the key sizes and the strings.
-                if (likely(key.size() == node->pair.first.size())) {
+                if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                    if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
+                    if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
                         return (iterator)&this->table_[index];
                     }
 #else
@@ -433,9 +433,9 @@ public:
             if (likely(node != nullptr)) {
                 if (likely(node->hash == hash)) {
                     // If hash value is equal, then compare the key sizes and the strings.
-                    if (likely(key.size() == node->pair.first.size())) {
+                    if (unlikely(key.size() == node->pair.first.size())) {
 #if USE_SSE42_STRING_COMPARE
-                        if (likely(str_utils::is_equals_flat(key, node->pair.first))) {
+                        if (likely(str_utils::is_equals_flat_safe(key, node->pair.first))) {
                             return (iterator)&this->table_[index];
                         }
 #else
