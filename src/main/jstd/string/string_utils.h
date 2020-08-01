@@ -42,21 +42,19 @@ CharTy * mem_copy(CharTy * dest, const CharTy * src, std::size_t count)
     return dest;
 }
 
-template <>
 static inline
 void * mem_copy(void * dest, const void * src, std::size_t count)
 {
     return std::memcpy(dest, src, count * sizeof(char));
 }
 
-template <>
 static inline
 char * mem_copy(char * dest, const char * src, std::size_t count)
 {
     return reinterpret_cast<char *>(std::memcpy((void *)dest, (const void *)src, count * sizeof(char)));
 }
 
-template <>
+
 static inline
 wchar_t * mem_copy(wchar_t * dest, const wchar_t * src, std::size_t count)
 {
@@ -80,14 +78,12 @@ CharTy * str_copy(CharTy * dest, const CharTy * src, std::size_t count)
     return dest;
 }
 
-template <>
 static inline
 char * str_copy(char * dest, const char * src, std::size_t count)
 {
     return std::strncpy(dest, src, count);
 }
 
-template <>
 static inline
 wchar_t * str_copy(wchar_t * dest, const wchar_t * src, std::size_t count)
 {
