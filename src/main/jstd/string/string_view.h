@@ -219,8 +219,9 @@ public:
                     "is_equal(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
         }
         constexpr size_type pos2 = 0;
+        constexpr size_type len2 = libc::StrLen(str);
         size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
-        size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
+        size_type rcount2 = ((pos2 + count2) <= len2) ? count2 : (len2 - pos2);
         const char_type * s1 = this->data() + pos1;
         const char_type * s2 = str + pos2;
         return this->is_equal(s1, rcount1, s2, rcount2);
@@ -295,8 +296,9 @@ public:
                     "compare(pos1, count1, sv, pos2, count2): pos1 out_of_range.");
         }
         constexpr size_type pos2 = 0;
+        constexpr size_type len2 = libc::StrLen(str);
         size_type rcount1 = ((pos1 + count1) <= this->size()) ? count1 : (this->size() - pos1);
-        size_type rcount2 = ((pos2 + count2) <= sv.size()) ? count2 : (sv.size() - pos2);
+        size_type rcount2 = ((pos2 + count2) <= len2) ? count2 : (len2 - pos2);
         const char_type * s1 = this->data() + pos1;
         const char_type * s2 = str + pos2;
         return this->compare(s1, rcount1, s2, rcount2);
