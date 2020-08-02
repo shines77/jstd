@@ -1,5 +1,5 @@
 
-// Enable Visual Leak Detector (Visual Studio)
+// Enable Visual Leak Detector (For Visual Studio)
 #define JSTD_ENABLE_VLD     1
 
 #ifdef _MSC_VER
@@ -10,12 +10,23 @@
 
 #ifndef __SSE4_2__
 #define __SSE4_2__              1
-#endif // __SSE4_2__
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+/* SIMD Support */
+#define __SUPPORT_MMX__         1
+#define __SUPPORT_SSE__         1
+#define __SUPPORT_SSE2__        1
+#define __SUPPORT_SSE3__        1
+#define __SUPPORT_SSSE3__       1
+#define __SUPPORT_SSE4__        1
+#define __SUPPORT_SSE4A__       1
+#define __SUPPORT_SSE41__       1
+#define __SUPPORT_SSE42__       1
 
 #if __SSE4_2__
 
@@ -1753,13 +1764,34 @@ void run_hashtable_benchmark()
     run_hashtable_rehash2_benchmark();
 }
 
+void run_string_view_test()
+{
+    string_view sv1(header_fields[4]);
+    //sv1[2] = 'a';
+
+    std::string str1("12345676890");
+
+    printf("str1 = %s\n", str1.c_str());
+
+    string_view sv2("abcdefg");
+    std::size_t n2 = sv2.copy((char *)str1.data(), 4, 0);
+
+    printf("str1 = %s\n", str1.c_str());
+
+    string_view sv3(str1);
+    sv3[2] = 'q';
+
+    printf("str1 = %s\n", str1.c_str());
+}
+
 int main(int argc, char *argv[])
 {
     test::cpu_warmup(1000);
 
+    run_string_view_test();
     run_iterator_test();
 
-    run_hashtable_benchmark();
+    //run_hashtable_benchmark();
 
 #ifdef _WIN32
     ::system("pause");
