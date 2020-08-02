@@ -1085,7 +1085,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static int get_num_cores(void) {
 
-#ifdef defined(OS_WINDOWS)
+#if defined(OS_WINDOWS)
     SYSTEM_INFO sysinfo;
 
     GetSystemInfo(&sysinfo);

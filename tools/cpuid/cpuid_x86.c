@@ -215,10 +215,20 @@ static C_INLINE int have_excpuid(void)
 }
 
 #ifndef NO_AVX
+struct reg64_t {
+    int low;
+    int high;
+};
+
 static C_INLINE void xgetbv(int op, int * eax, int * edx) {
-    //Use binary code for xgetbv
+    // Use binary code for xgetbv
 #if defined(_MSC_VER) && !defined(__clang__)
-    *eax = __xgetbv(op);
+
+    unsigned __int64 result = __xgetbv(op);
+
+    struct reg64_t * r64 = (struct reg64_t *)&result;
+    *eax = r64->low;
+    *edx = r64->high;
 #else
     __asm__ __volatile__
     (".byte 0x0f, 0x01, 0xd0": "=a" (*eax), "=d" (*edx) : "c" (op) : "cc");
@@ -532,17 +542,17 @@ int get_vendor(void)
     return VENDOR_UNKNOWN;
 }
 
-int get_cpuinfo(int gettype)
+int get_cpuinfo(int info_type)
 {
     int eax, ebx, ecx, edx;
-    int extend_family, family;
-    int extend_model, model;
-    int type, stepping;
+    // int extend_family, family;
+    // int extend_model, model;
+    // int cpu_type, stepping;
     int feature = 0;
 
     cpuid(1, &eax, &ebx, &ecx, &edx);
 
-    switch (gettype) {
+    switch (info_type) {
         case GET_EXFAMILY:
             return BITMASK(eax, 20, 0xff);
         case GET_EXMODEL:
@@ -2267,17 +2277,17 @@ int get_coretype(void)
     return CORE_UNKNOWN;
 }
 
-char * get_cpunamechar(void)
+const char * get_cpunamechar(void)
 {
     return cpuname[get_cputype()];
 }
 
-char * get_lower_cpunamechar(void)
+const char * get_lower_cpunamechar(void)
 {
     return lowercpuname[get_cputype()];
 }
 
-char * get_corename(void)
+const char * get_corename(void)
 {
     return corename[get_coretype()];
 }
