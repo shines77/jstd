@@ -150,9 +150,9 @@ IcUpdateLog.htm
 # Ignore CMake cache or temp files(folders)
 /CMakeFiles
 /Makefile
-# /cmake/
 *CMakeCache.txt
-*.cmake
+# /cmake/
+# *.cmake
 
 # Ignore dependency library folders
 /deps/boost/
