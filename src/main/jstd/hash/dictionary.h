@@ -960,18 +960,46 @@ public:
         this->rehash_internal<true>(new_bucket_capacity);
     }
 
+#if 1
     iterator find(const key_type & key) {
         if (likely(this->buckets() != nullptr)) {
             hash_code_t hash_code = this->get_hash(key);
             index_type index = this->index_of(hash_code, this->bucket_mask_);
 
             entry_type * first = this->buckets_[index];
-            if (likely(this->key_is_equal_(key, first->value.first))) {
-                return iterator(first);
+            if (likely(first != nullptr)) {
+                if (likely(first->hash_code == hash_code &&
+                           this->key_is_equal_(key, first->value.first))) {
+                    return iterator(first);
+                }
+
+                entry_type * entry = first->next;
+                do {
+                    if (likely(entry->hash_code != hash_code)) {
+                        entry = entry->next;
+                    }
+                    else {
+                        if (likely(this->key_is_equal_(key, entry->value.first))) {
+                            return iterator(entry);
+                        }
+                        entry = entry->next;
+                    }
+                } while (likely(entry != nullptr));
             }
 
-            entry_type * entry = first->next;
-            do {
+            return this->unsafe_end();  // Not found
+        }
+
+        return iterator(nullptr);   // Error: buckets data is invalid
+    }
+#else
+    iterator find(const key_type & key) {
+        if (likely(this->buckets() != nullptr)) {
+            hash_code_t hash_code = this->get_hash(key);
+            index_type index = this->index_of(hash_code, this->bucket_mask_);
+
+            entry_type * entry = this->buckets_[index];
+            while (likely(entry != nullptr)) {
                 if (likely(entry->hash_code != hash_code)) {
                     entry = entry->next;
                 }
@@ -981,13 +1009,14 @@ public:
                     }
                     entry = entry->next;
                 }
-            } while (likely(entry != nullptr));
+            }
 
             return this->unsafe_end();  // Not found
         }
 
         return iterator(nullptr);   // Error: buckets data is invalid
     }
+#endif
 
     bool contains(const key_type & key) {
         iterator iter = this->find(key);
