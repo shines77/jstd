@@ -48,7 +48,7 @@ namespace jstd {
 template < typename Key, typename Value,
            std::size_t HashFunc = HashFunc_Default,
            std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
-           typename Hasher = hash<Key, HashFunc>,
+           typename Hasher = hash<Key, std::uint32_t, HashFunc>,
            typename KeyEqual = equal_to<Key>,
            typename Allocator = allocator<std::pair<const Key, Value>, Alignment, false> >
 class BasicDictionary {

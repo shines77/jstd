@@ -81,7 +81,7 @@ static uint32_t crc32c_x86(const char * data, size_t length)
 
     return ~crc32;
 #else
-    return 0;
+    return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
 }
 
@@ -127,7 +127,7 @@ static uint32_t crc32c_x64(const char * data, size_t length)
     return crc32c_x86(data, length);
 #endif // CRC32C_IS_X86_64
 #else
-    return 0;
+    return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
 }
 
@@ -157,7 +157,7 @@ static uint32_t crc32c_hw_u64(const char * data, size_t length)
     }
     return ~crc32;
 #else
-    return 0;
+    return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
 }
 
@@ -190,7 +190,7 @@ static uint32_t crc32c_hw_u64_v2(const char * data, size_t length)
     }
     return ~crc32;
 #else
-    return 0;
+    return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
 }
 
@@ -220,7 +220,7 @@ static uint32_t crc32c_hw_u32(const char * data, size_t length)
     }
     return ~crc32;
 #else
-    return 0;
+    return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
 }
 

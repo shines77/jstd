@@ -44,7 +44,7 @@ namespace jstd {
 namespace v1 {
 
 template < typename Key, typename Value, std::size_t HashFunc = HashFunc_Default,
-           typename Hasher = hash<Key, HashFunc>,
+           typename Hasher = hash<Key, std::uint32_t, HashFunc>,
            typename KeyEqual = equal_to<Key> >
 class BasicDictionary {
 public:

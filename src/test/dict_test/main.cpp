@@ -316,7 +316,7 @@ namespace std {
 template <>
 struct hash<jstd::StringRef> {
     typedef jstd::StringRef         argument_type;
-    typedef std::size_t             result_type;
+    typedef std::uint32_t           result_type;
     typedef std::hash<std::string>  hasher_type;
 
 #if USE_STRINGREF_STD_HASH
@@ -330,13 +330,13 @@ struct hash<jstd::StringRef> {
 #else // !USE_STRINGREF_STD_HASH
 
 #if JSTD_HAVE_SSE42_CRC32C
-    jstd::hash<jstd::StringRef, HashFunc_CRC32C, std::uint32_t> hasher_;
+    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
 #else
-    jstd::hash<jstd::StringRef, HashFunc_Time31, std::uint32_t> hasher_;
+    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_Time31> hash_helper_;
 #endif
 
     result_type operator()(argument_type const & key) const {
-        return hasher_(key);
+        return hash_helper_.getHashCode(key);
     }
 
 #endif // USE_STRINGREF_STD_HASH
@@ -349,16 +349,16 @@ namespace jstd {
 template <>
 struct hash<jstd::StringRef> {
     typedef jstd::StringRef         argument_type;
-    typedef std::size_t             result_type;
+    typedef std::uint32_t           result_type;
 
 #if JSTD_HAVE_SSE42_CRC32C
-    jstd::hash<jstd::StringRef, HashFunc_CRC32C, std::uint32_t> hasher_;
+    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
 #else
-    jstd::hash<jstd::StringRef, HashFunc_Time31, std::uint32_t> hasher_;
+    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_Time31> hash_helper_;
 #endif
 
     result_type operator()(argument_type const & key) const {
-        return hasher_(key);
+        return hash_helper_.getHashCode(key);
     }
 };
 

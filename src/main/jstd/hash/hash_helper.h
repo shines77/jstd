@@ -33,13 +33,19 @@
                 >::type decay_type;                                             \
                                                                                 \
         static ResultType getHashCode(char_type * data, std::size_t length) {   \
-            return (ResultType)HashFunc((const char *)data,                     \
-                                        length * sizeof(char_type));            \
+            if (likely(data != nullptr))                                        \
+                return (ResultType)HashFunc((const char *)data,                 \
+                                            length * sizeof(char_type));        \
+            else                                                                \
+                return 0;                                                       \
         }                                                                       \
                                                                                 \
         static ResultType getHashCode(char_type * data) {                       \
-            return (ResultType)HashFunc((const char *)data,                     \
-                             jstd::libc::StrLen((const decay_type *)data));     \
+            if (likely(data != nullptr))                                        \
+                return (ResultType)HashFunc((const char *)data,                 \
+                                jstd::libc::StrLen((const decay_type *)data));  \
+            else                                                                \
+                return 0;                                                       \
         }                                                                       \
     }
 
@@ -90,8 +96,8 @@
 namespace jstd {
 
 enum hash_func_id_t {
-    HashFunc_Default,
     HashFunc_CRC32C,
+    HashFunc_Default = HashFunc_CRC32C,
     HashFunc_Time31,
     HashFunc_Time31Std,
     HashFunc_SHA1_MSG2,
@@ -112,7 +118,14 @@ struct hash_helper {
             >::type     key_type;
 
     static ResultType getHashCode(const key_type & key) {
-        return static_cast<result_type>(hashes::Times31((const char *)&key, sizeof(key)));
+        if (HashFunc == HashFunc_CRC32C)
+            return static_cast<result_type>(crc32::crc32c_x64((const char *)&key, sizeof(key)));
+        else if (HashFunc == HashFunc_Time31)
+            return static_cast<result_type>(hashes::Times31((const char *)&key, sizeof(key)));
+        else if (HashFunc == HashFunc_Time31Std)
+            return static_cast<result_type>(hashes::Times31_std((const char *)&key, sizeof(key)));
+        else
+            return static_cast<result_type>(crc32::crc32c_x64((const char *)&key, sizeof(key)));
     }
 };
 
@@ -129,7 +142,14 @@ struct hash_helper<T *, ResultType, HashFunc> {
             >::type     key_type;
 
     static result_type getHashCode(const key_type * key) {
-        return static_cast<result_type>(hashes::Times31((const char *)key, sizeof(key_type *)));
+        if (HashFunc == HashFunc_CRC32C)
+            return static_cast<result_type>(crc32::crc32c_x64((const char *)key, sizeof(key_type *)));
+        else if (HashFunc == HashFunc_Time31)
+            return static_cast<result_type>(hashes::Times31((const char *)key, sizeof(key_type *)));
+        else if (HashFunc == HashFunc_Time31Std)
+            return static_cast<result_type>(hashes::Times31_std((const char *)key, sizeof(key_type *)));
+        else
+            return static_cast<result_type>(crc32::crc32c_x64((const char *)key, sizeof(key_type *)));
     }
 };
 
@@ -287,8 +307,8 @@ struct hash_traits {
 
 };
 
-template <typename Key, std::size_t HashFunc = HashFunc_Default,
-          typename ResultType = std::uint32_t>
+template <typename Key, typename ResultType = std::uint32_t,
+                        std::size_t HashFunc = HashFunc_Default>
 struct hash {
     typedef typename std::remove_pointer<
                 typename std::remove_cv<
@@ -296,8 +316,8 @@ struct hash {
                 >::type
             >::type     key_type;
 
-    typedef Key             argument_type;
-    typedef ResultType      result_type;
+    typedef Key         argument_type;
+    typedef ResultType  result_type;
 
     hash() {}
     ~hash() {}
