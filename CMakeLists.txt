@@ -76,6 +76,9 @@ if (WIN32)
     ## set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 mswsock)
 endif()
 
+# Disable jstd library compile
+if (0)
+
 set(JSTD_LIBNAME jstd${SUFFIX64_UNDERSCORE})
 
 # Set default library output directory
@@ -183,6 +186,8 @@ if (BUILD_SHARED_LIBS AND NOT ${SYMBOLPREFIX}${SYMBOLSUFFIX} STREQUAL "")
         message(STATUS "adding suffix ${SYMBOLSUFFIX} to names of exported symbols in ${JSTD_LIBNAME}")
     endif()
 endif()
+
+endif() # Disable jstd library compile
 
 project(dict-test)
 
