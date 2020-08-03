@@ -41,7 +41,7 @@
 
 if (DEFINED CPUIDEMU)
     set(EXFLAGS "-DCPUIDEMU -DVENDOR=99")
-endif ()
+endif()
 
 set(TARGET_CONF "src/main/jstd/config.h")
 set(TARGET_CONF_DIR ${PROJECT_BINARY_DIR})
@@ -184,7 +184,7 @@ if (DEFINED CORE AND CMAKE_CROSSCOMPILING AND NOT (${HOST_OS} STREQUAL "WINDOWSS
         else ()
             set(SGEMM_UNROLL_M 8)
             set(SGEMM_UNROLL_N 8) 
-        endif ()
+        endif()
         set(DGEMM_UNROLL_M 8)
         set(DGEMM_UNROLL_N 4)
         set(CGEMM_UNROLL_M 8)
@@ -492,7 +492,7 @@ else(NOT CMAKE_CROSSCOMPILING)
         message("MSVC")
         set(GETARCH_FLAGS ${GETARCH_FLAGS} -DFORCE_GENERIC)
     else()
-        list(APPEND GETARCH_SRC ${PROJECT_SOURCE_DIR}/cpuid.S)
+        list(APPEND GETARCH_SRC ${PROJECT_SOURCE_DIR}/tools/cpuid/cpuid.S)
         if (DEFINED TARGET_CORE)
             set(GETARCH_FLAGS ${GETARCH_FLAGS} -DFORCE_${TARGET_CORE})
         endif()
@@ -547,8 +547,8 @@ else(NOT CMAKE_CROSSCOMPILING)
 
         if (NOT ${GETARCH2_RESULT})
             MESSAGE(FATAL_ERROR "Compiling get-arch-2nd failed ${GETARCH2_LOG}")
-        endif ()
-    endif ()
+        endif()
+    endif()
 
     # use the cmake binary w/ the -E param to run a shell command in a cross-platform way
     execute_process(COMMAND "${PROJECT_BINARY_DIR}/${GETARCH2_BIN}" 0 OUTPUT_VARIABLE GETARCH2_MAKE_OUT)
