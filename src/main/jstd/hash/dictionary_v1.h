@@ -953,7 +953,7 @@ using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31>;
 template <typename Key, typename Value>
 using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std>;
 
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
 template <typename Key, typename Value>
 using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C>;
 
@@ -962,7 +962,7 @@ using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C>;
 #else
 template <typename Key, typename Value>
 using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31>;
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 
 } // namespace v1
 } // namespace jstd

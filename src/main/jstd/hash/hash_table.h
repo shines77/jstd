@@ -596,7 +596,7 @@ using hash_table_time31 = basic_hash_table<Key, Value, HashFunc_Time31>;
 template <typename Key, typename Value>
 using hash_table_time31_std = basic_hash_table<Key, Value, HashFunc_Time31Std>;
 
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
 template <typename Key, typename Value>
 using hash_table = basic_hash_table<Key, Value, HashFunc_CRC32C>;
 #else

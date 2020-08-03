@@ -965,23 +965,28 @@ public:
             hash_code_t hash_code = this->get_hash(key);
             index_type index = this->index_of(hash_code, this->bucket_mask_);
 
-            entry_type * entry = this->buckets_[index];
-            while (likely(entry != nullptr)) {
+            entry_type * first = this->buckets_[index];
+            if (likely(this->key_is_equal_(key, first->value.first))) {
+                return iterator(first);
+            }
+
+            entry_type * entry = first->next;
+            do {
                 if (likely(entry->hash_code != hash_code)) {
                     entry = entry->next;
                 }
                 else {
                     if (likely(this->key_is_equal_(key, entry->value.first))) {
-                        return (iterator)entry;
+                        return iterator(entry);
                     }
                     entry = entry->next;
                 }
-            }
+            } while (likely(entry != nullptr));
 
             return this->unsafe_end();  // Not found
         }
 
-        return nullptr; // Error: buckets data is invalid
+        return iterator(nullptr);   // Error: buckets data is invalid
     }
 
     bool contains(const key_type & key) {
@@ -1151,7 +1156,7 @@ using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, Alignment
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
 using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, Alignment>;
 
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
 using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment>;
 
@@ -1160,7 +1165,7 @@ using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment>;
 #else
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
 using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, Alignment>;
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 
 } // namespace jstd
 

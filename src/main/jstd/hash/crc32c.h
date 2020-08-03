@@ -45,7 +45,7 @@ namespace crc32 {
 
 static uint32_t crc32c_x86(const char * data, size_t length)
 {
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
     assert(data != nullptr);
 
     static const ssize_t kStepSize = sizeof(uint32_t);
@@ -82,12 +82,12 @@ static uint32_t crc32c_x86(const char * data, size_t length)
     return ~crc32;
 #else
     return 0;
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 }
 
 static uint32_t crc32c_x64(const char * data, size_t length)
 {
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
 #if CRC32C_IS_X86_64
     assert(data != nullptr);
 
@@ -128,14 +128,14 @@ static uint32_t crc32c_x64(const char * data, size_t length)
 #endif // CRC32C_IS_X86_64
 #else
     return 0;
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 }
 
 #if CRC32C_IS_X86_64
 
 static uint32_t crc32c_hw_u64(const char * data, size_t length)
 {
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
     assert(data != nullptr);
     uint64_t crc64 = ~0;
 
@@ -158,7 +158,7 @@ static uint32_t crc32c_hw_u64(const char * data, size_t length)
     return ~crc32;
 #else
     return 0;
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 }
 
 #endif // CRC32C_IS_X86_64
@@ -167,7 +167,7 @@ static uint32_t crc32c_hw_u64(const char * data, size_t length)
 
 static uint32_t crc32c_hw_u64_v2(const char * data, size_t length)
 {
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
     assert(data != nullptr);
     uint64_t crc64 = ~0;
 
@@ -191,14 +191,14 @@ static uint32_t crc32c_hw_u64_v2(const char * data, size_t length)
     return ~crc32;
 #else
     return 0;
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 }
 
 #endif // CRC32C_IS_X86_64
 
 static uint32_t crc32c_hw_u32(const char * data, size_t length)
 {
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
     assert(data != nullptr);
     uint32_t crc32 = ~0;
 
@@ -221,7 +221,7 @@ static uint32_t crc32c_hw_u32(const char * data, size_t length)
     return ~crc32;
 #else
     return 0;
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 }
 
 } // namespace crc32
@@ -232,7 +232,7 @@ namespace sha1 {
 
 static uint32_t sha1_msg2_x86(const char * data, size_t length)
 {
-#if SUPPORT_SMID_SHA
+#if JSTD_HAVE_SMID_SHA
     assert(data != nullptr);
     static const ssize_t kMaxSize = 16;
     static const uint64_t kRestMask = (uint64_t)((kMaxSize / 2) - 1);
@@ -314,14 +314,14 @@ static uint32_t sha1_msg2_x86(const char * data, size_t length)
         uint32_t sha1 = _mm_cvtsi128_si32(__msg1);
         return sha1;
     }
-#endif // SUPPORT_SMID_SHA
+#endif // JSTD_HAVE_SMID_SHA
 
     return 0;
 }
 
 static uint32_t sha1_msg2_x64(const char * data, size_t length)
 {
-#if SUPPORT_SMID_SHA
+#if JSTD_HAVE_SMID_SHA
 #if CRC32C_IS_X86_64
     assert(data != nullptr);
     static const ssize_t kMaxSize = 16;
@@ -451,7 +451,7 @@ static uint32_t sha1_msg2_x64(const char * data, size_t length)
         return (uint32_t)sha1;
     }
 #endif // CRC32C_IS_X86_64
-#endif // SUPPORT_SMID_SHA
+#endif // JSTD_HAVE_SMID_SHA
 
     return 0;
 }
@@ -478,7 +478,7 @@ static uint32_t s_sha1_state[5] = { 0x67452301U, 0xEFCDAB89U, 0x98BADCFEU, 0x103
 
 static uint32_t sha1_x86(uint32_t state[5], const char * data, size_t length)
 {
-#if SUPPORT_SMID_SHA
+#if JSTD_HAVE_SMID_SHA
     __m128i ABCD, ABCD_SAVE, E0, E0_SAVE, E1;
     __m128i MSG0, MSG1, MSG2, MSG3;
     static const __m128i MASK = _mm_set_epi64x(0x0001020304050607ULL, 0x08090a0b0c0d0e0fULL);
@@ -716,7 +716,7 @@ static uint32_t sha1_x86(uint32_t state[5], const char * data, size_t length)
 
 #else
     return 0;
-#endif // SUPPORT_SMID_SHA
+#endif // JSTD_HAVE_SMID_SHA
 }
 
 static uint32_t sha1_x86(const char * data, size_t length)

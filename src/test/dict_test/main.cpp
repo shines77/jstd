@@ -17,25 +17,25 @@
 #include <string.h>
 #include <math.h>
 
-/* SIMD Support */
-#define __SUPPORT_MMX__         1
-#define __SUPPORT_SSE__         1
-#define __SUPPORT_SSE2__        1
-#define __SUPPORT_SSE3__        1
-#define __SUPPORT_SSSE3__       1
-#define __SUPPORT_SSE4__        1
-#define __SUPPORT_SSE4A__       1
-#define __SUPPORT_SSE41__       1
-#define __SUPPORT_SSE42__       1
+/* SIMD support features */
+#define JSTD_HAVE_MMX         1
+#define JSTD_HAVE_SSE         1
+#define JSTD_HAVE_SSE2        1
+#define JSTD_HAVE_SSE3        1
+#define JSTD_HAVE_SSSE3       1
+#define JSTD_HAVE_SSE4        1
+#define JSTD_HAVE_SSE4A       1
+#define JSTD_HAVE_SSE4_1      1
+#define JSTD_HAVE_SSE4_2      1
 
 #if __SSE4_2__
 
 // Support SSE 4.2: _mm_crc32_u32(), _mm_crc32_u64().
-#define SUPPORT_SSE42_CRC32C    1
+#define JSTD_HAVE_SSE42_CRC32C  1
 
 // Support Intel SMID SHA module: sha1 & sha256, it's higher than SSE 4.2 .
 // _mm_sha1msg1_epu32(), _mm_sha1msg2_epu32() and so on.
-#define SUPPORT_SMID_SHA        0
+#define JSTD_HAVE_SMID_SHA      0
 
 #endif // __SSE4_2__
 
@@ -278,7 +278,7 @@ public:
     }
 };
 
-void run_iterator_test()
+void iterator_test()
 {
     bool is_iterator = jstd::is_iterator<ListIterator<ListDemo>>::value;
 
@@ -329,7 +329,7 @@ struct hash<jstd::StringRef> {
 
 #else // !USE_STRINGREF_STD_HASH
 
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
     jstd::hash<jstd::StringRef, HashFunc_CRC32C, std::uint32_t> hasher_;
 #else
     jstd::hash<jstd::StringRef, HashFunc_Time31, std::uint32_t> hasher_;
@@ -351,7 +351,7 @@ struct hash<jstd::StringRef> {
     typedef jstd::StringRef         argument_type;
     typedef std::size_t             result_type;
 
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
     jstd::hash<jstd::StringRef, HashFunc_CRC32C, std::uint32_t> hasher_;
 #else
     jstd::hash<jstd::StringRef, HashFunc_Time31, std::uint32_t> hasher_;
@@ -792,7 +792,7 @@ void hashtable_find_benchmark()
     }
 }
 
-void run_hashtable_find_benchmark()
+void hashtable_find_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_find_benchmark()" << std::endl;
@@ -875,7 +875,7 @@ void hashtable_insert_benchmark_impl()
     }
 }
 
-void run_hashtable_insert_benchmark()
+void hashtable_insert_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_insert_benchmark()" << std::endl;
@@ -958,7 +958,7 @@ void hashtable_emplace_benchmark_impl()
     }
 }
 
-void run_hashtable_emplace_benchmark()
+void hashtable_emplace_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_emplace_benchmark()" << std::endl;
@@ -1049,7 +1049,7 @@ void hashtable_erase_benchmark_impl()
     }
 }
 
-void run_hashtable_erase_benchmark()
+void hashtable_erase_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_erase_benchmark()" << std::endl;
@@ -1140,7 +1140,7 @@ void hashtable_ref_erase_benchmark_impl()
     }
 }
 
-void run_hashtable_ref_erase_benchmark()
+void hashtable_ref_erase_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_erase_benchmark()" << std::endl;
@@ -1232,7 +1232,7 @@ void hashtable_insert_erase_benchmark_impl()
     }
 }
 
-void run_hashtable_insert_erase_benchmark()
+void hashtable_insert_erase_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_insert_erase_benchmark()" << std::endl;
@@ -1316,7 +1316,7 @@ void hashtable_ref_find_benchmark()
     }
 }
 
-void run_hashtable_ref_find_benchmark()
+void hashtable_ref_find_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_find_benchmark()" << std::endl;
@@ -1401,7 +1401,7 @@ void hashtable_ref_emplace_benchmark_impl()
     }
 }
 
-void run_hashtable_ref_emplace_benchmark()
+void hashtable_ref_emplace_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_emplace_benchmark()" << std::endl;
@@ -1495,7 +1495,7 @@ void hashtable_ref_insert_erase_benchmark_impl()
     }
 }
 
-void run_hashtable_ref_insert_erase_benchmark()
+void hashtable_ref_insert_erase_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_insert_erase_benchmark()" << std::endl;
@@ -1602,7 +1602,7 @@ void hashtable_rehash_benchmark_impl()
     }
 }
 
-void run_hashtable_rehash_benchmark()
+void hashtable_rehash_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_rehash_benchmark()" << std::endl;
@@ -1709,7 +1709,7 @@ void hashtable_rehash2_benchmark_impl()
     }
 }
 
-void run_hashtable_rehash2_benchmark()
+void hashtable_rehash2_benchmark()
 {
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_rehash2_benchmark()" << std::endl;
@@ -1744,30 +1744,30 @@ void run_hashtable_rehash2_benchmark()
     printf("\n");
 }
 
-void run_hashtable_benchmark()
+void hashtable_benchmark()
 {
-    run_hashtable_find_benchmark();
-    run_hashtable_ref_find_benchmark();
+    hashtable_find_benchmark();
+    hashtable_ref_find_benchmark();
 
-    run_hashtable_insert_benchmark();
+    hashtable_insert_benchmark();
 
-    run_hashtable_emplace_benchmark();
-    run_hashtable_ref_emplace_benchmark();
+    hashtable_emplace_benchmark();
+    hashtable_ref_emplace_benchmark();
 
-    run_hashtable_erase_benchmark();
-    run_hashtable_ref_erase_benchmark();
+    hashtable_erase_benchmark();
+    hashtable_ref_erase_benchmark();
 
-    run_hashtable_insert_erase_benchmark();
-    run_hashtable_ref_insert_erase_benchmark();
+    hashtable_insert_erase_benchmark();
+    hashtable_ref_insert_erase_benchmark();
 
-    run_hashtable_rehash_benchmark();
-    run_hashtable_rehash2_benchmark();
+    hashtable_rehash_benchmark();
+    hashtable_rehash2_benchmark();
 }
 
-void run_string_view_test()
+void string_view_test()
 {
     string_view sv1(header_fields[4]);
-    //sv1[2] = 'a';
+    //sv1[2] = 'a';  // Error, readonly
 
     std::string str1("12345676890");
 
@@ -1788,10 +1788,10 @@ int main(int argc, char *argv[])
 {
     test::cpu_warmup(1000);
 
-    run_string_view_test();
-    run_iterator_test();
+    //string_view_test();
+    iterator_test();
 
-    //run_hashtable_benchmark();
+    hashtable_benchmark();
 
 #ifdef _WIN32
     ::system("pause");

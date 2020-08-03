@@ -68,7 +68,7 @@
                 >::type decay_type;                                             \
                                                                                 \                                                                      \
         static ResultType getHashCode(pod_type data) {                          \
-            return (ResultType)HashFunc((const char *)&data, sizeof(data));     \
+            return static_cast<result_type>(HashFunc((const char *)&data, sizeof(data))); \
         }                                                                       \
     }
 
@@ -112,13 +112,15 @@ struct hash_helper {
             >::type     key_type;
 
     static ResultType getHashCode(const key_type & key) {
-        return hashes::Times31_std((const char *)&key, sizeof(key));
+        return static_cast<result_type>(hashes::Times31((const char *)&key, sizeof(key)));
     }
 };
 
-template <typename T>
-struct hash_helper<T *, std::uint32_t, HashFunc_Default> {
-    typedef std::uint32_t  result_type;
+template <typename T,
+         typename ResultType,
+         std::size_t HashFunc>
+struct hash_helper<T *, ResultType, HashFunc> {
+    typedef ResultType  result_type;
 
     typedef typename std::remove_pointer<
                 typename std::remove_cv<
@@ -127,11 +129,11 @@ struct hash_helper<T *, std::uint32_t, HashFunc_Default> {
             >::type     key_type;
 
     static result_type getHashCode(const key_type * key) {
-        return hashes::Times31_std((const char *)key, sizeof(key_type *));
+        return static_cast<result_type>(hashes::Times31((const char *)key, sizeof(key_type *)));
     }
 };
 
-#if SUPPORT_SSE42_CRC32C
+#if JSTD_HAVE_SSE42_CRC32C
 
 /***************************************************************************
 template <>
@@ -149,7 +151,10 @@ struct hash_helper<std::string, std::uint32_t, HashFunc_CRC32C> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::string & key) {
-        return crc32::crc32c_x64(key.c_str(), key.size());
+        if (likely(key.c_str() != nullptr))
+            return crc32::crc32c_x64(key.c_str(), key.size());
+        else
+            return 0;
     }
 };
 
@@ -158,11 +163,14 @@ struct hash_helper<std::wstring, std::uint32_t, HashFunc_CRC32C> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::wstring & key) {
-        return crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(wchar_t));
+        if (likely(key.c_str() != nullptr))
+            return crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(wchar_t));
+        else
+            return 0;
     }
 };
 
-#endif // SUPPORT_SSE42_CRC32C
+#endif // JSTD_HAVE_SSE42_CRC32C
 
 /***************************************************************************
 template <>
@@ -182,7 +190,10 @@ struct hash_helper<std::string, std::uint32_t, HashFunc_Time31> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::string & key) {
-        return hashes::Times31(key.c_str(), key.size());
+        if (likely(key.c_str() != nullptr))
+            return hashes::Times31(key.c_str(), key.size());
+        else
+            return 0;
     }
 };
 
@@ -191,7 +202,10 @@ struct hash_helper<std::wstring, std::uint32_t, HashFunc_Time31> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::wstring & key) {
-        return hashes::Times31((const char *)key.c_str(), key.size() * sizeof(wchar_t));
+        if (likely(key.c_str() != nullptr))
+            return hashes::Times31((const char *)key.c_str(), key.size() * sizeof(wchar_t));
+        else
+            return 0;
     }
 };
 
@@ -213,7 +227,10 @@ struct hash_helper<std::string, std::uint32_t, HashFunc_Time31Std> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::string & key) {
-        return hashes::Times31_std(key.c_str(), key.size());
+        if (likely(key.c_str() != nullptr))
+            return hashes::Times31_std(key.c_str(), key.size());
+        else
+            return 0;
     }
 };
 
@@ -222,7 +239,10 @@ struct hash_helper<std::wstring, std::uint32_t, HashFunc_Time31Std> {
     typedef std::uint32_t  result_type;
 
     static std::uint32_t getHashCode(const std::wstring & key) {
-        return hashes::Times31_std((const char *)key.c_str(), key.size() * sizeof(wchar_t));
+        if (likely(key.c_str() != nullptr))
+            return hashes::Times31_std((const char *)key.c_str(), key.size() * sizeof(wchar_t));
+        else
+            return 0;
     }
 };
 
