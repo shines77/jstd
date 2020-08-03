@@ -77,7 +77,7 @@ if (WIN32)
 endif()
 
 # Disable jstd library compile
-if (0)
+if (JSTD_ENABLED)
 
 set(JSTD_LIBNAME jstd${SUFFIX64_UNDERSCORE})
 
@@ -187,7 +187,8 @@ if (BUILD_SHARED_LIBS AND NOT ${SYMBOLPREFIX}${SYMBOLSUFFIX} STREQUAL "")
     endif()
 endif()
 
-endif() # Disable jstd library compile
+# Disable jstd library compile
+endif(JSTD_ENABLED)
 
 project(dict-test)
 

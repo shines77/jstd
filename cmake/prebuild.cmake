@@ -520,46 +520,19 @@ else(NOT CMAKE_CROSSCOMPILING)
         endif()
     endif()
 
-    message(STATUS "Running getarch")
+    message(STATUS "Running get-arch")
 
     # use the cmake binary w/ the -E param to run a shell command in a cross-platform way
-    execute_process(COMMAND "${PROJECT_BINARY_DIR}/${GETARCH_BIN}" 0 OUTPUT_VARIABLE GETARCH_MAKE_OUT)
-    execute_process(COMMAND "${PROJECT_BINARY_DIR}/${GETARCH_BIN}" 1 OUTPUT_VARIABLE GETARCH_CONF_OUT)
+    execute_process(COMMAND "${PROJECT_BINARY_DIR}/tools/cpuid/${GETARCH_BIN}" 0 OUTPUT_VARIABLE GETARCH_MAKE_OUT)
+    execute_process(COMMAND "${PROJECT_BINARY_DIR}/tools/cpuid/${GETARCH_BIN}" 1 OUTPUT_VARIABLE GETARCH_CONF_OUT)
 
     message(STATUS "GETARCH results:\n${GETARCH_MAKE_OUT}")
 
     # append config data from getarch to the TARGET file and read in CMake vars
     file(APPEND ${TARGET_CONF_TEMP} ${GETARCH_CONF_OUT})
     
-    # ParseGetArchVars(${GETARCH_MAKE_OUT})
-
-    set(GETARCH2_DIR "${PROJECT_BINARY_DIR}/tools/get-arch2-build")
-    set(GETARCH2_BIN "get-arch-2nd${CMAKE_EXECUTABLE_SUFFIX}")
-    file(MAKE_DIRECTORY ${GETARCH2_DIR})
-    configure_file(${TARGET_CONF_TEMP} ${GETARCH2_DIR}/${TARGET_CONF} COPYONLY)
-
-    if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "WindowsStore")
-        try_compile(GETARCH2_RESULT ${GETARCH2_DIR}
-            SOURCES ${PROJECT_SOURCE_DIR}/getarch_2nd.c
-            COMPILE_DEFINITIONS ${EXFLAGS} ${GETARCH_FLAGS} ${GETARCH2_FLAGS} -I"${GETARCH2_DIR}" -I"${PROJECT_SOURCE_DIR}/tools/cpuid/" -I"${PROJECT_BINARY_DIR}"
-            OUTPUT_VARIABLE GETARCH2_LOG
-            COPY_FILE ${PROJECT_BINARY_DIR}/tools/cpuid/${GETARCH2_BIN}
-        )
-
-        if (NOT ${GETARCH2_RESULT})
-            MESSAGE(FATAL_ERROR "Compiling get-arch-2nd failed ${GETARCH2_LOG}")
-        endif()
-    endif()
-
-    # use the cmake binary w/ the -E param to run a shell command in a cross-platform way
-    execute_process(COMMAND "${PROJECT_BINARY_DIR}/${GETARCH2_BIN}" 0 OUTPUT_VARIABLE GETARCH2_MAKE_OUT)
-    execute_process(COMMAND "${PROJECT_BINARY_DIR}/${GETARCH2_BIN}" 1 OUTPUT_VARIABLE GETARCH2_CONF_OUT)
-
-    # append config data from getarch_2nd to the TARGET file and read in CMake vars
-    file(APPEND ${TARGET_CONF_TEMP} ${GETARCH2_CONF_OUT})
+    ParseGetArchVars(${GETARCH_MAKE_OUT})
 
     configure_file(${TARGET_CONF_TEMP} ${TARGET_CONF_DIR}/${TARGET_CONF} COPYONLY)
-
-    ParseGetArchVars(${GETARCH2_MAKE_OUT})
 
 endif()
