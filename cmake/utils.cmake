@@ -388,4 +388,3 @@ function(GenerateCombinationObjects sources_in defines_in absent_codes_in all_de
 
   set(JSTD_SRC ${JSTD_SRC} PARENT_SCOPE)
 endfunction ()
-

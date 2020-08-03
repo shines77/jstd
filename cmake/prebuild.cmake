@@ -43,8 +43,8 @@ if (DEFINED CPUIDEMU)
     set(EXFLAGS "-DCPUIDEMU -DVENDOR=99")
 endif()
 
-set(TARGET_CONF "src/main/jstd/config.h")
-set(TARGET_CONF_DIR ${PROJECT_BINARY_DIR})
+set(TARGET_CONF "config.h")
+set(TARGET_CONF_DIR ${PROJECT_BINARY_DIR}/src/main/jstd/)
 
 set(TARGET_CONF_TEMP "${PROJECT_BINARY_DIR}/src/main/jstd/${TARGET_CONF}.tmp")
 
@@ -530,7 +530,8 @@ else(NOT CMAKE_CROSSCOMPILING)
 
     # append config data from getarch to the TARGET file and read in CMake vars
     file(APPEND ${TARGET_CONF_TEMP} ${GETARCH_CONF_OUT})
-    ParseGetArchVars(${GETARCH_MAKE_OUT})
+    
+    # ParseGetArchVars(${GETARCH_MAKE_OUT})
 
     set(GETARCH2_DIR "${PROJECT_BINARY_DIR}/tools/get-arch2-build")
     set(GETARCH2_BIN "get-arch-2nd${CMAKE_EXECUTABLE_SUFFIX}")
