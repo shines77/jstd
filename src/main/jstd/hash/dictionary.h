@@ -396,6 +396,7 @@ protected:
     inline hash_code_t get_hash(const key_type & key) const {
         hash_code_t hash_code = this->hasher_(key);
         //return hash_traits<hash_code_t>::filter(hash_code);
+        hash_code = hash_code ^ (hash_code >> 16);
         return hash_code;
     }
 
