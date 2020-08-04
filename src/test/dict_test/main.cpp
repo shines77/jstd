@@ -18,15 +18,15 @@
 #include <math.h>
 
 /* SIMD support features */
-#define JSTD_HAVE_MMX         1
-#define JSTD_HAVE_SSE         1
-#define JSTD_HAVE_SSE2        1
-#define JSTD_HAVE_SSE3        1
-#define JSTD_HAVE_SSSE3       1
-#define JSTD_HAVE_SSE4        1
-#define JSTD_HAVE_SSE4A       1
-#define JSTD_HAVE_SSE4_1      1
-#define JSTD_HAVE_SSE4_2      1
+#define JSTD_HAVE_MMX           1
+#define JSTD_HAVE_SSE           1
+#define JSTD_HAVE_SSE2          1
+#define JSTD_HAVE_SSE3          1
+#define JSTD_HAVE_SSSE3         1
+#define JSTD_HAVE_SSE4          1
+#define JSTD_HAVE_SSE4A         1
+#define JSTD_HAVE_SSE4_1        1
+#define JSTD_HAVE_SSE4_2        1
 
 #if __SSE4_2__
 
@@ -40,14 +40,17 @@
 #endif // __SSE4_2__
 
 // String compare mode
-#define STRING_UTILS_LIBC     0
-#define STRING_UTILS_U64      1
-#define STRING_UTILS_SSE42    2
+#define STRING_UTILS_LIBC       0
+#define STRING_UTILS_U64        1
+#define STRING_UTILS_SSE42      2
 
-#define STRING_UTILS_MODE     STRING_UTILS_SSE42
+#define STRING_UTILS_MODE       STRING_UTILS_SSE42
 
 // Use in <jstd/support/PowerOf2.h>
 #define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
+
+#define USE_JSTD_HASH_TABLE     1
+#define USE_JSTD_DICTIONARY     1
 
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
@@ -536,13 +539,9 @@ public:
                                          std::forward<value_type>(value)));
     }
 
-    void emplace(const key_type & key, const value_type & value) {
-        this->map_.emplace(key, value);
-    }
-
-    void emplace(key_type && key, value_type && value) {
-        this->map_.emplace(std::forward<key_type>(key),
-                           std::forward<value_type>(value));
+    template <typename ...Args>
+    void emplace(Args && ... args) {
+        std::pair<iterator, bool> result = this->map_.emplace(std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {
@@ -629,16 +628,12 @@ public:
 
     void insert(key_type && key, value_type && value) {
         this->map_.insert(std::make_pair(std::forward<key_type>(key),
-                          std::forward<value_type>(value)));
+                                         std::forward<value_type>(value)));
     }
 
-    void emplace(const key_type & key, const value_type & value) {
-        std::pair<iterator, bool> result = this->map_.emplace(key, value);
-    }
-
-    void emplace(key_type && key, value_type && value) {
-        this->map_.emplace(std::forward<key_type>(key),
-                           std::forward<value_type>(value));
+    template <typename ...Args>
+    void emplace(Args && ... args) {
+        std::pair<iterator, bool> result = this->map_.emplace(std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {
@@ -727,6 +722,7 @@ public:
                           std::forward<value_type>(value));
     }
 
+    /*
     void emplace(const key_type & key, const value_type & value) {
         this->map_.emplace(key, value);
     }
@@ -734,6 +730,12 @@ public:
     void emplace(key_type && key, value_type && value) {
         this->map_.emplace(std::forward<key_type>(key),
                            std::forward<value_type>(value));
+    }
+    //*/
+
+    template <typename ...Args>
+    void emplace(Args && ... args) {
+        this->map_.emplace(std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {
@@ -799,27 +801,17 @@ void hashtable_find_benchmark()
     hashtable_find_benchmark<test::std_map<std::string, std::string>>();
     hashtable_find_benchmark<test::std_unordered_map<std::string, std::string>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_find_benchmark<test::hash_table_impl<jstd::hash_table<std::string, std::string>>>();
     hashtable_find_benchmark<test::hash_table_impl<jstd::hash_table_time31<std::string, std::string>>>();
     hashtable_find_benchmark<test::hash_table_impl<jstd::hash_table_time31_std<std::string, std::string>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_find_benchmark<test::hash_table_impl<jstd::hash_map<std::string, std::string>>>();
-    hashtable_find_benchmark<test::hash_table_impl<jstd::hash_map_time31<std::string, std::string>>>();
-    hashtable_find_benchmark<test::hash_table_impl<jstd::hash_map_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_find_benchmark<test::hash_table_impl<jstd::hash_map_ex<std::string, std::string>>>();
-    hashtable_find_benchmark<test::hash_table_impl<jstd::hash_map_ex_time31<std::string, std::string>>>();
-    hashtable_find_benchmark<test::hash_table_impl<jstd::hash_map_ex_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_find_benchmark<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -882,27 +874,17 @@ void hashtable_insert_benchmark()
     hashtable_insert_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_insert_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table<std::string, std::string>>>();
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<std::string, std::string>>>();
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<std::string, std::string>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_map<std::string, std::string>>>();
-    hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<std::string, std::string>>>();
-    hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<std::string, std::string>>>();
-    hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<std::string, std::string>>>();
-    hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -965,27 +947,17 @@ void hashtable_emplace_benchmark()
     hashtable_emplace_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_emplace_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table<std::string, std::string>>>();
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<std::string, std::string>>>();
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<std::string, std::string>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map<std::string, std::string>>>();
-    hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<std::string, std::string>>>();
-    hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<std::string, std::string>>>();
-    hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<std::string, std::string>>>();
-    hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1056,27 +1028,17 @@ void hashtable_erase_benchmark()
     hashtable_erase_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_erase_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<std::string, std::string>>>();
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<std::string, std::string>>>();
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<std::string, std::string>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map<std::string, std::string>>>();
-    hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<std::string, std::string>>>();
-    hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<std::string, std::string>>>();
-    hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<std::string, std::string>>>();
-    hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1147,27 +1109,17 @@ void hashtable_ref_erase_benchmark()
     hashtable_ref_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
     hashtable_ref_erase_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1239,27 +1191,17 @@ void hashtable_insert_erase_benchmark()
     hashtable_insert_erase_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_insert_erase_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<std::string, std::string>>>();
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<std::string, std::string>>>();
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<std::string, std::string>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map<std::string, std::string>>>();
-    hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<std::string, std::string>>>();
-    hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<std::string, std::string>>>();
-    hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<std::string, std::string>>>();
-    hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1323,27 +1265,17 @@ void hashtable_ref_find_benchmark()
     hashtable_ref_find_benchmark<test::std_map<StringRef, StringRef>>();
     hashtable_ref_find_benchmark<test::std_unordered_map<StringRef, StringRef>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_map<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_map_time31<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_map_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_map_ex<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_map_ex_time31<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_map_ex_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1408,27 +1340,17 @@ void hashtable_ref_emplace_benchmark()
     hashtable_ref_emplace_benchmark_impl<test::std_map<StringRef, StringRef>>();
     hashtable_ref_emplace_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1502,27 +1424,17 @@ void hashtable_ref_insert_erase_benchmark()
     hashtable_ref_insert_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
     hashtable_ref_insert_erase_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<StringRef, StringRef>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1608,27 +1520,17 @@ void hashtable_rehash_benchmark()
 
     hashtable_rehash_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_table<std::string, std::string>>>();
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<std::string, std::string>>>();
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<std::string, std::string>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_map<std::string, std::string>>>();
-    hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<std::string, std::string>>>();
-    hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<std::string, std::string>>>();
-    hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<std::string, std::string>>>();
-    hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");
@@ -1715,27 +1617,17 @@ void hashtable_rehash2_benchmark()
 
     hashtable_rehash2_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
+#if USE_JSTD_HASH_TABLE
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_table<std::string, std::string>>>();
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<std::string, std::string>>>();
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<std::string, std::string>>>();
-
-#if USE_JSTD_HASH_MAP
-    hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_map<std::string, std::string>>>();
-    hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31<std::string, std::string>>>();
-    hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_map_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP
-
-#if USE_JSTD_HASH_MAP_EX
-    hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex<std::string, std::string>>>();
-    hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31<std::string, std::string>>>();
-    hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::hash_map_ex_time31_std<std::string, std::string>>>();
-#endif // USE_JSTD_HASH_MAP_EX
+#endif
 
 #if USE_JSTD_DICTIONARY
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#endif // USE_JSTD_DICTIONARY
+#endif
 
     printf("---------------------------------------------------------------------------\n");
     printf("\n");

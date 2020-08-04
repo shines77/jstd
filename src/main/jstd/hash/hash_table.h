@@ -21,6 +21,10 @@
 #include "jstd/string/string_utils.h"
 #include "jstd/support/PowerOf2.h"
 
+#ifndef ENABLE_JSTD_HASH_TABLE
+#define ENABLE_JSTD_HASH_TABLE      1
+#endif
+
 #ifndef USE_SSE42_STRING_COMPARE
 #define USE_SSE42_STRING_COMPARE    1
 #endif

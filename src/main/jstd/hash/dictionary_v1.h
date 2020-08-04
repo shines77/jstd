@@ -19,9 +19,9 @@
 #include <vector>
 #include <type_traits>
 
-#ifndef USE_JSTD_DICTIONARY
+#ifndef ENABLE_JSTD_DICTIONARY
 
-#define USE_JSTD_DICTIONARY                     1
+#define ENABLE_JSTD_DICTIONARY                  1
 #define DICTIONARY_ENTRY_USE_PLACEMENT_NEW      1
 
 // The entry's pair whether release on erase the entry.
@@ -29,7 +29,7 @@
 #define DICTIONARY_USE_FAST_REHASH_MODE         1
 #define DICTIONARY_SUPPORT_VERSION              0
 
-#endif // USE_JSTD_DICTIONARY
+#endif // ENABLE_JSTD_DICTIONARY
 
 // This macro must define before include file "jstd/nothrow_new.h".
 #undef  JSTD_USE_NOTHROW_NEW

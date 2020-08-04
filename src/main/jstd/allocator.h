@@ -225,7 +225,7 @@ struct allocator_base {
 
     template <typename U>
     void destroy(U * ptr) {
-        this->destroy(ptr, 1);
+        this->destroy_array(ptr, 1);
     }
 
     template <typename U>
