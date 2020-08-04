@@ -1354,10 +1354,10 @@ public:
 
     void insert(key_type && key, mapped_type && value) {
         if (likely(this->buckets() != nullptr)) {
-            hash_code_t hash_code = this->get_hash(std::forward<key_type>(key));
+            hash_code_t hash_code = this->get_hash(key);
             index_type index = this->index_of(hash_code, this->bucket_mask_);
 
-            entry_type * entry = this->find_entry(std::forward<key_type>(key), hash_code, index);
+            entry_type * entry = this->find_entry(key, hash_code, index);
             if (likely(entry == nullptr)) {
                 this->move_insert_new_entry(std::forward<key_type>(key),
                                             std::forward<mapped_type>(value),
@@ -1376,7 +1376,7 @@ public:
     }
 
     void insert(value_type && pair) {
-        bool is_rvalue = std::is_rvalue_reference<decltype(value_type)>::value;
+        bool is_rvalue = std::is_rvalue_reference<std::forward<value_type>(value_type)>::value;
         if (is_rvalue) {
             this->insert(std::move(pair.first), std::move(pair.second));
         }
@@ -1385,28 +1385,24 @@ public:
         }
     }
 
-    //void emplace(const key_type & key, const mapped_type & value) {
-    //    this->insert(key, value);
-    //}
-
-    /************************************************************************
-    /*
-    /* See: https://en.cppreference.com/w/cpp/container/unordered_map/emplace
-    /*
-    /*   Don't support that emplace() interface:
-    /*
-    /*   // uses pair's piecewise constructor
-    /*   m.emplace(std::piecewise_construct,
-    /*             std::forward_as_tuple("c"),
-    /*             std::forward_as_tuple(10, 'c'));
-    /*   // as of C++17, m.try_emplace("c", 10, 'c'); can be used
-    /*
-    ************************************************************************/
+    /***************************************************************************/
+    /*                                                                         */
+    /* See: https://en.cppreference.com/w/cpp/container/unordered_map/emplace  */
+    /*                                                                         */
+    /*   Don't support that emplace() interface:                               */
+    /*                                                                         */
+    /*   // uses pair's piecewise constructor                                  */
+    /*   m.emplace(std::piecewise_construct,                                   */
+    /*             std::forward_as_tuple("c"),                                 */
+    /*             std::forward_as_tuple(10, 'c'));                            */
+    /*   // as of C++17, m.try_emplace("c", 10, 'c'); can be used              */
+    /*                                                                         */
+    /***************************************************************************/
 
     template <typename ...Args>
     void emplace(Args && ... args) {
-        return emplace_unique(key_extractor<value_type>::extract(std::forward<Args>(args)...),
-                              std::forward<Args>(args)...);
+        this->emplace_unique(key_extractor<value_type>::extract(std::forward<Args>(args)...),
+                             std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {
