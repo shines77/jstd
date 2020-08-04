@@ -1376,7 +1376,7 @@ public:
     }
 
     void insert(value_type && pair) {
-        bool is_rvalue = std::is_rvalue_reference<std::forward<value_type>(value_type)>::value;
+        bool is_rvalue = std::is_rvalue_reference<std::forward<value_type>(pair)>::value;
         if (is_rvalue) {
             this->insert(std::move(pair.first), std::move(pair.second));
         }
