@@ -8,6 +8,8 @@
 
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
+#include "jstd/basic/stdsize.h"
+
 #include <assert.h>
 
 #include <memory>

@@ -178,6 +178,8 @@ static const char * header_fields[] = {
     "Last"
 };
 
+static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
+
 class ListDemo {
 public:
     ListDemo() {}
@@ -748,7 +750,6 @@ public:
 template <typename AlgorithmTy>
 void hashtable_find_benchmark()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
 
     std::string field_str[kHeaderFieldSize];
@@ -820,7 +821,6 @@ void hashtable_find_benchmark()
 template <typename AlgorithmTy>
 void hashtable_insert_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 100;
 #else
@@ -893,7 +893,6 @@ void hashtable_insert_benchmark()
 template <typename AlgorithmTy>
 void hashtable_emplace_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 100;
 #else
@@ -966,7 +965,6 @@ void hashtable_emplace_benchmark()
 template <typename AlgorithmTy>
 void hashtable_erase_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 100;
 #else
@@ -1047,7 +1045,6 @@ void hashtable_erase_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_erase_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 100;
 #else
@@ -1128,7 +1125,6 @@ void hashtable_ref_erase_benchmark()
 template <typename AlgorithmTy>
 void hashtable_insert_erase_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 100;
 #else
@@ -1210,7 +1206,6 @@ void hashtable_insert_erase_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_find_benchmark()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
 
     std::string index_buf[kHeaderFieldSize];
@@ -1284,7 +1279,6 @@ void hashtable_ref_find_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_emplace_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 100;
 #else
@@ -1359,7 +1353,6 @@ void hashtable_ref_emplace_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_insert_erase_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 100;
 #else
@@ -1443,7 +1436,6 @@ void hashtable_ref_insert_erase_benchmark()
 template <typename AlgorithmTy>
 void hashtable_rehash_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 2;
 #else
@@ -1539,7 +1531,6 @@ void hashtable_rehash_benchmark()
 template <typename AlgorithmTy>
 void hashtable_rehash2_benchmark_impl()
 {
-    static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 #ifndef NDEBUG
     static const size_t kRepeatTimes = 2;
 #else
@@ -1653,6 +1644,57 @@ void hashtable_benchmark()
     hashtable_rehash2_benchmark();
 }
 
+template <typename Container>
+void hashtable_iterator_uinttest()
+{
+    std::string field_str[kHeaderFieldSize];
+    std::string index_str[kHeaderFieldSize];
+    for (size_t i = 0; i < kHeaderFieldSize; ++i) {
+        field_str[i].assign(header_fields[i]);
+        char buf[16];
+#ifdef _MSC_VER
+        ::_itoa_s((int)i, buf, 10);
+#else
+        sprintf(buf, "%d", (int)i);
+#endif
+        index_str[i] = buf;
+    }
+
+    Container container(kInitCapacity);
+    for (size_t j = 0; j < kHeaderFieldSize; ++j) {
+        container.emplace(field_str[j], index_str[j]);
+    }
+
+    container.display_status();
+
+    typedef typename Container::iterator iterator;
+    typedef typename Container::const_iterator const_iterator;
+
+    //     " [  1]: 0x7289F843  3      "From":                        "13""
+    printf("\n");
+    printf("   #       hash     index  key                            value\n");
+    printf("----------------------------------------------------------------------\n");
+
+    uint32_t index = 0;
+    for (const_iterator iter = container.cbegin(); iter != container.cend(); ++iter) {
+        std::string key_name = "";
+        key_name += iter->value.first.c_str();
+        key_name += ":";
+        printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
+               iter->hash_code,
+               uint32_t(iter->hash_code & container.bucket_mask()),
+               key_name.c_str(),
+               iter->value.second.c_str());
+        index++;
+    }
+    printf("\n\n");
+}
+
+void hashtable_uinttest()
+{
+    hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
+}
+
 void string_view_test()
 {
     string_view sv1(header_fields[4]);
@@ -1677,9 +1719,10 @@ int main(int argc, char *argv[])
 {
     test::cpu_warmup(1000);
 
-    //string_view_test();
     iterator_test();
+    //string_view_test();
 
+    hashtable_uinttest();
     hashtable_benchmark();
 
 #ifdef _WIN32
