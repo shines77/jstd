@@ -1428,10 +1428,10 @@ public:
                         entry->flags = 0;
                         this->freelist_.push_front(entry);
 
-                        // pair_type class placement delete
-                        value_type * pair_ptr = &entry->value;
-                        assert(pair_ptr != nullptr);
-                        allocator_.destructor(pair_ptr);
+                        // value_type class placement delete
+                        value_type * value_ptr = &entry->value;
+                        assert(value_ptr != nullptr);
+                        allocator_.destructor(value_ptr);
 
                         this->entry_size_--;
 
