@@ -39,102 +39,14 @@
 #define JSTD_USE_NOTHROW_NEW        1
 
 #include "jstd/nothrow_new.h"
+#include "jstd/allocator.h"
 #include "jstd/hash/hash_helper.h"
 #include "jstd/hash/equal_to.h"
 #include "jstd/hash/dictionary_traits.h"
-#include "jstd/allocator.h"
+#include "jstd/hash/key_extractor.h"
 #include "jstd/support/PowerOf2.h"
 
 namespace jstd {
-
-//////////////////////////////////////////////////////////////////////////
-//
-// pair_traits<T>
-//
-// Used to get the types from a pair without instantiating it.
-//
-
-template <typename Pair>
-struct pair_traits {
-    typedef typename Pair::first_type   first_type;
-    typedef typename Pair::second_type  second_type;
-};
-
-template <typename T1, typename T2>
-struct pair_traits< std::pair<T1, T2> > {
-    typedef T1  first_type;
-    typedef T2  second_type;
-};
-
-struct no_key_t {
-    no_key_t() {}
-
-    template <class T>
-    no_key_t(T const &) {}
-};
-
-//////////////////////////////////////////////////////////////////////////
-//
-// pair_extractor<T>
-//
-// Used to get the types from a pair without instantiating it.
-//
-
-template <typename ValueType>
-struct key_extractor {
-    typedef ValueType   value_type;
-    typedef typename std::remove_const<
-            typename pair_traits<ValueType>::first_type>::type
-                        key_type;
-
-    static key_type const & extract(value_type const & val) {
-        return val.first;
-    }
-
-    template <class Second>
-    static key_type const & extract(std::pair<key_type, Second> const & val) {
-        return val.first;
-    }
-
-    template <class Second>
-    static key_type const & extract(std::pair<const key_type, Second> const & val) {
-        return val.first;
-    }
-
-    template <class Second>
-    static key_type const & extract(std::add_rvalue_reference<std::pair<key_type, Second>> const & val) {
-        return val.first;
-    }
-
-    template <class Second>
-    static key_type const & extract(std::add_rvalue_reference<std::pair<const key_type, Second>> const & val) {
-        return val.first;
-    }
-
-    template <class Arg1>
-    static key_type const & extract(key_type const & key, Arg1 const &) {
-        return key;
-    }
-
-    static no_key_t extract() {
-        return no_key_t();
-    }
-
-    template <class Arg>
-    static no_key_t extract(Arg const &) {
-        return no_key_t();
-    }
-
-    template <class Arg1, class Arg2>
-    static no_key_t extract(Arg1 const & , Arg2 const & ) {
-        return no_key_t();
-    }
-
-    template <class Arg1, class Arg2, class Arg3, class... Args>
-    static no_key_t extract(Arg1 const &, Arg2 const &, Arg3 const &, Args const & ...) {
-        return no_key_t();
-    }
-};
 
 template < typename Key, typename Value,
            std::size_t HashFunc = HashFunc_Default,
