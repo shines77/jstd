@@ -1667,27 +1667,104 @@ void hashtable_iterator_uinttest()
 
     container.display_status();
 
-    typedef typename Container::iterator iterator;
-    typedef typename Container::const_iterator const_iterator;
+    typedef typename Container::iterator                iterator;
+    typedef typename Container::const_iterator          const_iterator;
+    typedef typename Container::local_iterator          local_iterator;
+    typedef typename Container::const_local_iterator    const_local_iterator;
 
-    //     " [  1]: 0x7289F843  3      "From":                        "13""
-    printf("\n");
-    printf("   #       hash     index  key                            value\n");
-    printf("----------------------------------------------------------------------\n");
+    typedef typename Container::hasher hasher;
+    typedef typename Container::node_pointer node_pointer;
 
-    uint32_t index = 0;
-    for (const_iterator iter = container.cbegin(); iter != container.cend(); ++iter) {
-        std::string key_name = "";
-        key_name += iter->value.first.c_str();
-        key_name += ":";
-        printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
-               iter->hash_code,
-               uint32_t(iter->hash_code & container.bucket_mask()),
-               key_name.c_str(),
-               iter->value.second.c_str());
-        index++;
+    hasher hasher_;
+
+    {
+        //     " [  1]: 0x7289F843  3      From:                          13"
+        printf("\n");
+        printf("   #       hash     index  key                            value\n");
+        printf("----------------------------------------------------------------------\n");
+
+        uint32_t index = 0;
+        for (iterator iter = container.begin(); iter != container.end(); ++iter) {
+            std::uint32_t hash_code = container.get_hash(iter->first);
+            std::string key_name = "";
+            key_name += iter->first.c_str();
+            key_name += ":";
+            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
+                   hash_code,
+                   uint32_t(hash_code & container.bucket_mask()),
+                   key_name.c_str(),
+                   iter->second.c_str());
+            index++;
+        }
+        printf("\n\n");
     }
-    printf("\n\n");
+
+    {
+        printf("\n");
+        printf("   #       hash     index  key                            value\n");
+        printf("----------------------------------------------------------------------\n");
+
+        uint32_t index = 0;
+        for (local_iterator iter = container.l_begin(); iter != container.l_end(); ++iter) {
+            std::uint32_t hash_code = container.get_hash(iter->value.first);
+            std::uint32_t hash_code2 = iter->hash_code;
+            assert(hash_code == hash_code2);
+            std::string key_name = "";
+            key_name += iter->value.first.c_str();
+            key_name += ":";
+            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
+                   hash_code,
+                   uint32_t(hash_code & container.bucket_mask()),
+                   key_name.c_str(),
+                   iter->value.second.c_str());
+            index++;
+        }
+        printf("\n\n");
+    }
+
+    {
+        printf("\n");
+        printf("   #       hash     index  key                            value\n");
+        printf("----------------------------------------------------------------------\n");
+
+        uint32_t index = 0;
+        for (const_iterator iter = container.cbegin(); iter != container.cend(); ++iter) {
+            std::uint32_t hash_code = container.get_hash(iter->first);
+            std::string key_name = "";
+            key_name += iter->first.c_str();
+            key_name += ":";
+            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
+                   hash_code,
+                   uint32_t(hash_code & container.bucket_mask()),
+                   key_name.c_str(),
+                   iter->second.c_str());
+            index++;
+        }
+        printf("\n\n");
+    }
+
+    {
+        printf("\n");
+        printf("   #       hash     index  key                            value\n");
+        printf("----------------------------------------------------------------------\n");
+
+        uint32_t index = 0;
+        for (const_local_iterator iter = container.l_cbegin(); iter != container.l_cend(); ++iter) {
+            std::uint32_t hash_code = container.get_hash(iter->value.first);
+            std::uint32_t hash_code2 = iter->hash_code;
+            assert(hash_code == hash_code2);
+            std::string key_name = "";
+            key_name += iter->value.first.c_str();
+            key_name += ":";
+            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
+                   hash_code,
+                   uint32_t(hash_code & container.bucket_mask()),
+                   key_name.c_str(),
+                   iter->value.second.c_str());
+            index++;
+        }
+        printf("\n\n");
+    }
 }
 
 void hashtable_uinttest()

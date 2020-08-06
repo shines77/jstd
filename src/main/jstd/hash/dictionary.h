@@ -9,6 +9,7 @@
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
+#include "jstd/basic/inttypes.h"
 
 #include <memory.h>
 #include <assert.h>
@@ -73,6 +74,12 @@ public:
                                             this_type;
 
     struct hash_node {
+        typedef hash_node *                     node_pointer;
+        typedef hash_node &                     node_reference;
+        typedef const hash_node *               const_node_pointer;
+        typedef const hash_node &               const_node_reference;
+        typedef typename this_type::value_type  value_type;
+
         hash_node *  next;
         hash_code_t  hash_code;
         uint32_t     flags;
@@ -89,7 +96,11 @@ public:
         }
     };
 
-    typedef hash_node  node_type;
+    typedef hash_node                                   node_type;
+    typedef typename hash_node::node_pointer            node_pointer;
+    typedef typename hash_node::node_reference          node_reference;
+    typedef typename hash_node::const_node_pointer      const_node_pointer;
+    typedef typename hash_node::const_node_reference    const_node_reference;
 
     struct entry_list {
         node_type * entries;
@@ -216,8 +227,9 @@ public:
     public:
         typedef iterator_t<Node>                this_iter_t;
 
-        typedef typename Node                   emlement_type;
-        typedef typename Node                   value_type;
+        typedef typename Node::node_pointer     node_pointer;
+        typedef typename Node::value_type       emlement_type;
+        typedef typename Node::value_type       value_type;
         typedef typename std::ptrdiff_t         difference_type;
         typedef typename value_type *           pointer;
         typedef typename value_type &           reference;
@@ -226,14 +238,13 @@ public:
 
         template <typename>
         friend class const_iterator_t;
-        friend class this_type;
 
     protected:
-        pointer node_;
+        node_pointer node_;
 
     public:
         // construct with null pointer
-        iterator_t(pointer node = nullptr) : node_(node) {}
+        iterator_t(node_pointer node = nullptr) : node_(node) {}
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
         iterator_t(std::nullptr_t) : node_(nullptr) {}
 #endif
@@ -241,19 +252,20 @@ public:
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
             assert(this->node_ != std::nullptr_t {});
 #endif
-            return (*this->node_);
+            return this->node_->value;
         }
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
         // return pointer to class object
         pointer operator -> () const {
-            return std::pointer_traits<pointer>::pointer_to(**this);
+            // return std::pointer_traits<pointer>::pointer_to(**this));
+            return std::pointer_traits<pointer>::pointer_to(this->node_->value);
         }
 #endif
         // pre-increment
         this_iter_t & operator ++ () {
             this_type * owner = this->node_->owner;
-            this->node_ = static_cast<pointer>(owner->next_iterator(this->node_));
+            this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
             return (*this);
         }
 
@@ -261,7 +273,7 @@ public:
         this_iter_t & operator ++ (int) {
             this_iter_t tmp(this->node_);
             this_type * owner = this->node_->owner;
-            this->node_ = static_cast<pointer>(owner->next_iterator(this->node_));
+            this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
             return tmp;
         }
 
@@ -274,6 +286,10 @@ public:
         bool operator != (const this_iter_t & rhs) const noexcept {
             return (this->node_ != rhs.node_);
         }
+
+        node_pointer get_node_ptr() {
+            return this->node_;
+        }
     };
 
     template <typename Node>
@@ -281,8 +297,9 @@ public:
     public:
         typedef const_iterator_t<Node>          this_iter_t;
 
-        typedef typename const Node             emlement_type;
-        typedef typename Node                   value_type;
+        typedef typename Node::node_pointer     node_pointer;
+        typedef typename const Node::value_type emlement_type;
+        typedef typename Node::value_type       value_type;
         typedef typename std::ptrdiff_t         difference_type;
         typedef typename const value_type *     pointer;
         typedef typename const value_type &     reference;
@@ -293,38 +310,39 @@ public:
         typedef forward_iterator_tag            iterator_category;
 
         friend class iterator_t<Node>;
-        friend class this_type;
 
     protected:
         typedef iterator_t<Node>                normal_iterator;
 
-        pointer node_;
+        node_pointer node_;
 
     public:
         // construct with null pointer
-        const_iterator_t(pointer node = nullptr) : node_(node) {}
+        const_iterator_t(node_pointer node = nullptr) : node_(node) {}
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
         const_iterator_t(std::nullptr_t) : node_(nullptr) {}
 #endif
-        const_iterator_t(const normal_iterator & src) noexcept : node_(src.node_) {}
+        const_iterator_t(const normal_iterator & src) noexcept
+            : node_(const_cast<node_pointer>(src.node_)) {}
 
         reference operator * () const {
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
             assert(this->node_ != std::nullptr_t {});
 #endif
-            return (*this->node_);
+            return this->node_->value;
         }
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
         // return pointer to class object
         pointer operator -> () const {
-            return std::pointer_traits<pointer>::pointer_to(**this);
+            // return std::pointer_traits<pointer>::pointer_to(**this);
+            return std::pointer_traits<pointer>::pointer_to(this->node_->value);
         }
 #endif
         // pre-increment
         this_iter_t & operator ++ () {
             this_type * owner = this->node_->owner;
-            this->node_ = owner->next_const_iterator(this->node_);
+            this->node_ = owner->next_iterator(this->node_);
             return (*this);
         }
 
@@ -332,7 +350,7 @@ public:
         this_iter_t & operator ++ (int) {
             this_iter_t tmp(this->node_);
             this_type * owner = this->node_->owner;
-            this->node_ = owner->next_const_iterator(this->node_);
+            this->node_ = owner->next_iterator(this->node_);
             return tmp;
         }
 
@@ -345,14 +363,165 @@ public:
         bool operator != (const this_iter_t & rhs) const noexcept {
             return (this->node_ != rhs.node_);
         }
+
+        const node_pointer get_node_ptr() {
+            return const_cast<const node_pointer>(this->node_);
+        }
     };
 
+    template <typename Node>
+    class local_iterator_t {
+    public:
+        typedef local_iterator_t<Node>          this_iter_t;
+
+        typedef typename Node::node_pointer     node_pointer;
+        typedef typename Node::value_type       emlement_type;
+        typedef typename Node::value_type       value_type;
+        typedef typename std::ptrdiff_t         difference_type;
+        typedef typename Node::node_pointer     pointer;
+        typedef typename Node::node_reference   reference;
+
+        typedef forward_iterator_tag            iterator_category;
+
+        template <typename>
+        friend class const_local_iterator_t;
+
+    protected:
+        node_pointer node_;
+
+    public:
+        // construct with null pointer
+        local_iterator_t(node_pointer node = nullptr) : node_(node) {}
+#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
+        local_iterator_t(std::nullptr_t) : node_(nullptr) {}
+#endif
+        reference operator * () const {
+#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
+            assert(this->node_ != std::nullptr_t {});
+#endif
+            return *(this->node_);
+        }
+
+#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
+        // return pointer to class object
+        pointer operator -> () const {
+            return std::pointer_traits<pointer>::pointer_to(**this);
+        }
+#endif
+        // pre-increment
+        this_iter_t & operator ++ () {
+            this_type * owner = this->node_->owner;
+            this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
+            return (*this);
+        }
+
+        // post-increment
+        this_iter_t & operator ++ (int) {
+            this_iter_t tmp(this->node_);
+            this_type * owner = this->node_->owner;
+            this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
+            return tmp;
+        }
+
+        // test for iterator equality
+        bool operator == (const this_iter_t & rhs) const noexcept {
+            return (this->node_ == rhs.node_);
+        }
+
+        // test for iterator inequality
+        bool operator != (const this_iter_t & rhs) const noexcept {
+            return (this->node_ != rhs.node_);
+        }
+
+        node_pointer get_node_ptr() {
+            return this->node_;
+        }
+    };
+
+    template <typename Node>
+    class const_local_iterator_t {
+    public:
+        typedef const_local_iterator_t<Node>        this_iter_t;
+
+        typedef typename Node::node_pointer         node_pointer;
+        typedef typename const Node::value_type     emlement_type;
+        typedef typename Node::value_type           value_type;
+        typedef typename std::ptrdiff_t             difference_type;
+        typedef typename Node::const_node_pointer   pointer;
+        typedef typename Node::const_node_reference reference;
+
+        typedef typename Node::node_pointer         n_pointer;
+        typedef typename Node::node_reference       n_reference;
+
+        typedef forward_iterator_tag                iterator_category;
+
+        friend class local_iterator_t<Node>;
+
+    protected:
+        typedef local_iterator_t<Node>          normal_iterator;
+
+        node_pointer node_;
+
+    public:
+        // construct with null pointer
+        const_local_iterator_t(node_pointer node = nullptr) : node_(node) {}
+#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
+        const_local_iterator_t(std::nullptr_t) : node_(nullptr) {}
+#endif
+        const_local_iterator_t(const normal_iterator & src) noexcept
+            : node_(const_cast<node_pointer>(src.node_)) {}
+
+        reference operator * () const {
+#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
+            assert(this->node_ != std::nullptr_t {});
+#endif
+            return *(this->node_);
+        }
+
+#if !defined(_MSC_VER) || (_MSC_VER >= 1600)
+        // return pointer to class object
+        pointer operator -> () const {
+            return std::pointer_traits<pointer>::pointer_to(**this);
+        }
+#endif
+        // pre-increment
+        this_iter_t & operator ++ () {
+            this_type * owner = this->node_->owner;
+            this->node_ = owner->next_iterator(this->node_);
+            return (*this);
+        }
+
+        // post-increment
+        this_iter_t & operator ++ (int) {
+            this_iter_t tmp(this->node_);
+            this_type * owner = this->node_->owner;
+            this->node_ = owner->next_iterator(this->node_);
+            return tmp;
+        }
+
+        // test for iterator equality
+        bool operator == (const this_iter_t & rhs) const noexcept {
+            return (this->node_ == rhs.node_);
+        }
+
+        // test for iterator inequality
+        bool operator != (const this_iter_t & rhs) const noexcept {
+            return (this->node_ != rhs.node_);
+        }
+
+        const node_pointer get_node_ptr() {
+            return const_cast<const node_pointer>(this->node_);
+        }
+    };
 
     friend class iterator_t<node_type>;
     friend class const_iterator_t<node_type>;
 
     typedef iterator_t<node_type>       iterator;
     typedef const_iterator_t<node_type> const_iterator;
+
+    typedef local_iterator_t<node_type>       local_iterator;
+    typedef const_local_iterator_t<node_type> const_local_iterator;
 
     template <typename T>
     class entry_chunk {
@@ -489,10 +658,24 @@ public:
     }
 
     const_iterator cbegin() const {
-        return const_iterator(this->find_first_valid_node());
+        return const_iterator(iterator(this->find_first_valid_node()));
     }
     const_iterator cend() const {
         return const_iterator(nullptr);
+    }
+
+    local_iterator l_begin() const {
+        return local_iterator(this->find_first_valid_node());
+    }
+    local_iterator l_end() const {
+        return local_iterator(nullptr);
+    }
+
+    const_local_iterator l_cbegin() const {
+        return const_local_iterator(local_iterator(this->find_first_valid_node()));
+    }
+    const_local_iterator l_cend() const {
+        return const_local_iterator(nullptr);
     }
 
     size_type __size() const {
@@ -540,13 +723,6 @@ protected:
         return capacity;
     }
 
-    inline hash_code_t get_hash(const key_type & key) const {
-        hash_code_t hash_code = this->hasher_(key);
-        //return hash_traits<hash_code_t>::filter(hash_code);
-        hash_code = hash_code ^ (hash_code >> 16);
-        return hash_code;
-    }
-
     inline index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
         return (index_type)((size_type)hash_code & capacity_mask);
     }
@@ -558,7 +734,8 @@ protected:
     }
 #endif // __amd64__
 
-    inline index_type index_for(hash_code_t hash_code) const {
+    JSTD_FORCEINLINE
+    index_type index_for(hash_code_t hash_code) const {
         return (index_type)((size_type)hash_code & this->bucket_mask_);
     }
 
@@ -663,7 +840,7 @@ protected:
                 index++;
                 if (likely(index < this->bucket_count())) {
                     first = this->buckets_[index];
-                    if (likely(first != nullptr))
+                    if (unlikely(first != nullptr))
                         return first;
                 }
                 else {
@@ -1411,6 +1588,13 @@ protected:
     }
 
 public:
+    inline hash_code_t get_hash(const key_type & key) const {
+        hash_code_t hash_code = this->hasher_(key);
+        //return hash_traits<hash_code_t>::filter(hash_code);
+        hash_code = hash_code ^ (hash_code >> 16);
+        return hash_code;
+    }
+
     void clear() {
         if (likely(this->buckets_ != nullptr)) {
             // Initialize the buckets's data.
@@ -1419,8 +1603,8 @@ public:
 
         // Clear settings
         this->entry_size_ = 0;
-        this->freelist_.clear();
-        this->entry_chunk_.clear();
+        //this->freelist_.clear();
+        //this->entry_chunk_.clear();
     }
 
     void rehash(size_type bucket_count) {
@@ -1499,12 +1683,10 @@ public:
 
     void insert(value_type && pair) {
         bool is_rvalue = std::is_rvalue_reference<decltype(pair)>::value;
-        if (is_rvalue) {
+        if (is_rvalue)
             this->insert(std::move(pair.first), std::move(pair.second));
-        }
-        else {
+        else
             this->insert(pair.first, pair.second);
-        }
     }
 
     /***************************************************************************/
@@ -1550,9 +1732,8 @@ public:
                         entry->flags = 0;
                         this->freelist_.push_front(entry);
 
-                        // value_type class placement delete
+                        // destruct the entry->value
                         value_type * value_ptr = &entry->value;
-                        assert(value_ptr != nullptr);
                         allocator_.destructor(value_ptr);
 
                         this->entry_size_--;
