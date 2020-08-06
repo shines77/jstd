@@ -287,8 +287,12 @@ public:
             return (this->node_ != rhs.node_);
         }
 
-        node_pointer get_node_ptr() {
+        node_pointer get_node() {
             return this->node_;
+        }
+
+        const node_pointer get_node() const {
+            return const_cast<const node_pointer>(this->node_);
         }
     };
 
@@ -323,7 +327,7 @@ public:
         const_iterator_t(std::nullptr_t) : node_(nullptr) {}
 #endif
         const_iterator_t(const normal_iterator & src) noexcept
-            : node_(const_cast<node_pointer>(src.node_)) {}
+            : node_(const_cast<node_pointer>(src.get_node())) {}
 
         reference operator * () const {
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
@@ -364,7 +368,7 @@ public:
             return (this->node_ != rhs.node_);
         }
 
-        const node_pointer get_node_ptr() {
+        const node_pointer get_node() {
             return const_cast<const node_pointer>(this->node_);
         }
     };
@@ -433,8 +437,12 @@ public:
             return (this->node_ != rhs.node_);
         }
 
-        node_pointer get_node_ptr() {
+        node_pointer get_node() {
             return this->node_;
+        }
+
+        const node_pointer get_node() const {
+            return const_cast<const node_pointer>(this->node_);
         }
     };
 
@@ -469,7 +477,7 @@ public:
         const_local_iterator_t(std::nullptr_t) : node_(nullptr) {}
 #endif
         const_local_iterator_t(const normal_iterator & src) noexcept
-            : node_(const_cast<node_pointer>(src.node_)) {}
+            : node_(const_cast<node_pointer>(src.get_node())) {}
 
         reference operator * () const {
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
@@ -509,7 +517,7 @@ public:
             return (this->node_ != rhs.node_);
         }
 
-        const node_pointer get_node_ptr() {
+        const node_pointer get_node() {
             return const_cast<const node_pointer>(this->node_);
         }
     };
