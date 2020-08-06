@@ -444,7 +444,7 @@ public:
         typedef const_local_iterator_t<Node>        this_iter_t;
 
         typedef typename Node::node_pointer         node_pointer;
-        typedef typename const Node::value_type     emlement_type;
+        typedef const typename Node::value_type     emlement_type;
         typedef typename Node::value_type           value_type;
         typedef typename std::ptrdiff_t             difference_type;
         typedef typename Node::const_node_pointer   pointer;
