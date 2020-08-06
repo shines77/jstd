@@ -231,8 +231,8 @@ public:
         typedef typename Node::value_type       emlement_type;
         typedef typename Node::value_type       value_type;
         typedef typename std::ptrdiff_t         difference_type;
-        typedef typename value_type *           pointer;
-        typedef typename value_type &           reference;
+        typedef value_type *                    pointer;
+        typedef value_type &                    reference;
 
         typedef forward_iterator_tag            iterator_category;
 
@@ -298,14 +298,14 @@ public:
         typedef const_iterator_t<Node>          this_iter_t;
 
         typedef typename Node::node_pointer     node_pointer;
-        typedef typename const Node::value_type emlement_type;
+        typedef const typename Node::value_type emlement_type;
         typedef typename Node::value_type       value_type;
         typedef typename std::ptrdiff_t         difference_type;
-        typedef typename const value_type *     pointer;
-        typedef typename const value_type &     reference;
+        typedef const value_type *              pointer;
+        typedef const value_type &              reference;
 
-        typedef typename value_type *           n_pointer;
-        typedef typename value_type &           n_reference;
+        typedef value_type *                    n_pointer;
+        typedef value_type &                    n_reference;
 
         typedef forward_iterator_tag            iterator_category;
 
