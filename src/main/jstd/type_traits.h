@@ -56,6 +56,15 @@ struct integral_traits {
     static const unsigned_type max_num = static_cast<unsigned_type>(-1);
 };
 
+struct void_warpper {
+    void_warpper() {}
+
+    template <typename... Args>
+    void operator () (Args && ... args) {
+        return void();
+    }
+};
+
 // Template struct param_tester
 
 // test if parameters are valid

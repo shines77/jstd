@@ -35,11 +35,6 @@
 
 #endif // ENABLE_JSTD_DICTIONARY
 
-// This macro must define before include file "jstd/nothrow_new.h".
-#undef  JSTD_USE_NOTHROW_NEW
-#define JSTD_USE_NOTHROW_NEW        1
-
-#include "jstd/nothrow_new.h"
 #include "jstd/allocator.h"
 #include "jstd/iterator.h"
 #include "jstd/hash/hash_helper.h"
@@ -258,7 +253,6 @@ public:
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
         // return pointer to class object
         pointer operator -> () const {
-            // return std::pointer_traits<pointer>::pointer_to(**this));
             return std::pointer_traits<pointer>::pointer_to(this->node_->value);
         }
 #endif
@@ -339,7 +333,6 @@ public:
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
         // return pointer to class object
         pointer operator -> () const {
-            // return std::pointer_traits<pointer>::pointer_to(**this);
             return std::pointer_traits<pointer>::pointer_to(this->node_->value);
         }
 #endif
@@ -525,11 +518,13 @@ public:
     friend class iterator_t<node_type>;
     friend class const_iterator_t<node_type>;
 
-    typedef iterator_t<node_type>       iterator;
-    typedef const_iterator_t<node_type> const_iterator;
+    typedef iterator_t<node_type>               iterator;
+    typedef const_iterator_t<node_type>         const_iterator;
 
-    typedef local_iterator_t<node_type>       local_iterator;
-    typedef const_local_iterator_t<node_type> const_local_iterator;
+    typedef local_iterator_t<node_type>         local_iterator;
+    typedef const_local_iterator_t<node_type>   const_local_iterator;
+
+    typedef std::pair<iterator, bool>           insert_return_type;
 
     template <typename T>
     class entry_chunk {
@@ -1424,12 +1419,37 @@ protected:
 
     JSTD_FORCEINLINE
     void construct_value(node_type * new_entry, const key_type & key,
-                                                 const mapped_type & value) {
+                                                const mapped_type & value) {
         assert(new_entry != nullptr);
 
         // Use placement new method to construct value_type.
         void * value_ptr = (void *)&new_entry->value;
         value_type * new_value = allocator_.constructor(value_ptr, key, value);
+        assert(new_value == &new_entry->value);
+    }
+
+    JSTD_FORCEINLINE
+    void construct_value(node_type * new_entry, const key_type & key,
+                                                mapped_type && value) {
+        assert(new_entry != nullptr);
+
+        // Use placement new method to construct value_type.
+        void * value_ptr = (void *)&new_entry->value;
+        value_type * new_value = allocator_.constructor(value_ptr,
+                                        key, std::forward<mapped_type>(value));
+        assert(new_value == &new_entry->value);
+    }
+
+    JSTD_FORCEINLINE
+    void construct_value(node_type * new_entry, key_type && key,
+                                                mapped_type && value) {
+        assert(new_entry != nullptr);
+
+        // Use placement new method to construct value_type.
+        void * value_ptr = (void *)&new_entry->value;
+        value_type * new_value = allocator_.constructor(value_ptr,
+                                        std::forward<key_type>(key),
+                                        std::forward<mapped_type>(value));
         assert(new_value == &new_entry->value);
     }
 
@@ -1442,24 +1462,19 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void move_construct_value(node_type * new_entry, key_type && key,
-                                                      mapped_type && value) {
-        assert(new_entry != nullptr);
-
-        // Use placement new method to construct value_type.
-        void * value_ptr = (void *)&new_entry->value;
-        value_type * new_value = allocator_.constructor(value_ptr,
-                                        std::forward<key_type>(key),
-                                        std::forward<mapped_type>(value));
-        assert(new_value == &new_entry->value);
+    void insert_new_entry(const key_type & key, mapped_type && value,
+                          hash_code_t hash_code, index_type index) {
+        node_type * new_entry = this->insert_new_entry_to_bucket(hash_code, index);
+        this->construct_value(new_entry, key, std::forward<mapped_type>(value));
+        this->entry_size_++;
     }
 
     JSTD_FORCEINLINE
-    void move_insert_new_entry(key_type && key, mapped_type && value,
-                               hash_code_t hash_code, index_type index) {
+    void insert_new_entry(key_type && key, mapped_type && value,
+                          hash_code_t hash_code, index_type index) {
         node_type * new_entry = this->insert_new_entry_to_bucket(hash_code, index);
-        this->move_construct_value(new_entry, std::forward<key_type>(key),
-                                              std::forward<mapped_type>(value));
+        this->construct_value(new_entry, std::forward<key_type>(key),
+                                         std::forward<mapped_type>(value));
         this->entry_size_++;
     }
 
@@ -1473,6 +1488,76 @@ protected:
         value_type * new_value = allocator_.constructor(value_ptr,
                                                         std::forward<Args>(args)...);
         assert(new_value == &new_entry->value);
+    }
+
+    template <bool OnlyIfAbsent, typename ReturnType>
+    ReturnType insert_unique(const key_type & key, const mapped_type & value) {
+        assert(this->buckets() != nullptr);
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_of(hash_code, this->bucket_mask_);
+
+        node_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            this->insert_new_entry(key, value,
+                                   hash_code, index);
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                this->update_value(entry, value);
+            }
+        }
+
+        this->updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
+    }
+
+    template <bool OnlyIfAbsent, typename ReturnType>
+    ReturnType insert_unique(const key_type & key, mapped_type && value) {
+        assert(this->buckets() != nullptr);
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_of(hash_code, this->bucket_mask_);
+
+        node_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            this->insert_new_entry(key, std::forward<mapped_type>(value),
+                                    hash_code, index);
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                this->update_value(entry, std::forward<mapped_type>(value));
+            }
+        }
+
+        this->updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
+    }
+
+    template <bool OnlyIfAbsent, typename ReturnType>
+    ReturnType insert_unique(key_type && key, mapped_type && value) {
+        assert(this->buckets() != nullptr);
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_of(hash_code, this->bucket_mask_);
+
+        node_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            this->insert_new_entry(std::forward<key_type>(key),
+                                    std::forward<mapped_type>(value),
+                                    hash_code, index);
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                this->update_value(entry, std::forward<mapped_type>(value));
+            }
+        }
+
+        this->updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
     }
 
     template <typename ...Args>
@@ -1500,16 +1585,16 @@ protected:
         this->entry_size_++;
     }
 
-    // Update the existed key's value.
+    // Update the existed key's value, maybe by move assignment operator.
     JSTD_FORCEINLINE
     void update_value(node_type * entry, const mapped_type & value) {
         assert(entry != nullptr);
         entry->value.second = value;
     }
 
-    // Update the existed key's value by move assignment operator.
+    // Update the existed key's value, maybe by move assignment operator.
     JSTD_FORCEINLINE
-    void move_update_value(node_type * entry, mapped_type && value) {
+    void update_value(node_type * entry, mapped_type && value) {
         assert(entry != nullptr);
         entry->value.second = std::forward<mapped_type>(value);
     }
@@ -1524,7 +1609,7 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void update_value_args(node_type * entry, mapped_type const & value) {
+    void update_value_args(node_type * entry, const mapped_type & value) {
         assert(entry != nullptr);
         entry->value.second = value;
     }
@@ -1547,46 +1632,54 @@ protected:
         return key_extractor<value_type>::extract(*const_cast<const value_type *>(value));
     }
 
-    template <typename ...Args>
-    void emplace_unique(const key_type & key, Args && ... args) {
-        if (likely(this->buckets() != nullptr)) {
-            hash_code_t hash_code = this->get_hash(key);
-            index_type index = this->index_of(hash_code, this->bucket_mask_);
+    template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    ReturnType emplace_unique(const key_type & key, Args && ... args) {
+        assert(this->buckets() != nullptr);
 
-            node_type * entry = this->find_entry(key, hash_code, index);
-            if (likely(entry == nullptr)) {
-                this->emplace_new_entry(hash_code, index,
-                                        std::forward<Args>(args)...);
-            }
-            else {
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_of(hash_code, this->bucket_mask_);
+
+        node_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            this->emplace_new_entry(hash_code, index,
+                                    std::forward<Args>(args)...);
+        }
+        else {
+            if (!OnlyIfAbsent) {
                 this->update_value_args(entry, std::forward<Args>(args)...);
             }
-
-            this->updateVersion();
         }
+
+        this->updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
     }
 
-    template <typename ...Args>
-    void emplace_unique(no_key_t nokey, Args && ... args) {
-        if (likely(this->buckets() != nullptr)) {
-            value_type * value_tmp = this->allocator_.create(std::forward<Args>(args)...);
-            assert(value_tmp != nullptr);
-            const key_type & key = this->get_key(value_tmp);
+    template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
+        assert(this->buckets() != nullptr);
 
-            hash_code_t hash_code = this->get_hash(key);
-            index_type index = this->index_of(hash_code, this->bucket_mask_);
+        value_type * value_tmp = this->allocator_.create(std::forward<Args>(args)...);
+        assert(value_tmp != nullptr);
+        const key_type & key = this->get_key(value_tmp);
 
-            node_type * entry = this->find_entry(key, hash_code, index);
-            if (likely(entry == nullptr)) {
-                this->emplace_new_entry_from_value(hash_code, index, value_tmp);
-            }
-            else {
-                this->move_update_value(entry, std::move(value_tmp->second));
-            }
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_of(hash_code, this->bucket_mask_);
 
-            this->allocator_.destroy(value_tmp);
-            this->updateVersion();
+        node_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            this->emplace_new_entry_from_value(hash_code, index, value_tmp);
         }
+        else {
+            if (!OnlyIfAbsent) {
+                this->update_value(entry, std::move(value_tmp->second));
+            }
+        }
+
+        this->allocator_.destroy(value_tmp);
+        this->updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
     }
 
     void updateVersion() {
@@ -1649,52 +1742,57 @@ public:
         return iterator(nullptr);   // Error: buckets data is invalid
     }
 
-    void insert(const key_type & key, const mapped_type & value) {
-        if (likely(this->buckets() != nullptr)) {
-            hash_code_t hash_code = this->get_hash(key);
-            index_type index = this->index_of(hash_code, this->bucket_mask_);
+    // insert(key, value)
 
-            node_type * entry = this->find_entry(key, hash_code, index);
-            if (likely(entry == nullptr)) {
-                this->insert_new_entry(key, value, hash_code, index);
-            }
-            else {
-                this->update_value(entry, value);
-            }
-
-            this->updateVersion();
-        }
+    insert_return_type insert(const key_type & key, const mapped_type & value) {
+        return this->insert_unique<false, insert_return_type>(key, value);
     }
 
-    void insert(key_type && key, mapped_type && value) {
-        if (likely(this->buckets() != nullptr)) {
-            hash_code_t hash_code = this->get_hash(key);
-            index_type index = this->index_of(hash_code, this->bucket_mask_);
-
-            node_type * entry = this->find_entry(key, hash_code, index);
-            if (likely(entry == nullptr)) {
-                this->move_insert_new_entry(std::forward<key_type>(key),
-                                            std::forward<mapped_type>(value),
-                                            hash_code, index);
-            }
-            else {
-                this->move_update_value(entry, std::forward<mapped_type>(value));
-            }
-
-            this->updateVersion();
-        }
+    insert_return_type insert(const key_type & key, mapped_type && value) {
+        return this->insert_unique<false, insert_return_type>(key, std::forward<mapped_type>(value));
     }
 
-    void insert(const value_type & pair) {
-        this->insert(pair.first, pair.second);
+    insert_return_type insert(key_type && key, mapped_type && value) {
+        return this->insert_unique<false, insert_return_type>(std::forward<key_type>(key),
+                                                            std::forward<mapped_type>(value));
     }
 
-    void insert(value_type && pair) {
+    insert_return_type insert(const value_type & pair) {
+        return this->insert(pair.first, pair.second);
+    }
+
+    insert_return_type insert(value_type && pair) {
         bool is_rvalue = std::is_rvalue_reference<decltype(pair)>::value;
         if (is_rvalue)
-            this->insert(std::move(pair.first), std::move(pair.second));
+            return this->insert(std::move(pair.first), std::move(pair.second));
         else
-            this->insert(pair.first, pair.second);
+            return this->insert(pair.first, pair.second);
+    }
+
+    // insert_no_return(key, value)
+
+    void insert_no_return(const key_type & key, const mapped_type & value) {
+        this->insert_unique<false, void_warpper>(key, value);
+    }
+
+    void insert_no_return(const key_type & key, mapped_type && value) {
+        this->insert_unique<false, void_warpper>(key, std::forward<mapped_type>(value));
+    }
+
+    void insert_no_return(key_type && key, mapped_type && value) {
+        this->insert_unique<false, void_warpper>(std::forward<key_type>(key), std::forward<mapped_type>(value));
+    }
+
+    void insert_no_return(const value_type & pair) {
+        this->insert_no_return(pair.first, pair.second);
+    }
+
+    void insert_no_return(value_type && pair) {
+        bool is_rvalue = std::is_rvalue_reference<decltype(pair)>::value;
+        if (is_rvalue)
+            this->insert_no_return(std::move(pair.first), std::move(pair.second));
+        else
+            this->insert_no_return(pair.first, pair.second);
     }
 
     /***************************************************************************/
@@ -1712,9 +1810,17 @@ public:
     /***************************************************************************/
 
     template <typename ...Args>
-    void emplace(Args && ... args) {
-        this->emplace_unique(key_extractor<value_type>::extract(std::forward<Args>(args)...),
-                             std::forward<Args>(args)...);
+    insert_return_type emplace(Args && ... args) {
+        return this->emplace_unique<false, insert_return_type>(
+            key_extractor<value_type>::extract(std::forward<Args>(args)...),
+            std::forward<Args>(args)...);
+    }
+
+    template <typename ...Args>
+    void emplace_no_return(Args && ... args) {
+        this->emplace_unique<false, void_warpper>(
+            key_extractor<value_type>::extract(std::forward<Args>(args)...),
+            std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {

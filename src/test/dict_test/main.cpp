@@ -543,7 +543,7 @@ public:
 
     template <typename ...Args>
     void emplace(Args && ... args) {
-        std::pair<iterator, bool> result = this->map_.emplace(std::forward<Args>(args)...);
+        this->map_.emplace(std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {
@@ -635,7 +635,7 @@ public:
 
     template <typename ...Args>
     void emplace(Args && ... args) {
-        std::pair<iterator, bool> result = this->map_.emplace(std::forward<Args>(args)...);
+        this->map_.emplace(std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {
@@ -652,6 +652,7 @@ public:
     typedef typename map_type::size_type        size_type;
     typedef typename map_type::iterator         iterator;
     typedef typename map_type::const_iterator   const_iterator;
+    typedef std::pair<iterator, bool>           insert_return_type;
 
 private:
     map_type map_;
@@ -717,6 +718,10 @@ public:
 
     void insert(const key_type & key, const value_type & value) {
         this->map_.insert(key, value);
+    }
+
+    void insert(const key_type & key, value_type && value) {
+        this->map_.insert(key, std::forward<value_type>(value));
     }
 
     void insert(key_type && key, value_type && value) {

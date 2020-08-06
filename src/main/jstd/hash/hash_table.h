@@ -493,6 +493,43 @@ public:
         }
     }
 
+    void insert(const key_type & key, mapped_type && value) {
+        if (likely(this->table_ != nullptr)) {
+            hash_type hash;
+            iterator iter = this->find_internal(key, hash);
+            if (likely(iter == this->end())) {
+                // Insert the new key.
+                if (likely(this->size_ >= (this->buckets_ * 3 / 4))) {
+                    this->resize_internal(this->buckets_ * 2);
+                }
+
+                node_type * new_data = new node_type(hash, key, std::forward<mapped_type>(value));
+                if (likely(new_data != nullptr)) {
+                    size_type index = this_type::index_of(hash, this->mask_);
+                    if (likely(this->table_[index] == nullptr)) {
+                        this->table_[index] = (data_type)new_data;
+                        ++(this->size_);
+                    }
+                    else {
+                        do {
+                            index = this_type::next_index(index, this->mask_);
+                            if (likely(this->table_[index] == nullptr)) {
+                                this->table_[index] = (data_type)new_data;
+                                ++(this->size_);
+                                break;
+                            }
+                        } while (1);
+                    }
+                }
+            }
+            else {
+                // Update the existed key's value.
+                assert(iter != nullptr && (*iter) != nullptr);
+                (*iter)->pair.second = std::forward<mapped_type>(value);
+            }
+        }
+    }
+
     void insert(key_type && key, mapped_type && value) {
         if (likely(this->table_ != nullptr)) {
             hash_type hash;
