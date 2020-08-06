@@ -169,7 +169,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\equal_to.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_helper.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator.inc" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_table.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\key_extractor.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\iterator.h" />

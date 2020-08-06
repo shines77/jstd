@@ -43,7 +43,7 @@ public:
     onetime_ptr(this_type && src) {
         this->assign(std::forward<this_type>(src));
     }
-    virtual ~onetime_ptr() {
+    ~onetime_ptr() {
         this->destroy();
     }
 
