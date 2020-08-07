@@ -1405,6 +1405,9 @@ public:
 
         // Clear settings
         this->entry_size_ = 0;
+
+        // TODO: clear or rearrange entry chunk and freelist.
+
         //this->freelist_.clear();
         //this->entry_chunk_.clear();
     }
@@ -1455,7 +1458,7 @@ public:
 
     insert_return_type insert(key_type && key, mapped_type && value) {
         return this->insert_unique<false, insert_return_type>(std::forward<key_type>(key),
-                                                            std::forward<mapped_type>(value));
+                                                              std::forward<mapped_type>(value));
     }
 
     insert_return_type insert(const value_type & pair) {
@@ -1481,7 +1484,8 @@ public:
     }
 
     void insert_no_return(key_type && key, mapped_type && value) {
-        this->insert_unique<false, void_warpper>(std::forward<key_type>(key), std::forward<mapped_type>(value));
+        this->insert_unique<false, void_warpper>(std::forward<key_type>(key),
+                                                 std::forward<mapped_type>(value));
     }
 
     void insert_no_return(const value_type & pair) {
@@ -1569,13 +1573,9 @@ public:
         return size_type(0);
     }
 
-    void dump() {
-        printf("jstd::BasicDictionary<K, V>::dump()\n\n");
-    }
-
     void display_status() {
         printf("---------------------------------------\n");
-        printf("  jstd::BasicDictionary<K, V>\n");
+        printf("  %s\n", this_type::name());
         printf("---------------------------------------\n");
         printf("\n");
 
@@ -1584,6 +1584,25 @@ public:
         printf("  bucket_mask     = %" PRIuPTR "\n", this->bucket_mask());
         printf("  bucket_capacity = %" PRIuPTR "\n", this->bucket_count());
         printf("\n");
+    }
+
+    void dump_maps() {
+        printf("\n");
+        printf("   #       hash     index  key                            value\n");
+        printf("----------------------------------------------------------------------\n");
+
+        uint32_t index = 0;
+        for (const_iterator iter = this->cbegin(); iter != this->cend(); ++iter) {
+            std::uint32_t hash_code = this->get_hash(iter->first);
+            std::string key_name = iter->first.c_str() + std::string(":");
+            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
+                   hash_code,
+                   uint32_t(hash_code & container.bucket_mask()),
+                   key_name.c_str(),
+                   iter->second.c_str());
+            index++;
+        }
+        printf("\n\n");
     }
 
     static const char * name() {
