@@ -1678,7 +1678,6 @@ void hashtable_iterator_uinttest()
     typedef typename Container::const_local_iterator    const_local_iterator;
 
     typedef typename Container::hasher hasher;
-    typedef typename Container::node_pointer node_pointer;
 
     hasher hasher_;
 

@@ -37,7 +37,7 @@ template <typename CharTy>
 inline std::size_t StrLen(const CharTy * str) {
     assert(str != nullptr);
     const CharTy * start = str;
-    while (CharTy(*str++) != CharTy('/0'));
+    while (CharTy(*str++) != CharTy(0));
     assert(str >= start);
     return std::size_t(str - start);
 }

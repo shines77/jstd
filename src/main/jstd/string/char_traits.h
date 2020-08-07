@@ -49,6 +49,23 @@ struct is_char16<unsigned short> {
     static const bool value = true;
 };
 
+// jstd::is_char32<T>
+
+template <typename CharTy>
+struct is_char32 {
+    static const bool value = false;
+};
+
+template <>
+struct is_char32<signed int> {
+    static const bool value = true;
+};
+
+template <>
+struct is_char32<unsigned int> {
+    static const bool value = true;
+};
+
 // jstd::is_wchar<T>
 
 template <typename CharTy>
@@ -94,6 +111,36 @@ struct char_traits {
     typedef CharTy                                  char_type;
     typedef jstd::make_unsigned_char_t<char_type>   uchar_type;
     typedef jstd::make_signed_char_t<char_type>     schar_type;
+};
+
+template <typename CharTy>
+struct null_terminator {
+    static const CharTy value = CharTy(0);
+};
+
+template <>
+struct null_terminator<char> {
+    static const char value = '\0';
+};
+
+template <>
+struct null_terminator<unsigned char> {
+    static const unsigned char value = '\0';
+};
+
+template <>
+struct null_terminator<wchar_t> {
+    static const wchar_t value = L'\0';
+};
+
+template <>
+struct null_terminator<short> {
+    static const short value = L'\0';
+};
+
+template <>
+struct null_terminator<unsigned short> {
+    static const unsigned short value = L'\0';
 };
 
 } // namespace jstd
