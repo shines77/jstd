@@ -18,6 +18,7 @@
 #include "jstd/memory/onetime_ptr.h"
 #include "jstd/hash/hash_table.h"
 #include "jstd/hash/dictionary.h"
+#include <jstd/test/StopWatch.h>
 #include "jstd/lib.h"
 
 #endif // JSTD_ALL_H

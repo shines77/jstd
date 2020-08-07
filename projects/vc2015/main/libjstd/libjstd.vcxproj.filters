@@ -112,9 +112,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\support\SSEHelper.h">
       <Filter>src\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\support\StopWatch.h">
-      <Filter>src\support</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_utils.h">
       <Filter>src\string</Filter>
     </ClInclude>
@@ -168,6 +165,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator.inc">
       <Filter>src\hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch.h">
+      <Filter>src\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch_v1.h">
+      <Filter>src\test</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -59,7 +59,7 @@
 #include <jstd/hash/hash_table.h>
 #include <jstd/hash/dictionary.h>
 #include <jstd/string/string_view.h>
-#include <jstd/support/StopWatch.h>
+#include <jstd/test/StopWatch.h>
 
 #include <jstd/all.h>
 
@@ -779,7 +779,7 @@ void hashtable_find_benchmark()
             algorithm.emplace(field_str[i], index_str[i]);
         }
 
-        StopWatch sw;
+        jtest::StopWatch sw;
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
@@ -848,7 +848,7 @@ void hashtable_insert_benchmark_impl()
     {
         size_t checksum = 0;
         double totalTime = 0.0;
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         for (size_t i = 0; i < kRepeatTimes; ++i) {
             AlgorithmTy algorithm(kInitCapacity);
@@ -920,7 +920,7 @@ void hashtable_emplace_benchmark_impl()
     {
         size_t checksum = 0;
         double totalTime = 0.0;
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         for (size_t i = 0; i < kRepeatTimes; ++i) {
             AlgorithmTy algorithm(kInitCapacity);
@@ -992,7 +992,7 @@ void hashtable_erase_benchmark_impl()
     {
         size_t checksum = 0;
         double totalTime = 0.0;
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         for (size_t i = 0; i < kRepeatTimes; ++i) {
             AlgorithmTy algorithm;
@@ -1072,7 +1072,7 @@ void hashtable_ref_erase_benchmark_impl()
     {
         size_t checksum = 0;
         double totalTime = 0.0;
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         for (size_t i = 0; i < kRepeatTimes; ++i) {
             AlgorithmTy algorithm;
@@ -1153,7 +1153,7 @@ void hashtable_insert_erase_benchmark_impl()
         size_t checksum = 0;
         AlgorithmTy algorithm;
 
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
@@ -1237,7 +1237,7 @@ void hashtable_ref_find_benchmark()
             algorithm.emplace(field_str[i], index_str[i]);
         }
 
-        StopWatch sw;
+        jtest::StopWatch sw;
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
@@ -1308,7 +1308,7 @@ void hashtable_ref_emplace_benchmark_impl()
     {
         size_t checksum = 0;
         double totalTime = 0.0;
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         for (size_t i = 0; i < kRepeatTimes; ++i) {
             AlgorithmTy algorithm(kInitCapacity);
@@ -1383,7 +1383,7 @@ void hashtable_ref_insert_erase_benchmark_impl()
         size_t checksum = 0;
         AlgorithmTy algorithm;
 
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
@@ -1471,7 +1471,7 @@ void hashtable_rehash_benchmark_impl()
             algorithm.emplace(field_str[i], index_str[i]);
         }
 
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
@@ -1559,7 +1559,7 @@ void hashtable_rehash2_benchmark_impl()
         size_t checksum = 0;
         size_t buckets;
 
-        StopWatch sw;
+        jtest::StopWatch sw;
 
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
