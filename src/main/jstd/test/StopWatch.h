@@ -82,15 +82,15 @@ public:
     }
 
     time_float_t millisecs() const {
-        return (this->seconds() * TimeCoffe::kMillisecCoff);
+        return (this->seconds() * TimeCoffe<time_float_t>::kMillisecCoff);
     }
 
     time_float_t microsecs() const {
-        return (this->seconds() * TimeCoffe::kMicrosecCoff);
+        return (this->seconds() * TimeCoffe<time_float_t>::kMicrosecCoff);
     }
 
     time_float_t nanosecs() const {
-        return (this->seconds() * TimeCoffe::kNanosecCoff);
+        return (this->seconds() * TimeCoffe<time_float_t>::kNanosecCoff);
     }
 };
 
