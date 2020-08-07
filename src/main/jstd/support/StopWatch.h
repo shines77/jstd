@@ -33,22 +33,44 @@ using namespace std::chrono;
 
 namespace jstd {
 
+template <typename T>
+struct TimeCoffe {
+    typedef T   time_float_t;
+
+    // 1 second = 1000 millisecond
+    static time_float_t kMillisecCoff;      // static_cast<time_float_t>(1000.0);
+
+    // 1 second = 1,000,000 microsec
+    static time_float_t kMicrosecCoff;      // static_cast<time_float_t>(1000000.0);
+
+    // 1 second = 1,000,000,000 nanosec
+    static time_float_t kNanosecCoff;       // static_cast<time_float_t>(1000000000.0);
+};
+
+// 1 second = 1000 millisec
+template <typename T>
+typename TimeCoffe<T>::time_float_t
+TimeCoffe<T>::kMillisecCoff = static_cast<typename TimeCoffe<T>::time_float_t>(1000.0);
+
+// 1 second = 1,000,000 microsec
+template <typename T>
+typename TimeCoffe<T>::time_float_t
+TimeCoffe<T>::kMicrosecCoff = static_cast<typename TimeCoffe<T>::time_float_t>(1000000.0);
+
+// 1 second = 1,000,000,000 nanosec
+template <typename T>
+typename TimeCoffe<T>::time_float_t
+TimeCoffe<T>::kNanosecCoff = static_cast<typename TimeCoffe<T>::time_float_t>(1000000000.0);
+
 namespace detail {
 
 template <typename T>
 class duration_time {
 public:
-    typedef T time_float_t;
+    typedef T   time_float_t;
 
 private:
     time_float_t duration_;
-
-    // 1 second = 1,000 millisec
-    const time_float_t kMillisecCoff = static_cast<time_float_t>(1000.0);
-    // 1 second = 1,000,000 microsec
-    const time_float_t kMicrosecCoff = static_cast<time_float_t>(1000000.0);
-    // 1 second = 1,000,000,000 nanosec
-    const time_float_t kNanosecCoff = static_cast<time_float_t>(1000000000.0);
 
 public:
     duration_time(time_float_t duration) : duration_(duration) {}
@@ -60,15 +82,15 @@ public:
     }
 
     time_float_t millisecs() const {
-        return (this->seconds() * kMillisecCoff);
+        return (this->seconds() * TimeCoffe::kMillisecCoff);
     }
 
     time_float_t microsecs() const {
-        return (this->seconds() * kMicrosecCoff);
+        return (this->seconds() * TimeCoffe::kMicrosecCoff);
     }
 
     time_float_t nanosecs() const {
-        return (this->seconds() * kNanosecCoff);
+        return (this->seconds() * TimeCoffe::kNanosecCoff);
     }
 };
 
@@ -82,15 +104,13 @@ public:
     typedef typename impl_type::time_stamp_t    time_stamp_t;
     typedef typename impl_type::time_point_t    time_point_t;
     typedef typename impl_type::duration_type   duration_type;
+    typedef TimeCoffe<time_float_t>             time_coffe;
 
 private:
     time_point_t start_time_;
     time_point_t stop_time_;
 
     static time_point_t base_time_;
-
-    // 1 second = 1000 millisecond
-    static time_float_t kMillisecCoff;      // static_cast<time_float_t>(1000.0);
 
 public:
     StopWatchBase() :
@@ -102,14 +122,12 @@ public:
     ~StopWatchBase() {}
 
     void reset() {
-        __COMPILER_BARRIER();
         start_time_ = impl_type::now();
         stop_time_ = start_time_;
         __COMPILER_BARRIER();
     }
 
     void start() {
-        __COMPILER_BARRIER();
         start_time_ = impl_type::now();
         __COMPILER_BARRIER();
     }
@@ -117,7 +135,6 @@ public:
     void stop() {
         __COMPILER_BARRIER();
         stop_time_ = impl_type::now();
-        __COMPILER_BARRIER();
     }
 
     static time_point_t now() {
@@ -136,43 +153,54 @@ public:
 
     template <typename U>
     static detail::duration_time<time_float_t> duration(U now, U old) {
-        __COMPILER_BARRIER();
         detail::duration_time<time_float_t> _duration(impl_type::duration_time(now, old));
-        __COMPILER_BARRIER();
         return _duration;
     }
 
-    time_float_t peekSecond() const {
+    time_float_t peekElapsedTime() const {
         __COMPILER_BARRIER();
         time_float_t elapsed_time = impl_type::duration_time(impl_type::now(), start_time_);
-        __COMPILER_BARRIER();
         return elapsed_time;
     }
 
-    time_float_t peekMillisec() const {
-        return (this->peekSecond() * kMillisecCoff);
+    time_float_t peekElapsedMicrosec() const {
+        return (this->peekElapsedTime() * time_coffe::kMicrosecCoff);
     }
 
-    time_float_t getSecond() {
+    time_float_t peekElapsedMillisec() const {
+        return (this->peekElapsedTime() * time_coffe::kMillisecCoff);
+    }
+
+    time_float_t peekElapsedSecond() const {
+        return this->peekElapsedTime();
+    }
+
+    time_float_t currentTimeMillis() {
+        return this->peekElapsedMillisec();
+    }
+
+    time_float_t getElapsedTime() {
         __COMPILER_BARRIER();
         time_float_t elapsed_time = impl_type::duration_time(stop_time_, start_time_);
-        __COMPILER_BARRIER();
         return elapsed_time;
     }
 
-    time_float_t getMillisec() {
-        return (this->getSecond() * kMillisecCoff);
+    time_float_t getElapsedMicrosec() {
+        return (this->getElapsedSecond() * time_coffe::kMicrosecCoff);
+    }
+
+    time_float_t getElapsedMillisec() {
+        return (this->getElapsedSecond() * time_coffe::kMillisecCoff);
+    }
+
+    time_float_t getElapsedSecond() {
+        return this->getElapsedTime();
     }
 };
 
 template <typename T>
 typename StopWatchBase<T>::time_point_t
 StopWatchBase<T>::base_time_ = StopWatchBase<T>::impl_type::now();
-
-// 1 second = 1000 millisec
-template <typename T>
-typename StopWatchBase<T>::time_float_t
-StopWatchBase<T>::kMillisecCoff = static_cast<typename StopWatchBase<T>::time_float_t>(1000.0);
 
 template <typename T>
 class StopWatchExBase {
@@ -183,6 +211,7 @@ public:
     typedef typename impl_type::time_stamp_t    time_stamp_t;
     typedef typename impl_type::time_point_t    time_point_t;
     typedef typename impl_type::duration_type   duration_type;
+    typedef TimeCoffe<time_float_t>             time_coffe;
 
 private:
     time_point_t start_time_;
@@ -195,7 +224,9 @@ private:
 
     // The zero value time.
     static time_float_t kTimeZero;      // static_cast<time_float_t>(0.0);
-    // 1 second = 1000 millisec
+    // 1 second = 1,000,000 microsec
+    static time_float_t kMicrosecCoff;  // static_cast<time_float_t>(1000000.0);
+    // 1 second = 1,000 millisec
     static time_float_t kMillisecCoff;  // static_cast<time_float_t>(1000.0);
 
 public:
@@ -211,7 +242,6 @@ public:
     ~StopWatchExBase() {}
 
     void reset() {
-        __COMPILER_BARRIER();
         elapsed_time_ = kTimeZero;
         total_elapsed_time_ = kTimeZero;
         start_time_ = impl_type::now();
@@ -220,7 +250,6 @@ public:
     }
 
     void restart() {
-        __COMPILER_BARRIER();
         running_ = false;
         elapsed_time_ = kTimeZero;
         total_elapsed_time_ = kTimeZero;
@@ -277,7 +306,6 @@ public:
     }
 
     void again() {
-        __COMPILER_BARRIER();
         stop();
         __COMPILER_BARRIER();
         if (elapsed_time_ != kTimeZero) {
@@ -302,17 +330,21 @@ public:
 
     template <typename U>
     static detail::duration_time<time_float_t> duration(U now, U old) {
-        __COMPILER_BARRIER();
         detail::duration_time<time_float_t> _duration(impl_type::duration_time(now, old));
-        __COMPILER_BARRIER();
         return _duration;
     }
 
     time_float_t getDurationTime() const {
-        __COMPILER_BARRIER();
         detail::duration_time<time_float_t> _duration_time = impl_type::duration_time(stop_time_, start_time_);
-        __COMPILER_BARRIER();
         return _duration_time;
+    }
+
+    time_float_t getDurationMicrosec() {
+        return (this->getDurationSecond() * time_coffe::kMicrosecCoff);
+    }
+
+    time_float_t getDurationMillisec() {
+        return (this->getDurationSecond() * time_coffe::kMillisecCoff);
     }
 
     time_float_t getDurationSecond() {
@@ -323,40 +355,60 @@ public:
         return this->elapsed_time_;
     }
 
-    time_float_t getDurationMillisec() {
-        return (this->getDurationSecond() * kMillisecCoff);
-    }
-
-    time_float_t peekSecond() const {
+    time_float_t peekElapsedTime() const {
         __COMPILER_BARRIER();
         time_float_t elapsed_time = impl_type::duration_time(impl_type::now(), start_time_);
-        __COMPILER_BARRIER();
         return elapsed_time;
     }
 
-    time_float_t peekMillisec() const {
-        return (this->peekSecond() * kMillisecCoff);
+    time_float_t peekElapsedMicrosec() const {
+        return (this->peekElapsedTime() * time_coffe::kMicrosecCoff);
     }
 
-    time_float_t getSecond() {
-        __COMPILER_BARRIER();
+    time_float_t peekElapsedMillisec() const {
+        return (this->peekElapsedTime() * time_coffe::kMillisecCoff);
+    }
+
+    time_float_t peekElapsedSecond() const {
+        return this->peekElapsedTime();
+    }
+
+    time_float_t currentTimeMillis() {
+        return this->peekElapsedMillisec();
+    }
+
+    time_float_t getElapsedTime() {
         stop();
-        __COMPILER_BARRIER();
         return this->elapsed_time_;
     }
 
-    time_float_t getMillisec() {
-        return (this->getSecond() * kMillisecCoff);
+    time_float_t getElapsedMicrosec() {
+        return (this->getElapsedTime() * time_coffe::kMicrosecCoff);
     }
 
-    time_float_t getTotalSecond() const {
+    time_float_t getElapsedMillisec() {
+        return (this->getElapsedTime() * time_coffe::kMillisecCoff);
+    }
+
+    time_float_t getElapsedSecond() {
+        return this->getElapsedTime();
+    }
+
+    time_float_t getTotalElapsedTime() const {
         __COMPILER_BARRIER();
         return this->total_elapsed_time_;
     }
 
+    time_float_t getTotalMicrosec() const {
+        return (this->getTotalElapsedTime() * time_coffe::kMicrosecCoff);
+    }
+
     time_float_t getTotalMillisec() const {
-        __COMPILER_BARRIER();
-        return (this->total_elapsed_time_ * kMillisecCoff);
+        return (this->getTotalElapsedTime() * time_coffe::kMillisecCoff);
+    }
+
+    time_float_t getTotalSecond() const {
+        return this->getTotalElapsedTime();
     }
 };
 
@@ -368,11 +420,6 @@ StopWatchExBase<T>::base_time_ = StopWatchExBase<T>::impl_type::now();
 template <typename T>
 typename StopWatchExBase<T>::time_float_t
 StopWatchExBase<T>::kTimeZero = static_cast<typename StopWatchExBase<T>::time_float_t>(0.0);
-
-// 1 second = 1000 millisec
-template <typename T>
-typename StopWatchExBase<T>::time_float_t
-StopWatchExBase<T>::kMillisecCoff = static_cast<typename StopWatchExBase<T>::time_float_t>(1000.0);
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1800)
 

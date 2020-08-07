@@ -793,7 +793,7 @@ void hashtable_find_benchmark()
 
         printf("---------------------------------------------------------------------------\n");
         printf(" %-36s  ", algorithm.name());
-        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getMillisec());
+        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
 
@@ -859,7 +859,7 @@ void hashtable_insert_benchmark_impl()
             checksum += algorithm.size();
             sw.stop();
 
-            totalTime += sw.getMillisec();
+            totalTime += sw.getElapsedMillisec();
         }
 
         AlgorithmTy algorithm;
@@ -931,7 +931,7 @@ void hashtable_emplace_benchmark_impl()
             checksum += algorithm.size();
             sw.stop();
 
-            totalTime += sw.getMillisec();
+            totalTime += sw.getElapsedMillisec();
         }
 
         AlgorithmTy algorithm;
@@ -1011,7 +1011,7 @@ void hashtable_erase_benchmark_impl()
             assert(algorithm.size() == 0);
             checksum += algorithm.size();
 
-            totalTime += sw.getMillisec();
+            totalTime += sw.getElapsedMillisec();
         }
 
         AlgorithmTy algorithm;
@@ -1091,7 +1091,7 @@ void hashtable_ref_erase_benchmark_impl()
             assert(algorithm.size() == 0);
             checksum += algorithm.size();
 
-            totalTime += sw.getMillisec();
+            totalTime += sw.getElapsedMillisec();
         }
 
         AlgorithmTy algorithm;
@@ -1178,7 +1178,7 @@ void hashtable_insert_erase_benchmark_impl()
 
         printf("---------------------------------------------------------------------------\n");
         printf(" %-36s  ", algorithm.name());
-        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getMillisec());
+        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
 
@@ -1251,7 +1251,7 @@ void hashtable_ref_find_benchmark()
 
         printf("---------------------------------------------------------------------------\n");
         printf(" %-36s  ", algorithm.name());
-        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getMillisec());
+        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
 
@@ -1319,7 +1319,7 @@ void hashtable_ref_emplace_benchmark_impl()
             checksum += algorithm.size();
             sw.stop();
 
-            totalTime += sw.getMillisec();
+            totalTime += sw.getElapsedMillisec();
         }
 
         AlgorithmTy algorithm;
@@ -1408,7 +1408,7 @@ void hashtable_ref_insert_erase_benchmark_impl()
 
         printf("---------------------------------------------------------------------------\n");
         printf(" %-36s  ", algorithm.name());
-        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getMillisec());
+        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
 
@@ -1504,7 +1504,7 @@ void hashtable_rehash_benchmark_impl()
 
         printf("---------------------------------------------------------------------------\n");
         printf(" %-36s  ", algorithm.name());
-        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getMillisec());
+        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
 
@@ -1600,7 +1600,7 @@ void hashtable_rehash2_benchmark_impl()
         AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
         printf(" %-36s  ", algorithm.name());
-        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getMillisec());
+        printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
 
