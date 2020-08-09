@@ -44,7 +44,7 @@ public:
     }
 
     static int ReadKey(bool displayTips = true, bool echoInput = false,
-                       bool newLine = false, bool enabledCpuWarmup = false) {
+                       bool newLine = true, bool enabledCpuWarmup = false) {
         int keyCode;
         if (displayTips) {
             printf("Press any key to continue ...");
@@ -74,8 +74,12 @@ public:
     }
 
     static int ReadKeyLine(bool displayTips = true, bool echoInput = false,
-                           bool newLine = false, bool enabledCpuWarmup = false) {
-        int keyCode = ReadKey(displayTips, echoInput, true, false);
+                           bool newLine = true, bool enabledCpuWarmup = false) {
+        if (enabledCpuWarmup)
+            newLine = true;
+
+        int keyCode = ReadKey(displayTips, echoInput, newLine, enabledCpuWarmup);
+
         if (newLine) {
             printf("\n");
         }
