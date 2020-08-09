@@ -1696,12 +1696,13 @@ public:
         printf("  max_bucket_count = %" PRIuPTR "\n", get_max_bucket_count());
         printf("  coverage_rate    = %0.2f %%\n", calc_coverage_rate());
         printf("  usage_rate       = %0.2f %%\n", calc_usage_rate());
-        printf("  unused_rate      = %0.2f %%\n", (100.0 - calc_usage_rate()));
+        printf("  unused_rate      = %0.2f %% / %0.2f %% (Total)\n", (calc_coverage_rate() - calc_usage_rate()),
+                                                  (100.0 - calc_usage_rate()));
         printf("  conflict_rate    = %0.2f %%\n", calc_conflict_rate());
         printf("\n");
     }
 
-    void dump_maps() {
+    void dump_entries(uint32_t max_entries = 0) {
         printf("\n");
         printf("   #       hash     index  key                            value\n");
         printf("----------------------------------------------------------------------\n");
@@ -1709,13 +1710,16 @@ public:
         uint32_t index = 0;
         for (const_iterator iter = cbegin(); iter != cend(); ++iter) {
             std::uint32_t hash_code = get_hash(iter->first);
-            std::string key_name = iter->first.c_str() + std::string(":");
+            std::string key_name = iter->first.c_str();
             printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
                    hash_code,
                    uint32_t(hash_code & bucket_mask()),
                    key_name.c_str(),
                    iter->second.c_str());
             index++;
+            if (max_entries != 0 && index >= max_entries) {
+                break;
+            }
         }
         printf("\n\n");
     }

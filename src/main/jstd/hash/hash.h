@@ -11,6 +11,7 @@
 #include "jstd/basic/stdsize.h"
 
 #include <string.h>
+#include <memory.h>
 #include <assert.h>
 
 #include <cstdint>
@@ -119,7 +120,7 @@ uint32_t DecodeFixed32(const CharTy * ptr) {
         // Load the raw bytes
         uint32_t result;
         // gcc optimizes this to a plain load
-        memcpy((void *)&result, (const void *)ptr, sizeof(result));
+        ::memcpy((void *)&result, (const void *)ptr, sizeof(result));
         return result;
     }
     else {
@@ -137,7 +138,7 @@ uint64_t DecodeFixed64(const CharTy * ptr) {
         // Load the raw bytes
         uint64_t result;
         // gcc optimizes this to a plain load
-        memcpy((void *)&result, (const void *)ptr, sizeof(result));
+        ::memcpy((void *)&result, (const void *)ptr, sizeof(result));
         return result;
     }
     else {

@@ -88,6 +88,9 @@
 
 using namespace jstd;
 
+std::vector<std::string> dict_words;
+bool dict_words_is_ready = false;
+
 #ifdef NDEBUG
 static const std::size_t kIterations = 3000000;
 #else
@@ -761,13 +764,7 @@ void hashtable_find_benchmark()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -836,13 +833,7 @@ void hashtable_insert_benchmark_impl()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -908,13 +899,7 @@ void hashtable_emplace_benchmark_impl()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -980,13 +965,7 @@ void hashtable_erase_benchmark_impl()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -1060,13 +1039,7 @@ void hashtable_ref_erase_benchmark_impl()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -1140,13 +1113,7 @@ void hashtable_insert_erase_benchmark_impl()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -1218,13 +1185,7 @@ void hashtable_ref_find_benchmark()
     StringRef index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].attach(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_buf[i] = buf;
+        index_buf[i] = std::to_string(i);
         index_str[i] = index_buf[i];
     }
 
@@ -1295,13 +1256,7 @@ void hashtable_ref_emplace_benchmark_impl()
     StringRef index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].attach(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_buf[i] = buf;
+        index_buf[i] = std::to_string(i);
         index_str[i] = index_buf[i];
     }
 
@@ -1369,13 +1324,7 @@ void hashtable_ref_insert_erase_benchmark_impl()
     StringRef index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].attach(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_buf[i] = buf;
+        index_buf[i] = std::to_string(i);
         index_str[i] = index_buf[i];
     }
 
@@ -1451,13 +1400,7 @@ void hashtable_rehash_benchmark_impl()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -1546,13 +1489,7 @@ void hashtable_rehash2_benchmark_impl()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     {
@@ -1656,13 +1593,7 @@ void hashtable_iterator_uinttest()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     Container container(kInitCapacity);
@@ -1770,27 +1701,41 @@ void hashtable_show_status()
     std::string index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].assign(header_fields[i]);
-        char buf[16];
-#ifdef _MSC_VER
-        ::_itoa_s((int)i, buf, 10);
-#else
-        sprintf(buf, "%d", (int)i);
-#endif
-        index_str[i] = buf;
+        index_str[i] = std::to_string(i);
     }
 
     Container container(kInitCapacity);
-    for (size_t j = 0; j < kHeaderFieldSize; ++j) {
-        container.emplace(field_str[j], index_str[j]);
+    for (size_t i = 0; i < kHeaderFieldSize; ++i) {
+        container.emplace(field_str[i], index_str[i]);
     }
 
     container.display_status();
-    container.dump_maps();
+    container.dump_entries();
+}
+
+template <typename Container>
+void hashtable_dict_words_show_status()
+{
+    Container container(kInitCapacity);
+    for (size_t i = 0; i < dict_words.size(); i++) {
+        container.emplace(dict_words[i], std::to_string(i));
+    }
+
+    container.display_status();
+    container.dump_entries(100);
 }
 
 void hashtable_uinttest()
 {
-    hashtable_show_status<jstd::Dictionary<std::string, std::string>>();
+    if (dict_words_is_ready && dict_words.size() > 0) {
+        hashtable_dict_words_show_status<jstd::Dictionary<std::string, std::string>>();
+        hashtable_dict_words_show_status<jstd::Dictionary_Time31<std::string, std::string>>();
+    }
+    else {
+        hashtable_show_status<jstd::Dictionary<std::string, std::string>>();
+        hashtable_show_status<jstd::Dictionary_Time31<std::string, std::string>>();
+    }
+    
     //hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
 }
 
@@ -1814,11 +1759,48 @@ void string_view_test()
     printf("str1 = %s\n", str1.c_str());
 }
 
-int main(int argc, char *argv[])
+bool read_dict_file(const std::string & filename)
 {
-    test::cpu_warmup(1000);
+    bool is_ok = false;
+    try {
+        std::ifstream dict(filename.c_str());
 
-    iterator_test();
+        if (dict.is_open()) {
+            std::string word;
+            while (!dict.eof()) {
+                char buf[256];
+                dict.getline(buf, sizeof(buf));
+                word = buf;
+                dict_words.push_back(word);
+            }
+
+            is_ok = true;
+            dict.close();
+        }
+    }
+    catch (const std::exception & ex) {
+        std::cout << "read_dict_file() Exception: " << ex.what() << std::endl << std::endl;
+        is_ok = false;
+    }
+    return is_ok;
+}
+
+int main(int argc, char * argv[])
+{
+    if (argc == 2) {
+        std::string filename = argv[1];
+        bool read_ok = read_dict_file(filename);
+        dict_words_is_ready = read_ok;
+    }
+
+    std::string test = ":";
+    hashes::Times31(test.c_str(), test.size());
+
+    if (!dict_words_is_ready) {
+        test::cpu_warmup(1000);
+    }
+
+    //iterator_test();
     //string_view_test();
 
     hashtable_uinttest();

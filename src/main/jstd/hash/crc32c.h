@@ -43,6 +43,8 @@
 namespace jstd {
 namespace crc32 {
 
+static const uint32_t kInitPrime32 = 0x165667C5UL;
+
 static uint32_t crc32c_x86(const char * data, size_t length)
 {
 #if JSTD_HAVE_SSE42_CRC32C
@@ -52,7 +54,7 @@ static uint32_t crc32c_x86(const char * data, size_t length)
     static const uint32_t kMaskOne = 0xFFFFFFFFUL;
     const char * data_end = data + length;
 
-    uint32_t crc32 = ~0;
+    uint32_t crc32 = 0;
     ssize_t remain = length;
 
     do {
@@ -79,7 +81,7 @@ static uint32_t crc32c_x86(const char * data, size_t length)
         }
     } while (1);
 
-    return ~crc32;
+    return crc32;
 #else
     return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
@@ -95,7 +97,7 @@ static uint32_t crc32c_x64(const char * data, size_t length)
     static const uint64_t kMaskOne = 0xFFFFFFFFFFFFFFFFULL;
     const char * data_end = data + length;
 
-    uint64_t crc64 = ~0;
+    uint64_t crc64 = 0;
     ssize_t remain = length;
 
     do {
@@ -122,7 +124,7 @@ static uint32_t crc32c_x64(const char * data, size_t length)
         }
     } while (1);
 
-    return (uint32_t)~crc64;
+    return static_cast<uint32_t>(crc64);
 #else
     return crc32c_x86(data, length);
 #endif // CRC32C_IS_X86_64
@@ -137,7 +139,7 @@ static uint32_t crc32c_hw_u64(const char * data, size_t length)
 {
 #if JSTD_HAVE_SSE42_CRC32C
     assert(data != nullptr);
-    uint64_t crc64 = ~0;
+    uint64_t crc64 = 0;
 
     static const size_t kStepSize = sizeof(uint64_t);
     uint64_t * src = (uint64_t *)data;
@@ -155,7 +157,7 @@ static uint32_t crc32c_hw_u64(const char * data, size_t length)
         crc32 = _mm_crc32_u8(crc32, data[i]);
         ++i;
     }
-    return ~crc32;
+    return crc32;
 #else
     return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
@@ -169,7 +171,7 @@ static uint32_t crc32c_hw_u64_v2(const char * data, size_t length)
 {
 #if JSTD_HAVE_SSE42_CRC32C
     assert(data != nullptr);
-    uint64_t crc64 = ~0;
+    uint64_t crc64 = 0;
 
     static const size_t kStepSize = sizeof(uint64_t);
     uint64_t * src = (uint64_t *)data;
@@ -188,7 +190,7 @@ static uint32_t crc32c_hw_u64_v2(const char * data, size_t length)
         crc32 = _mm_crc32_u8(crc32, *src8);
         ++src8;
     }
-    return ~crc32;
+    return crc32;
 #else
     return hashes::Times31(data, length);
 #endif // JSTD_HAVE_SSE42_CRC32C
