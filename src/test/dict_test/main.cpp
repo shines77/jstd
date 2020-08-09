@@ -623,9 +623,7 @@ void hashtable_find_benchmark()
 
 void hashtable_find_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_find_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_find_benchmark<test::std_map<std::string, std::string>>();
@@ -691,9 +689,7 @@ void hashtable_insert_benchmark_impl()
 
 void hashtable_insert_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_insert_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_insert_benchmark_impl<test::std_map<std::string, std::string>>();
@@ -759,9 +755,7 @@ void hashtable_emplace_benchmark_impl()
 
 void hashtable_emplace_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_emplace_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_emplace_benchmark_impl<test::std_map<std::string, std::string>>();
@@ -835,9 +829,7 @@ void hashtable_erase_benchmark_impl()
 
 void hashtable_erase_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_erase_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_erase_benchmark_impl<test::std_map<std::string, std::string>>();
@@ -911,9 +903,7 @@ void hashtable_ref_erase_benchmark_impl()
 
 void hashtable_ref_erase_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_erase_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_ref_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
@@ -988,9 +978,7 @@ void hashtable_insert_erase_benchmark_impl()
 
 void hashtable_insert_erase_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_insert_erase_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_insert_erase_benchmark_impl<test::std_map<std::string, std::string>>();
@@ -1057,9 +1045,7 @@ void hashtable_ref_find_benchmark()
 
 void hashtable_ref_find_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_find_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_ref_find_benchmark<test::std_map<StringRef, StringRef>>();
@@ -1127,9 +1113,7 @@ void hashtable_ref_emplace_benchmark_impl()
 
 void hashtable_ref_emplace_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_emplace_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_ref_emplace_benchmark_impl<test::std_map<StringRef, StringRef>>();
@@ -1206,9 +1190,7 @@ void hashtable_ref_insert_erase_benchmark_impl()
 
 void hashtable_ref_insert_erase_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_ref_insert_erase_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_ref_insert_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
@@ -1298,9 +1280,7 @@ void hashtable_rehash_benchmark_impl()
 
 void hashtable_rehash_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_rehash_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_rehash_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
@@ -1390,9 +1370,7 @@ void hashtable_rehash2_benchmark_impl()
 
 void hashtable_rehash2_benchmark()
 {
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << "  hashtable_rehash2_benchmark()" << std::endl;
-    std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
     hashtable_rehash2_benchmark_impl<test::std_unordered_map<std::string, std::string>>();

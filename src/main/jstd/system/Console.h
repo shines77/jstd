@@ -68,7 +68,7 @@ public:
 
         // After call jstd_getch(), warm up the CPU again, at least 500 ms.
         if (enabledCpuWarmup) {
-            jtest::CPU::warmup(500);
+            jtest::CPU::warmup(800);
         }
         return keyCode;
     }
