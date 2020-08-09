@@ -235,11 +235,5 @@ set(SOURCE_FILES
     src/test/benchmark/main.cpp
     )
 
-add_custom_target(release
-    COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${CMAKE_SOURCE_DIR}
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
-    COMMENT "Switch CMAKE_BUILD_TYPE to Release"
-)
-
 add_executable(benchmark ${SOURCE_FILES})
 target_link_libraries(benchmark ${EXTRA_LIBS})
