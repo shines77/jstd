@@ -151,7 +151,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\main\jstd\all.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\allocator.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\assert.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\compiler.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\export.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\inttypes.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\msvc\inttypes.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\msvc\stdbool.h" />
@@ -161,6 +163,15 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\stdint.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\stdsize.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\unistd.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\config.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_arch.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_post.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_pre.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\default\config.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\linux\config.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\macos\config.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\config\win32\config.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\crc32c.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_traits.h" />
@@ -172,6 +183,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator.inc" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_table.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\key_extractor.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\internal\Copyable.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\internal\NonAssignable.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\internal\NonCopyable.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\iterator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\lib.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\onetime_ptr.h" />
@@ -192,6 +206,10 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\support\Power2.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\PowerOf2.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\SSEHelper.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\system\Console.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\system\crtdbg_env.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\system\getchar.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\system\sleep.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\CPUWarmUp.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch_v1.h" />
@@ -199,7 +217,11 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\xutility.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\src\main\jstd\basic\assert-c.c" />
     <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp" />
+    <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c" />
+    <ClCompile Include="..\..\..\..\src\main\jstd\system\getchar.c" />
+    <ClCompile Include="..\..\..\..\src\main\jstd\system\sleep.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

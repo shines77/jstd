@@ -6,7 +6,6 @@
 #pragma once
 #endif
 
-#include <stdlib.h>
 #include <stdio.h>
 
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
@@ -57,7 +56,7 @@ void warmup(int delayMillsecs)
 
 #else
 
-void cpu_warmup(DWORD delayMillsecs)
+void warmup(DWORD delayMillsecs)
 {
 #if defined(NDEBUG)
     volatile int sum = 0;

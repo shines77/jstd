@@ -47,8 +47,8 @@
 // Use in <jstd/support/PowerOf2.h>
 #define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
 
-#define USE_JSTD_HASH_TABLE     0
-#define USE_JSTD_DICTIONARY     0
+#define USE_JSTD_HASH_TABLE     1
+#define USE_JSTD_DICTIONARY     1
 
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
@@ -57,9 +57,9 @@
 #include <jstd/hash/hash_table.h>
 #include <jstd/hash/dictionary.h>
 #include <jstd/string/string_view.h>
+#include <jstd/system/Console.h>
 #include <jstd/test/CPUWarmUp.h>
 #include <jstd/test/StopWatch.h>
-#include <jstd/system/Console.h>
 
 #include <jstd/all.h>
 
@@ -570,6 +570,17 @@ public:
                           std::forward<value_type>(value));
     }
 
+    /*
+    void emplace(const key_type & key, const value_type & value) {
+        this->map_.emplace(key, value);
+    }
+
+    void emplace(key_type && key, value_type && value) {
+        this->map_.emplace(std::forward<key_type>(key),
+                           std::forward<value_type>(value));
+    }
+    //*/
+
     template <typename ...Args>
     void emplace(Args && ... args) {
         this->map_.emplace(std::forward<Args>(args)...);
@@ -641,8 +652,6 @@ void hashtable_find_benchmark()
     hashtable_find_benchmark<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#else
-    hashtable_find_benchmark<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -709,8 +718,6 @@ void hashtable_insert_benchmark()
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#else
-    hashtable_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -777,8 +784,6 @@ void hashtable_emplace_benchmark()
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#else
-    hashtable_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -853,8 +858,6 @@ void hashtable_erase_benchmark()
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#else
-    hashtable_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -929,8 +932,6 @@ void hashtable_ref_erase_benchmark()
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#else
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1006,8 +1007,6 @@ void hashtable_insert_erase_benchmark()
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#else
-    hashtable_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1075,8 +1074,6 @@ void hashtable_ref_find_benchmark()
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#else
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1145,8 +1142,6 @@ void hashtable_ref_emplace_benchmark()
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#else
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1224,8 +1219,6 @@ void hashtable_ref_insert_erase_benchmark()
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
     hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
-#else
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1315,8 +1308,6 @@ void hashtable_rehash_benchmark()
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#else
-    hashtable_rehash_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1407,8 +1398,6 @@ void hashtable_rehash2_benchmark()
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<std::string, std::string>>>();
     hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<std::string, std::string>>>();
-#else
-    hashtable_rehash2_benchmark_impl<test::hash_table_impl<jstd::Dictionary<std::string, std::string>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
