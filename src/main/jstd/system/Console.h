@@ -13,7 +13,6 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <vadefs.h>
 
 #ifdef _MSC_VER
 #include <conio.h>
