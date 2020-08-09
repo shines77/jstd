@@ -639,7 +639,7 @@ void hashtable_find_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_find_benchmark<test::std_map<std::string, std::string>>();
+    //hashtable_find_benchmark<test::std_map<std::string, std::string>>();
     hashtable_find_benchmark<test::std_unordered_map<std::string, std::string>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -705,7 +705,7 @@ void hashtable_insert_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_insert_benchmark_impl<test::std_map<std::string, std::string>>();
+    //hashtable_insert_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_insert_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -771,7 +771,7 @@ void hashtable_emplace_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_emplace_benchmark_impl<test::std_map<std::string, std::string>>();
+    //hashtable_emplace_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_emplace_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -845,7 +845,7 @@ void hashtable_erase_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_erase_benchmark_impl<test::std_map<std::string, std::string>>();
+    //hashtable_erase_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_erase_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -919,7 +919,7 @@ void hashtable_ref_erase_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_ref_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
+    //hashtable_ref_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
     hashtable_ref_erase_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -994,7 +994,7 @@ void hashtable_insert_erase_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_insert_erase_benchmark_impl<test::std_map<std::string, std::string>>();
+    //hashtable_insert_erase_benchmark_impl<test::std_map<std::string, std::string>>();
     hashtable_insert_erase_benchmark_impl<test::std_unordered_map<std::string, std::string>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -1061,7 +1061,7 @@ void hashtable_ref_find_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_ref_find_benchmark<test::std_map<StringRef, StringRef>>();
+    //hashtable_ref_find_benchmark<test::std_map<StringRef, StringRef>>();
     hashtable_ref_find_benchmark<test::std_unordered_map<StringRef, StringRef>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -1129,7 +1129,7 @@ void hashtable_ref_emplace_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_ref_emplace_benchmark_impl<test::std_map<StringRef, StringRef>>();
+    //hashtable_ref_emplace_benchmark_impl<test::std_map<StringRef, StringRef>>();
     hashtable_ref_emplace_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
 
 #if USE_JSTD_HASH_TABLE
@@ -1206,7 +1206,7 @@ void hashtable_ref_insert_erase_benchmark()
     std::cout << "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=" << std::endl;
     std::cout << std::endl;
 
-    hashtable_ref_insert_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
+    //hashtable_ref_insert_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
     hashtable_ref_insert_erase_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
 
 #if USE_JSTD_HASH_TABLE
