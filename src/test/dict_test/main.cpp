@@ -59,6 +59,7 @@
 #include <jstd/hash/hash_table.h>
 #include <jstd/hash/dictionary.h>
 #include <jstd/string/string_view.h>
+#include <jstd/test/CPUWarmUp.h>
 #include <jstd/test/StopWatch.h>
 
 #include <jstd/all.h>
@@ -183,141 +184,7 @@ static const char * header_fields[] = {
 
 static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 
-class ListDemo {
-public:
-    ListDemo() {}
-    ~ListDemo() {}
-};
-
-template <class T>
-class ListIterator : public jstd::iterator<
-        jstd::random_access_iterator_tag, ListIterator<T>
-    > {
-public:
-    typedef jstd::iterator<jstd::random_access_iterator_tag, ListIterator<T>>
-                                                    base_type;
-    typedef ListIterator<T>                         this_type;
-
-    typedef typename base_type::iterator_category   iterator_category;
-    typedef typename base_type::value_type          value_type;
-    typedef typename base_type::difference_type     difference_type;
-
-    typedef typename base_type::pointer             pointer;
-    typedef typename base_type::reference           reference;
-
-private:
-    T * ptr_;
-
-public:
-    ListIterator(T * ptr = nullptr) : ptr_(ptr) {
-    }
-    template <class Other>
-    ListIterator(const ListIterator<Other> & src) : ptr_(src.ptr()) {
-    }
-    ~ListIterator() {
-    }
-
-    // return wrapped iterator
-	T * ptr() {
-        return ptr_;
-    }
-
-    // return wrapped iterator
-	const T * ptr() const {
-        return ptr_;
-    }
-
-    // assign from compatible base
-    template <class Other>
-    this_type & operator = (const ListIterator<Other> & right) {
-        ptr_ = right.ptr();
-        return (*this);
-    }
-
-    // return designated value
-    reference operator * () const {
-        return (*const_cast<this_type *>(this));
-    }
-
-    // return pointer to class object
-    pointer operator -> () const {
-        return (std::pointer_traits<pointer>::pointer_to(**this));
-    }
-
-    this_type & operator ++ () {
-        ++ptr_;
-        return (*this);
-    }
-
-    this_type operator ++ (int) {
-        this_type tmp = *this;
-        ++ptr_;
-        return tmp;
-    }
-
-    this_type & operator -- () {
-        --ptr_;
-        return (*this);
-    }
-
-    this_type operator -- (int) {
-        this_type tmp = *this;
-        --ptr_;
-        return tmp;
-    }
-
-    // increment by integer
-    this_type & operator += (difference_type offset) {
-        ptr_ += offset;
-        return (*this);
-    }
-
-    this_type operator + (difference_type offset) {
-        return this_type(ptr_ + offset);
-    }
-
-    this_type & operator -= (difference_type offset) {
-        ptr_ -= offset;
-        return (*this);
-    }
-
-    this_type operator - (difference_type offset) {
-        return this_type(ptr_ - offset);
-    }
-};
-
-void iterator_test()
-{
-    bool is_iterator = jstd::is_iterator<ListIterator<ListDemo>>::value;
-
-    ListIterator<ListDemo> iter;
-    iter++;
-    iter--;
-    iter += std::ptrdiff_t(10);
-    iter -= std::ptrdiff_t(5);
-
-    jstd::reverse_iterator<ListIterator<ListDemo>> riter;
-    riter++;
-    riter--;
-    riter += std::ptrdiff_t(10);
-    riter -= std::ptrdiff_t(5);
-
-    ListIterator<ListDemo> random_iter;
-    jstd::iterator_utils::advance(random_iter, std::ptrdiff_t(1));
-
-    jstd::Dictionary_crc32c<std::string, std::string> dict;
-    dict.insert("1", "100");
-
-    jstd::Dictionary_crc32c<std::wstring, std::wstring> wdict;
-    wdict.insert(L"2", L"200");
-
-    printf("dict_test.exe - %d, 0x%p, 0x%p\n\n",
-           (int)is_iterator,
-           (void *)iter.ptr(),
-           (void *)riter.base().ptr());
-}
-
-#define USE_STRINGREF_STD_HASH  0
+#define USE_STRINGREF_STD_HASH  1
 
 namespace std {
 
@@ -329,8 +196,8 @@ struct hash<jstd::StringRef> {
 
     std::hash<std::string> hasher_;
 
-    result_type operator()(argument_type const & key) const {
-        return hasher_(std::move(std::string(key.c_str(), key.size())));
+    result_type operator()(jstd::StringRef const & key) const {
+        return static_cast<result_type>(hasher_(std::move(std::string(key.c_str(), key.size()))));
     }
 
 #else // !USE_STRINGREF_STD_HASH
@@ -370,34 +237,6 @@ struct hash<jstd::StringRef> {
 } // namespace jstd
 
 namespace test {
-
-void cpu_warmup(int delayMillsecs)
-{
-#if defined(NDEBUG)
-    double delayTimeLimit = (double)delayMillsecs / 1.0;
-    volatile int sum = 0;
-
-    printf("CPU warm-up begin ...\n");
-    fflush(stdout);
-    std::chrono::high_resolution_clock::time_point startTime, endTime;
-    std::chrono::duration<double, std::ratio<1, 1000>> elapsedTime;
-    startTime = std::chrono::high_resolution_clock::now();
-    do {
-        for (int i = 0; i < 500; ++i) {
-            sum += i;
-            for (int j = 5000; j >= 0; --j) {
-                sum -= j;
-            }
-        }
-        endTime = std::chrono::high_resolution_clock::now();
-        elapsedTime = endTime - startTime;
-    } while (elapsedTime.count() < delayTimeLimit);
-
-    printf("sum = %u, time: %0.3f ms\n", sum, elapsedTime.count());
-    printf("CPU warm-up end   ... \n\n");
-    fflush(stdout);
-#endif // !_DEBUG
-}
 
 #if defined(_MSC_VER)
 
@@ -1797,14 +1636,13 @@ int main(int argc, char * argv[])
     hashes::Times31(test.c_str(), test.size());
 
     if (!dict_words_is_ready) {
-        test::cpu_warmup(1000);
+        jtest::CPU::warmup(1000);
     }
 
-    //iterator_test();
     //string_view_test();
 
     hashtable_uinttest();
-    //hashtable_benchmark();
+    hashtable_benchmark();
 
 #ifdef _WIN32
     ::system("pause");

@@ -172,6 +172,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch_v1.h">
       <Filter>src\test</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\CPUWarmUp.h">
+      <Filter>src\test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">

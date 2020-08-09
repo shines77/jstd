@@ -192,6 +192,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\support\Power2.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\PowerOf2.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\SSEHelper.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\CPUWarmUp.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch_v1.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits.h" />
