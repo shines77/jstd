@@ -12,6 +12,7 @@
 #include "jstd/basic/inttypes.h"
 
 #include <memory.h>
+#include <math.h>
 #include <assert.h>
 
 #include <cstdint>
@@ -68,41 +69,41 @@ public:
     typedef BasicDictionary<Key, Value, HashFunc, Alignment, Hasher, KeyEqual, Allocator>
                                             this_type;
 
-    struct hash_node {
-        typedef hash_node *                     node_pointer;
-        typedef hash_node &                     node_reference;
-        typedef const hash_node *               const_node_pointer;
-        typedef const hash_node &               const_node_reference;
+    struct hash_entry {
+        typedef hash_entry *                    node_pointer;
+        typedef hash_entry &                    node_reference;
+        typedef const hash_entry *              const_node_pointer;
+        typedef const hash_entry &              const_node_reference;
         typedef typename this_type::value_type  value_type;
 
-        hash_node *  next;
+        hash_entry * next;
         hash_code_t  hash_code;
         uint32_t     flags;
         this_type *  owner;
         alignas(Alignment)
         value_type   value;
 
-        hash_node() : next(nullptr), hash_code(0), flags(0), owner(nullptr) {}
+        hash_entry() : next(nullptr), hash_code(0), flags(0), owner(nullptr) {}
 
-        ~hash_node() {
+        ~hash_entry() {
 #ifndef NDEBUG
-            this->next = nullptr;
+            next = nullptr;
 #endif
         }
     };
 
-    typedef hash_node                                   node_type;
-    typedef typename hash_node::node_pointer            node_pointer;
-    typedef typename hash_node::node_reference          node_reference;
-    typedef typename hash_node::const_node_pointer      const_node_pointer;
-    typedef typename hash_node::const_node_reference    const_node_reference;
+    typedef hash_entry                                  entry_type;
+    typedef typename hash_entry::node_pointer           node_pointer;
+    typedef typename hash_entry::node_reference         node_reference;
+    typedef typename hash_entry::const_node_pointer     const_node_pointer;
+    typedef typename hash_entry::const_node_reference   const_node_reference;
 
     struct entry_list {
-        node_type * entries;
-        size_type   capacity;
+        entry_type * entries;
+        size_type    capacity;
 
         entry_list() : entries(nullptr), capacity(0) {}
-        entry_list(node_type * entries, size_type capacity)
+        entry_list(entry_type * entries, size_type capacity)
             : entries(entries), capacity(capacity) {}
         ~entry_list() {}
     };
@@ -121,82 +122,82 @@ public:
         free_list(node_type * head = nullptr) : head_(head), size_(0) {}
         ~free_list() {
 #ifndef NDEBUG
-            this->clear();
+            clear();
 #endif
         }
 
-        node_type * begin() const { return this->head_; }
+        node_type * begin() const { return head_; }
         node_type * end() const { return nullptr; }
 
-        node_type * head() const { return this->head_; }
-        size_type   size() const { return this->size_; }
+        node_type * head() const { return head_; }
+        size_type   size() const { return size_; }
 
-        bool is_valid() const { return (this->head_ != nullptr); }
-        bool is_empty() const { return (this->size_ == 0); }
+        bool is_valid() const { return (head_ != nullptr); }
+        bool is_empty() const { return (size_ == 0); }
 
         void set_head(node_type * head) {
-            this->head_ = head;
+            head_ = head;
         }
         void set_size(size_type size) {
-            this->size_ = size;
+            size_ = size;
         }
 
         void set_list(node_type * head, size_type size) {
-            this->head_ = head;
-            this->size_ = size;
+            head_ = head;
+            size_ = size;
         }
 
         void clear() {
-            this->head_ = nullptr;
-            this->size_ = 0;
+            head_ = nullptr;
+            size_ = 0;
         }
 
         void reset(node_type * head) {
-            this->head_ = head;
-            this->size_ = 0;
+            head_ = head;
+            size_ = 0;
         }
 
         void increase() {
-            ++(this->size_);
+            ++(size_);
         }
 
         void decrease() {
-            assert(this->size_ > 0);
-            --(this->size_);
+            assert(size_ > 0);
+            --(size_);
         }
 
         void inflate(size_type size) {
-            this->size_ += size;
+            size_ += size;
         }
 
         void deflate(size_type size) {
-            assert(this->size_ >= size);
-            this->size_ -= size;
+            assert(size_ >= size);
+            size_ -= size;
         }
 
         void push_front(node_type * node) {
             assert(node != nullptr);
-            node->next = this->head_;
-            this->head_ = node;
-            ++(this->size_);
+            node->next = head_;
+            head_ = node;
+            ++(size_);
         }
 
         node_type * pop_front() {
-            assert(this->head_ != nullptr);
-            node_type * node = this->head_;
-            this->head_ = node->next;
-            assert(this->size_ > 0);
-            --(this->size_);
+            assert(head_ != nullptr);
+            node_type * node = head_;
+            head_ = node->next;
+            assert(size_ > 0);
+            --(size_);
             return node;
         }
 
         node_type * front() {
-            return this->head();
+            return head();
         }
 
         node_type * back() {
             node_type * prev = nullptr;
-            node_type * node = this->head_;
+            node_type * node = head_;
             while (node != nullptr) {
                 prev = node;
                 node = node->next;
@@ -206,8 +207,8 @@ public:
 
         void swap(free_list & right) {
             if (&right != this) {
-                std::swap(this->head_, right.head_);
-                std::swap(this->size_, right.size_);
+                std::swap(head_, right.head_);
+                std::swap(size_, right.size_);
             }
         }
     };
@@ -219,22 +220,22 @@ public:
 
     #include "jstd/hash/hash_iterator.inc"
 
-    typedef iterator_t<this_type, node_type>                iterator;
-    typedef const_iterator_t<this_type, node_type>          const_iterator;
+    typedef iterator_t<this_type, entry_type>                iterator;
+    typedef const_iterator_t<this_type, entry_type>          const_iterator;
 
-    typedef local_iterator_t<this_type, node_type>          local_iterator;
-    typedef const_local_iterator_t<this_type, node_type>    const_local_iterator;
+    typedef local_iterator_t<this_type, entry_type>          local_iterator;
+    typedef const_local_iterator_t<this_type, entry_type>    const_local_iterator;
 
     typedef std::pair<iterator, bool>   insert_return_type;
 
     template <typename T>
     class entry_chunk {
     public:
-        typedef T                               node_type;
+        typedef T                               entry_type;
         typedef typename this_type::size_type   size_type;
 
     protected:
-        node_type *  entries_;
+        entry_type * entries_;
         size_type    size_;
         size_type    capacity_;
 
@@ -242,64 +243,64 @@ public:
         entry_chunk() : entries_(nullptr), size_(0), capacity_(0) {}
         ~entry_chunk() {}
 
-        node_type * entries() const { return this->entries_; }
-        size_type size() const { return this->size_; }
-        size_type capacity() const { return this->capacity_; }
+        entry_type * entries() const { return entries_; }
+        size_type size() const { return size_; }
+        size_type capacity() const { return capacity_; }
 
-        size_type is_full() const { return (this->size_ >= this->capacity_); }
+        size_type is_full() const { return (size_ >= capacity_); }
 
-        void set_entries(node_type * entries) {
-            this->entries_ = entries;
+        void set_entries(entry_type * entries) {
+            entries_ = entries;
         }
 
         void set_size(size_type size) {
-            this->size_ = size;
+            size_ = size;
         }
 
         void set_capacity(size_type capacity) {
-            this->capacity_ = capacity;
+            capacity_ = capacity;
         }
 
-        void init(node_type * entries, size_type size, size_type capacity) {
-            this->entries_ = entries;
-            this->size_ = size;
-            this->capacity_ = capacity;
+        void init(entry_type * entries, size_type size, size_type capacity) {
+            entries_ = entries;
+            size_ = size;
+            capacity_ = capacity;
         }
 
         void clear() {
-            this->entries_ = nullptr;
-            this->size_ = 0;
-            this->capacity_ = 0;
+            entries_ = nullptr;
+            size_ = 0;
+            capacity_ = 0;
         }
 
         void reset() {
-            this->size_ = 0;
+            size_ = 0;
         }
 
         void increase() {
-            ++(this->size_);
+            ++(size_);
         }
 
         void decrease() {
-            --(this->size_);
+            --(size_);
         }
 
         void inflate(size_type size) {
-            this->size_ += size;
+            size_ += size;
         }
 
         void deflate(size_type size) {
-            assert(this->size_ >= size);
-            this->size_ -= size;
+            assert(size_ >= size);
+            size_ -= size;
         }
     };
 
-    typedef free_list<node_type>   free_list_t;
-    typedef entry_chunk<node_type> entry_chunk_t;
+    typedef free_list<entry_type>   free_list_t;
+    typedef entry_chunk<entry_type> entry_chunk_t;
 
 protected:
-    node_type **            buckets_;
-    node_type *             entries_;
+    entry_type **            buckets_;
+    entry_type *             entries_;
     size_type               bucket_mask_;
     size_type               bucket_capacity_;
     size_type               entry_size_;
@@ -315,8 +316,8 @@ protected:
     key_equal               key_is_equal_;
     allocator_type          allocator_;
 
-    allocator<node_type *>  bucket_allocator_;
-    allocator<node_type>    entry_allocator_;
+    allocator<entry_type *> bucket_allocator_;
+    allocator<entry_type>   entry_allocator_;
 
     // Default initial capacity is 16.
     static const size_type kDefaultInitialCapacity = 16;
@@ -329,7 +330,7 @@ protected:
     static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
     // The entry's block size per chunk (entry_type).
     static const size_type kEntryChunkSize =
-            compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(node_type)>::value;
+            compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
 
     // The threshold of treeify to red-black tree.
     static const size_type kTreeifyThreshold = 8;
@@ -347,73 +348,85 @@ public:
                            the initial value of version starts from 1. */
 #endif
     {
-        this->initialize(initialCapacity);
+        initialize(initialCapacity);
     }
 
     ~BasicDictionary() {
-        this->destroy();
+        destroy();
     }
 
     iterator begin() const {
-        return iterator(this->find_first_valid_node());
+        return iterator(find_first_valid_node());
     }
     iterator end() const {
         return iterator(nullptr);
     }
 
     const_iterator cbegin() const {
-        return const_iterator(iterator(this->find_first_valid_node()));
+        return const_iterator(iterator(find_first_valid_node()));
     }
     const_iterator cend() const {
         return const_iterator(nullptr);
     }
 
     local_iterator l_begin() const {
-        return local_iterator(this->find_first_valid_node());
+        return local_iterator(find_first_valid_node());
     }
     local_iterator l_end() const {
         return local_iterator(nullptr);
     }
 
     const_local_iterator l_cbegin() const {
-        return const_local_iterator(local_iterator(this->find_first_valid_node()));
+        return const_local_iterator(local_iterator(find_first_valid_node()));
     }
     const_local_iterator l_cend() const {
         return const_local_iterator(nullptr);
     }
 
     size_type __size() const {
-        assert(this->entry_capacity_ >= this->freelist_.size());
-        return (this->entry_capacity_ - this->freelist_.size());
+        assert(entry_capacity_ >= freelist_.size());
+        return (entry_capacity_ - freelist_.size());
     }
     size_type size() const {
-        return this->entry_size_;
+        return entry_size_;
     }
-    size_type capacity() const { return this->bucket_capacity_; }
+    size_type capacity() const { return bucket_capacity_; }
 
-    size_type bucket_mask() const { return this->bucket_mask_; }
-    size_type bucket_count() const { return this->bucket_capacity_; }
-    size_type bucket_capacity() const { return this->bucket_capacity_; }
+    size_type bucket_mask() const { return bucket_mask_; }
+    size_type bucket_count() const { return bucket_capacity_; }
+    size_type bucket_capacity() const { return bucket_capacity_; }
 
-    size_type entry_size() const { return this->size(); }
-    size_type entry_count() const { return this->entry_capacity_; }
+    size_type entry_size() const { return size(); }
+    size_type entry_count() const { return entry_capacity_; }
 
-    node_type ** buckets() const { return this->buckets_; }
-    node_type *  entries() const { return this->entries_; }
+    entry_type ** buckets() const { return buckets_; }
+    entry_type *  entries() const { return entries_; }
 
     size_type max_bucket_capacity() const {
         return ((std::numeric_limits<size_type>::max)() / 2 + 1);
     }
     size_type max_size() const {
-        return this->max_bucket_capacity();
+        return max_bucket_capacity();
     }
 
-    bool valid() const { return (this->buckets() != nullptr); }
-    bool empty() const { return (this->size() == 0); }
+    bool valid() const { return (buckets() != nullptr); }
+    bool empty() const { return (size() == 0); }
+
+    size_type bucket_size(size_type index) const {
+        assert(index < bucket_count());
+
+        size_type count = 0;
+        entry_type * node = get_bucket_head(index);
+        while (likely(node != nullptr)) {
+            count++;
+            node = node->next;
+        }
+        return count;
+    }
 
     size_type version() const {
 #if DICTIONARY_SUPPORT_VERSION
-        return this->version_;
+        return version_;
 #else
         return 0;   /* Return 0 means that the version attribute is not supported. */
 #endif
@@ -440,7 +453,7 @@ protected:
 
     JSTD_FORCEINLINE
     index_type index_for(hash_code_t hash_code) const {
-        return (index_type)((size_type)hash_code & this->bucket_mask_);
+        return (index_type)((size_type)hash_code & bucket_mask_);
     }
 
     inline index_type next_index(index_type index, size_type capacity_mask) const {
@@ -449,23 +462,23 @@ protected:
     }
 
     void free_buckets_impl() {
-        assert(this->buckets_ != nullptr);
-        bucket_allocator_.deallocate(this->buckets_, this->bucket_capacity_);
+        assert(buckets_ != nullptr);
+        bucket_allocator_.deallocate(buckets_, bucket_capacity_);
     }
 
     void free_buckets() {
-        if (likely(this->buckets_ != nullptr)) {
-            this->free_buckets_impl();
+        if (likely(buckets_ != nullptr)) {
+            free_buckets_impl();
         }
     }
 
     void destroy_entries() {
-        if (likely(this->entries_list_.size() > 0)) {
-            size_type last_index = this->entries_list_.size() - 1;
+        if (likely(entries_list_.size() > 0)) {
+            size_type last_index = entries_list_.size() - 1;
             for (size_type i = 0; i < last_index; i++) {
-                node_type * entries = this->entries_list_[i].entries;
-                size_type   capacity = this->entries_list_[i].capacity;
-                node_type * entry = entries;
+                entry_type * entries = entries_list_[i].entries;
+                size_type   capacity = entries_list_[i].capacity;
+                entry_type * entry = entries;
                 assert(entry != nullptr);
                 for (size_type j = 0; j < capacity; j++) {
                     if (likely(entry->flags != 0)) {
@@ -480,22 +493,22 @@ protected:
                 entry_allocator_.deallocate(entries, capacity);
             }
 
-            // last_index
+            // Destroy last entry
             {
-                node_type *    entries = this->entries_list_[last_index].entries;
-                size_type      capacity = this->entries_list_[last_index].capacity;
-                size_type last_capacity = this->entry_chunk_.capacity();
-                size_type     last_size = this->entry_chunk_.size();
-                assert(entries == this->entries_);
+                entry_type *    entries  = entries_list_[last_index].entries;
+                size_type      capacity = entries_list_[last_index].capacity;
+                size_type last_capacity = entry_chunk_.capacity();
+                size_type     last_size = entry_chunk_.size();
+                assert(entries == entries_);
                 assert(last_size <= capacity);
                 assert(last_capacity == capacity);
-                node_type * entry = entries;
+                entry_type * entry = entries;
                 assert(entry != nullptr);
                 for (size_type j = 0; j < last_size; j++) {
                     if (likely(entry->flags != 0)) {
-                        value_type * pair_ptr = &entry->value;
-                        assert(pair_ptr != nullptr);
-                        allocator_.destructor(pair_ptr);
+                        value_type * value_ptr = &entry->value;
+                        assert(value_ptr != nullptr);
+                        allocator_.destructor(value_ptr);
                     }
                     ++entry;
                 }
@@ -508,42 +521,42 @@ protected:
 
     void destroy() {
         // Destroy the resources.
-        if (likely(this->buckets_ != nullptr)) {
-            if (likely(this->entries_ != nullptr)) {
+        if (likely(buckets_ != nullptr)) {
+            if (likely(entries_ != nullptr)) {
                 // Destroy all entries.
-                this->destroy_entries();
-                this->entries_ = nullptr;
+                destroy_entries();
+                entries_ = nullptr;
 #ifndef NDEBUG
-                this->entries_list_.clear();
+                entries_list_.clear();
 #endif
             }
 
             // Free the array of bucket.
-            this->free_buckets_impl();
-            this->buckets_ = nullptr;
+            free_buckets_impl();
+            buckets_ = nullptr;
         }
 
+        freelist_.clear();
+
         // Clear settings
-        this->bucket_mask_ = 0;
-        this->bucket_capacity_ = 0;
-        this->entry_size_ = 0;
-        this->entry_capacity_ = 0;
-
-        this->freelist_.clear();
+        bucket_mask_ = 0;
+        bucket_capacity_ = 0;
+        entry_size_ = 0;
+        entry_capacity_ = 0;
     }
 
-    node_type * get_bucket_head(index_type index) {
-        return this->buckets_[index];
+    entry_type * get_bucket_head(index_type index) const {
+        return buckets_[index];
     }
 
-    node_type * find_first_valid_node() const {
+    entry_type * find_first_valid_node() const {
         index_type index = 0;
-        node_type * first = this->buckets_[index];
+        entry_type * first = buckets_[index];
         if (likely(first == nullptr)) {
             do {
                 index++;
-                if (likely(index < this->bucket_count())) {
-                    first = this->buckets_[index];
+                if (likely(index < bucket_count())) {
+                    first = buckets_[index];
                     if (unlikely(first != nullptr))
                         return first;
                 }
@@ -557,28 +570,27 @@ protected:
         }
     }
 
-    node_type * next_iterator(node_type * node_ptr) {
+    entry_type * next_iterator(entry_type * node_ptr) {
         if (likely(node_ptr->next != nullptr)) {
             node_ptr = node_ptr->next;
             return node_ptr;
         }
         else {
-            index_type index = this->index_for(node_ptr->hash_code);
+            index_type index = index_for(node_ptr->hash_code);
             index++;
-            if (likely(index < this->bucket_count())) {
+            if (likely(index < bucket_count())) {
                 do {
-                    node_type * node = this->get_bucket_head(index);
+                    entry_type * node = get_bucket_head(index);
                     if (likely(node != nullptr)) {
                         node_ptr = node;
                         break;
                     }
                     index++;
-                    if (unlikely(index >= this->bucket_count())) {
+                    if (unlikely(index >= bucket_count())) {
                         node_ptr = nullptr;
                         break;
                     }
                 } while (1);
-
             }
             else {
                 node_ptr = nullptr;
@@ -588,15 +600,15 @@ protected:
         }
     }
 
-    const node_type * next_const_iterator(const node_type * node_ptr) {
-        node_type * node = const_cast<node_type *>(node_ptr);
-        node = this->next_iterator(node);
-        return const_cast<const node_type *>(node);
+    const entry_type * next_const_iterator(const entry_type * node_ptr) {
+        entry_type * node = const_cast<entry_type *>(node_ptr);
+        node = next_iterator(node);
+        return const_cast<const entry_type *>(node);
     }
 
     // Init the new entries's status.
-    void init_entries_chunk(node_type * entries, size_type capacity) {
-        node_type * entry = entries;
+    void init_entries_chunk(entry_type * entries, size_type capacity) {
+        entry_type * entry = entries;
         for (size_type i = 0; i < capacity; i++) {
             entry->flags = 0;
             entry++;
@@ -604,11 +616,11 @@ protected:
     }
 
     // Append all the entries to the free list.
-    void add_entries_to_freelist(node_type * entries, size_type capacity) {
+    void add_entries_to_freelist(entry_type * entries, size_type capacity) {
         assert(entries != nullptr);
         assert(capacity > 0);
-        node_type * entry = entries + capacity - 1;
-        node_type * prev = entries + capacity;
+        entry_type * entry = entries + capacity - 1;
+        entry_type * prev = entries + capacity;
         for (size_type i = 0; i < capacity; i++) {
             entry->next = prev;
             entry->flags = 0;
@@ -617,33 +629,33 @@ protected:
         }
 
 #if 1
-        node_type * last_entry = entries + capacity - 1;
-        last_entry->next = this->freelist_.head();
-        this->freelist_.set_head(entries);
-        this->freelist_.inflate(capacity);
+        entry_type * last_entry = entries + capacity - 1;
+        last_entry->next = freelist_.head();
+        freelist_.set_head(entries);
+        freelist_.inflate(capacity);
 #else
-        node_type * last_entry = entries + capacity - 1;
+        entry_type * last_entry = entries + capacity - 1;
         last_entry->next = nullptr;
 
-        node_type * tail = this->freelist_.back();
+        entry_type * tail = freelist_.back();
         if (likely(tail == nullptr)) {
-            this->freelist_.set_list(entries, capacity);
+            freelist_.set_list(entries, capacity);
         }
         else {
             tail->next = entries;
-            this->freelist_.inflate(capacity);
+            freelist_.inflate(capacity);
         }
 #endif
     }
 
     size_type count_entries_size() {
         size_type entry_size = 0;
-        for (size_type index = 0; index < this->bucket_capacity_; index++) {
+        for (size_type index = 0; index < bucket_capacity_; index++) {
             size_type list_size = 0;
-            node_type * entry = this->buckets_[index];
+            entry_type * entry = buckets_[index];
             while (likely(entry != nullptr)) {
                 hash_code_t hash_code = entry->hash_code;
-                index_type now_index = this->index_of(hash_code, this->bucket_mask_);
+                index_type now_index = index_of(hash_code, bucket_mask_);
                 assert(now_index == index);
                 assert(entry->flags == 1);
 
@@ -656,30 +668,30 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    node_type * get_free_entry(hash_code_t & hash_code, index_type & index) {
-        if (likely(this->freelist_.is_empty())) {
-            if (unlikely(this->entry_chunk_.is_full())) {
-                size_type old_size = this->size();
+    entry_type * get_free_entry(hash_code_t & hash_code, index_type & index) {
+        if (likely(freelist_.is_empty())) {
+            if (unlikely(entry_chunk_.is_full())) {
+                size_type old_size = size();
 
                 // Inflate the entry for 1.
-                this->inflate_entries(1);
+                inflate_entries(1);
 
-                size_type new_size = this->count_entries_size();
+                size_type new_size = count_entries_size();
                 assert(new_size == old_size);
 
                 // Recalculate the bucket index.
-                index = this->index_of(hash_code, this->bucket_mask_);
+                index = index_of(hash_code, bucket_mask_);
             }
 
             // Get a unused entry.
-            node_type * new_entry = &this->entries_[this->entry_chunk_.size()];
+            entry_type * new_entry = &entries_[entry_chunk_.size()];
             assert(new_entry != nullptr);
-            this->entry_chunk_.increase();
+            entry_chunk_.increase();
             return new_entry;
         }
         else {
             // Pop a free entry from freelist.
-            return this->freelist_.pop_front();
+            return freelist_.pop_front();
         }
     }
 
@@ -691,58 +703,58 @@ protected:
         size_type bucket_capacity = entry_capacity;
 
         // The the array of bucket's first entry.
-        node_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
+        entry_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
         if (likely(bucket_allocator_.is_ok(new_buckets))) {
             // Initialize the buckets's data.
-            ::memset((void *)new_buckets, 0, bucket_capacity * sizeof(node_type *));
+            ::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
             // Save the buckets info.
-            this->buckets_ = new_buckets;
-            this->bucket_mask_ = bucket_capacity - 1;
-            this->bucket_capacity_ = bucket_capacity;
+            buckets_ = new_buckets;
+            bucket_mask_ = bucket_capacity - 1;
+            bucket_capacity_ = bucket_capacity;
 
             // The array of entries.
-            node_type * new_entries = entry_allocator_.allocate(entry_capacity);
+            entry_type * new_entries = entry_allocator_.allocate(entry_capacity);
             if (likely(entry_allocator_.is_ok(new_entries))) {
                 // Save the entries info.
-                this->entries_ = new_entries;
-                this->entry_size_ = 0;
-                this->entry_capacity_ = entry_capacity;
+                entries_ = new_entries;
+                entry_size_ = 0;
+                entry_capacity_ = entry_capacity;
 
-                this->entries_list_.reserve(4);
-                this->entries_list_.emplace_back(new_entries, entry_capacity);
+                entries_list_.reserve(4);
+                entries_list_.emplace_back(new_entries, entry_capacity);
 
-                this->entry_chunk_.init(new_entries, 0, entry_capacity);
+                entry_chunk_.init(new_entries, 0, entry_capacity);
 
-                //this->init_entries_chunk(new_entries, entry_capacity);
+                //init_entries_chunk(new_entries, entry_capacity);
 
-                this->freelist_.clear();
+                freelist_.clear();
             }
         }
     }
 
-    void rehash_all_entries_2x(node_type ** new_buckets, size_type new_bucket_capacity) {
-        assert(this->buckets_ != nullptr);
+    void rehash_all_entries_2x(entry_type ** new_buckets, size_type new_bucket_capacity) {
+        assert(buckets_ != nullptr);
         assert(new_buckets != nullptr);
         assert(new_bucket_capacity > 0);
         assert(run_time::is_pow2(new_bucket_capacity));
 
         size_type new_bucket_mask = new_bucket_capacity - 1;
 
-        for (size_type index = 0; index < this->bucket_capacity_; index++) {
-            node_type * entry = this->buckets_[index];
+        for (size_type index = 0; index < bucket_capacity_; index++) {
+            entry_type * entry = buckets_[index];
             if (likely(entry != nullptr)) {
-                node_type * first_entry = nullptr;
-                node_type * prev_entry = nullptr;
-                node_type * new_entry = nullptr;
+                entry_type * first_entry = nullptr;
+                entry_type * prev_entry = nullptr;
+                entry_type * new_entry = nullptr;
                 do {
                     hash_code_t hash_code = entry->hash_code;
-                    index_type new_index = this->index_of(hash_code, new_bucket_mask);
+                    index_type new_index = index_of(hash_code, new_bucket_mask);
                     if (likely(new_index != index)) {
                         if (prev_entry != nullptr) {
                             prev_entry->next = entry->next;
                         }
-                        node_type * next_entry = entry->next;
+                        entry_type * next_entry = entry->next;
 
                         entry->next = new_entry;
                         new_entry = entry;
@@ -760,18 +772,18 @@ protected:
 
                 if (likely(first_entry != nullptr)) {
                     index_type new_index;
-                    if (likely(new_bucket_capacity >= this->bucket_capacity_))
+                    if (likely(new_bucket_capacity >= bucket_capacity_))
                         new_index = index;
                     else
-                        new_index = this->index_of(index, new_bucket_mask);
+                        new_index = index_of(index, new_bucket_mask);
 
                     new_buckets[new_index] = first_entry;
                 }
 
                 if (likely(new_entry != nullptr)) {
                     index_type new_index = index + new_bucket_capacity / 2;
-                    if (likely(new_bucket_capacity < this->bucket_capacity_)) {
-                        new_index = this->index_of(new_index, new_bucket_mask);
+                    if (likely(new_bucket_capacity < bucket_capacity_)) {
+                        new_index = index_of(new_index, new_bucket_mask);
                     }
 
                     new_buckets[new_index] = new_entry;
@@ -780,27 +792,27 @@ protected:
         }
     }
 
-    void rehash_all_entries(node_type ** new_buckets, size_type new_bucket_capacity) {
-        assert(this->buckets_ != nullptr);
+    void rehash_all_entries(entry_type ** new_buckets, size_type new_bucket_capacity) {
+        assert(buckets_ != nullptr);
         assert(new_buckets != nullptr);
         assert(new_bucket_capacity > 0);
         assert(run_time::is_pow2(new_bucket_capacity));
 
         size_type new_bucket_mask = new_bucket_capacity - 1;
 
-        for (size_type index = 0; index < this->bucket_capacity_; index++) {
-            node_type * entry = this->buckets_[index];
+        for (size_type index = 0; index < bucket_capacity_; index++) {
+            entry_type * entry = buckets_[index];
             if (likely(entry != nullptr)) {
-                node_type * first_entry = nullptr;
-                node_type * prev_entry = nullptr;
+                entry_type * first_entry = nullptr;
+                entry_type * prev_entry = nullptr;
                 do {
                     hash_code_t hash_code = entry->hash_code;
-                    index_type new_index = this->index_of(hash_code, new_bucket_mask);
+                    index_type new_index = index_of(hash_code, new_bucket_mask);
                     if (likely(new_index != index)) {
                         if (prev_entry != nullptr) {
                             prev_entry->next = entry->next;
                         }
-                        node_type * next_entry = entry->next;
+                        entry_type * next_entry = entry->next;
 
                         entry->next = new_buckets[new_index];
                         new_buckets[new_index] = entry;
@@ -818,10 +830,10 @@ protected:
 
                 if (likely(first_entry != nullptr)) {
                     index_type new_index;
-                    if (likely(new_bucket_capacity >= this->bucket_capacity_))
+                    if (likely(new_bucket_capacity >= bucket_capacity_))
                         new_index = index;
                     else
-                        new_index = this->index_of(index, new_bucket_mask);
+                        new_index = index_of(index, new_bucket_mask);
 
                     new_buckets[new_index] = first_entry;
                 }
@@ -832,26 +844,25 @@ protected:
     void rehash_buckets(size_type new_bucket_capacity) {
         assert(new_bucket_capacity > 0);
         assert(run_time::is_pow2(new_bucket_capacity));
-        //assert(new_bucket_capacity > this->bucket_capacity_);
-        assert(this->entry_size_ <= this->bucket_capacity_);
+        assert(entry_size_ <= bucket_capacity_);
 
-        node_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
+        entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
         if (likely(bucket_allocator_.is_ok(new_buckets))) {
             // Initialize the bucket list's data.
-            ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(node_type *));
+            ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
 
-            if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                this->rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+            if (likely(new_bucket_capacity == bucket_capacity_ * 2))
+                rehash_all_entries_2x(new_buckets, new_bucket_capacity);
             else
-                this->rehash_all_entries(new_buckets, new_bucket_capacity);
+                rehash_all_entries(new_buckets, new_bucket_capacity);
 
-            this->free_buckets_impl();
+            free_buckets_impl();
 
-            this->buckets_ = new_buckets;
-            this->bucket_mask_ = new_bucket_capacity - 1;
-            this->bucket_capacity_ = new_bucket_capacity;
+            buckets_ = new_buckets;
+            bucket_mask_ = new_bucket_capacity - 1;
+            bucket_capacity_ = new_bucket_capacity;
 
-            this->updateVersion();
+            updateVersion();
         }
     }
 
@@ -860,42 +871,42 @@ protected:
         assert(new_bucket_capacity > 0);
         assert(run_time::is_pow2(new_entry_capacity));
         assert(run_time::is_pow2(new_bucket_capacity));
-        assert(new_bucket_capacity > this->bucket_capacity_);
+        assert(new_bucket_capacity > bucket_capacity_);
 
-        node_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
+        entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
         if (likely(bucket_allocator_.is_ok(new_buckets))) {
             // Initialize the bucket list's data.
-            ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(node_type *));
+            ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
 
             // Only allocate a chunk size we need.
-            assert(new_entry_capacity > this->entry_capacity_);
-            size_type new_entry_size = new_entry_capacity - this->entry_capacity_;
+            assert(new_entry_capacity > entry_capacity_);
+            size_type new_entry_size = new_entry_capacity - entry_capacity_;
 
-            node_type * new_entries = entry_allocator_.allocate(new_entry_size);
+            entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
             if (likely(entry_allocator_.is_ok(new_entries))) {
-                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                    this->rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+                if (likely(new_bucket_capacity == bucket_capacity_ * 2))
+                    rehash_all_entries_2x(new_buckets, new_bucket_capacity);
                 else
-                    this->rehash_all_entries(new_buckets, new_bucket_capacity);
+                    rehash_all_entries(new_buckets, new_bucket_capacity);
 
-                this->free_buckets_impl();
+                free_buckets_impl();
 
-                this->buckets_ = new_buckets;
-                this->entries_ = new_entries;
-                this->bucket_mask_ = new_bucket_capacity - 1;
-                this->bucket_capacity_ = new_bucket_capacity;
+                buckets_ = new_buckets;
+                entries_ = new_entries;
+                bucket_mask_ = new_bucket_capacity - 1;
+                bucket_capacity_ = new_bucket_capacity;
                 // Here, the entry_size_ doesn't change.
-                this->entry_capacity_ = new_entry_capacity;
+                entry_capacity_ = new_entry_capacity;
 
                 // Push the new entries pointer to entries list.
-                this->entries_list_.emplace_back(new_entries, new_entry_size);
+                entries_list_.emplace_back(new_entries, new_entry_size);
 
-                assert(this->entry_chunk_.is_full());
-                this->entry_chunk_.init(new_entries, 0, new_entry_size);
+                assert(entry_chunk_.is_full());
+                entry_chunk_.init(new_entries, 0, new_entry_size);
 
-                //this->init_entries_chunk(new_entries, new_entry_size);
+                //init_entries_chunk(new_entries, new_entry_size);
 
-                this->updateVersion();
+                updateVersion();
             }
             else {
                 // Failed to allocate new_entries, processing the abnormal exit.
@@ -909,16 +920,16 @@ protected:
         assert(new_bucket_capacity > 0);
         assert((new_bucket_capacity & (new_bucket_capacity - 1)) == 0);
 
-        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + 1);
-        if (likely(new_bucket_capacity > this->bucket_capacity_)) {
-            // Is infalte
+        size_type new_entry_capacity = run_time::round_up_to_pow2(entry_size_ + 1);
+        if (likely(new_bucket_capacity > bucket_capacity_)) {
+            // Is infalte, do nothing.
         }
-        else if (likely(new_bucket_capacity < this->bucket_capacity_)) {
+        else if (likely(new_bucket_capacity < bucket_capacity_)) {
             if (likely(new_entry_capacity > new_bucket_capacity)) {
                 new_bucket_capacity = new_entry_capacity;
             }
-            if (likely(new_bucket_capacity > this->bucket_capacity_)) {
-                // Is infalte
+            if (likely(new_bucket_capacity > bucket_capacity_)) {
+                // Is infalte, do nothing.
             }
             else {
                 // We need to shrink the bucket list capacity.
@@ -929,46 +940,46 @@ protected:
             return;
         }
 
-        if (likely(new_entry_capacity <= this->entry_capacity_)) {
-            return this->rehash_buckets(new_bucket_capacity);
+        if (likely(new_entry_capacity <= entry_capacity_)) {
+            return rehash_buckets(new_bucket_capacity);
         }
         else {
-            return this->rehash_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
+            return rehash_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
         }
     }
 
     void inflate_entries(size_type size = 1) {
-        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + size);
+        size_type new_entry_capacity = run_time::round_up_to_pow2(entry_size_ + size);
 
         // If new entry capacity is too small, exit directly.
-        if (likely(new_entry_capacity > this->entry_capacity_)) {
+        if (likely(new_entry_capacity > entry_capacity_)) {
             // Most of the time, we don't need to reallocate buckets list.
-            if (likely(new_entry_capacity <= this->bucket_capacity_)) {
-                assert(this->freelist_.is_empty());
+            if (likely(new_entry_capacity <= bucket_capacity_)) {
+                assert(freelist_.is_empty());
 
-                size_type new_entry_size = new_entry_capacity - this->entry_capacity_;
-                node_type * new_entries = entry_allocator_.allocate(new_entry_size);
+                size_type new_entry_size = new_entry_capacity - entry_capacity_;
+                entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
                 if (likely(entry_allocator_.is_ok(new_entries))) {
-                    this->entries_ = new_entries;
-                    this->entry_capacity_ = new_entry_capacity;
+                    entries_ = new_entries;
+                    entry_capacity_ = new_entry_capacity;
 
                     // Push the new entries pointer to entries list.
-                    this->entries_list_.emplace_back(new_entries, new_entry_size);
+                    entries_list_.emplace_back(new_entries, new_entry_size);
 
-                    assert(this->entry_chunk_.is_full());
-                    this->entry_chunk_.init(new_entries, 0, new_entry_size);
+                    assert(entry_chunk_.is_full());
+                    entry_chunk_.init(new_entries, 0, new_entry_size);
 
-                    //this->init_entries_chunk(new_entries, new_entry_size);
+                    //init_entries_chunk(new_entries, new_entry_size);
                 }
             }
             else {
                 // The bucket list capacity is full, need to reallocate.
-                this->rehash_buckets_and_entries(new_entry_capacity, new_entry_capacity);
+                rehash_buckets_and_entries(new_entry_capacity, new_entry_capacity);
             }
         }
         else {
-            // this->entry_capacity_ = this->bucket_capacity_ ?
-            assert(new_entry_capacity <= this->bucket_capacity_);
+            // entry_capacity_ = bucket_capacity_ ?
+            assert(new_entry_capacity <= bucket_capacity_);
         }
     }
 
@@ -977,25 +988,25 @@ protected:
 #if USE_JAVA_FIND_ENTRY
 
     JSTD_FORCEINLINE
-    node_type * find_entry(const key_type & key) {
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_of(hash_code, this->bucket_mask_);
+    entry_type * find_entry(const key_type & key) {
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code, bucket_mask_);
 
-        node_type * first = this->buckets_[index];
+        entry_type * first = buckets_[index];
         if (likely(first != nullptr)) {
             if (likely(first->hash_code == hash_code &&
-                       this->key_is_equal_(key, first->value.first))) {
+                       key_is_equal_(key, first->value.first))) {
                 return first;
             }
 
-            node_type * entry = first->next;
+            entry_type * entry = first->next;
             if (likely(entry != nullptr)) {
                 do {
                     if (likely(entry->hash_code != hash_code)) {
                         // Do nothing, Continue
                     }
                     else {
-                        if (likely(this->key_is_equal_(key, entry->value.first))) {
+                        if (likely(key_is_equal_(key, entry->value.first))) {
                             return entry;
                         }
                     }
@@ -1008,23 +1019,23 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    node_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
-        assert(this->buckets() != nullptr);
-        node_type * first = this->buckets_[index];
+    entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
+        assert(buckets() != nullptr);
+        entry_type * first = buckets_[index];
         if (likely(first != nullptr)) {
             if (likely(first->hash_code == hash_code &&
-                       this->key_is_equal_(key, first->value.first))) {
+                       key_is_equal_(key, first->value.first))) {
                 return first;
             }
 
-            node_type * entry = first->next;
+            entry_type * entry = first->next;
             if (likely(entry != nullptr)) {
                 do {
                     if (likely(entry->hash_code != hash_code)) {
                         // Do nothing, Continue
                     }
                     else {
-                        if (likely(this->key_is_equal_(key, entry->value.first))) {
+                        if (likely(key_is_equal_(key, entry->value.first))) {
                             return entry;
                         }
                     }
@@ -1039,17 +1050,17 @@ protected:
 #else // !USE_JAVA_FIND_ENTRY
 
     JSTD_FORCEINLINE
-    node_type * find_entry(const key_type & key) {
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_of(hash_code, this->bucket_mask_);
+    entry_type * find_entry(const key_type & key) {
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code, bucket_mask_);
 
-        node_type * entry = this->buckets_[index];
+        entry_type * entry = buckets_[index];
         while (likely(entry != nullptr)) {
             if (likely(entry->hash_code != hash_code)) {
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(key_is_equal_(key, entry->value.first))) {
                     return iterator(entry);
                 }
                 entry = entry->next;
@@ -1060,15 +1071,15 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    node_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
-        assert(this->buckets() != nullptr);
-        node_type * entry = this->buckets_[index];
+    entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
+        assert(buckets() != nullptr);
+        entry_type * entry = buckets_[index];
         while (likely(entry != nullptr)) {
             if (likely(entry->hash_code != hash_code)) {
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(key_is_equal_(key, entry->value.first))) {
                     return entry;
                 }
                 entry = entry->next;
@@ -1081,20 +1092,20 @@ protected:
 #endif // USE_JAVA_FIND_ENTRY
 
     JSTD_FORCEINLINE
-    node_type * find_before(const key_type & key, node_type *& before, size_type & index) {
-        hash_code_t hash_code = this->get_hash(key);
-        index = this->index_of(hash_code, this->bucket_mask_);
+    entry_type * find_before(const key_type & key, entry_type *& before, size_type & index) {
+        hash_code_t hash_code = get_hash(key);
+        index = index_of(hash_code, bucket_mask_);
 
-        assert(this->buckets() != nullptr);
-        node_type * prev = nullptr;
-        node_type * entry = this->buckets_[index];
+        assert(buckets() != nullptr);
+        entry_type * prev = nullptr;
+        entry_type * entry = buckets_[index];
         while (likely(entry != nullptr)) {
             if (likely(entry->hash_code != hash_code)) {
                 prev = entry;
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(key_is_equal_(key, entry->value.first))) {
                     before = prev;
                     return entry;
                 }
@@ -1105,21 +1116,21 @@ protected:
         return nullptr;  // Not found
     }
 
-    node_type * insert_new_entry_to_bucket(hash_code_t hash_code, index_type index) {
-        node_type * new_entry = this->get_free_entry(hash_code, index);
+    entry_type * insert_new_entry_to_bucket(hash_code_t hash_code, index_type index) {
+        entry_type * new_entry = get_free_entry(hash_code, index);
         assert(new_entry != nullptr);
 
-        new_entry->next = this->buckets_[index];
+        new_entry->next = buckets_[index];
         new_entry->hash_code = hash_code;
         new_entry->flags = 1;
         new_entry->owner = this;
-        this->buckets_[index] = new_entry;
+        buckets_[index] = new_entry;
 
         return new_entry;
     }
 
     JSTD_FORCEINLINE
-    void construct_value(node_type * new_entry, const key_type & key,
+    void construct_value(entry_type * new_entry, const key_type & key,
                                                 const mapped_type & value) {
         assert(new_entry != nullptr);
 
@@ -1130,7 +1141,7 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void construct_value(node_type * new_entry, const key_type & key,
+    void construct_value(entry_type * new_entry, const key_type & key,
                                                 mapped_type && value) {
         assert(new_entry != nullptr);
 
@@ -1142,7 +1153,7 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void construct_value(node_type * new_entry, key_type && key,
+    void construct_value(entry_type * new_entry, key_type && key,
                                                 mapped_type && value) {
         assert(new_entry != nullptr);
 
@@ -1157,31 +1168,31 @@ protected:
     JSTD_FORCEINLINE
     void insert_new_entry(const key_type & key, const mapped_type & value,
                           hash_code_t hash_code, index_type index) {
-        node_type * new_entry = this->insert_new_entry_to_bucket(hash_code, index);
-        this->construct_value(new_entry, key, value);
-        this->entry_size_++;
+        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
+        construct_value(new_entry, key, value);
+        entry_size_++;
     }
 
     JSTD_FORCEINLINE
     void insert_new_entry(const key_type & key, mapped_type && value,
                           hash_code_t hash_code, index_type index) {
-        node_type * new_entry = this->insert_new_entry_to_bucket(hash_code, index);
-        this->construct_value(new_entry, key, std::forward<mapped_type>(value));
-        this->entry_size_++;
+        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
+        construct_value(new_entry, key, std::forward<mapped_type>(value));
+        entry_size_++;
     }
 
     JSTD_FORCEINLINE
     void insert_new_entry(key_type && key, mapped_type && value,
                           hash_code_t hash_code, index_type index) {
-        node_type * new_entry = this->insert_new_entry_to_bucket(hash_code, index);
-        this->construct_value(new_entry, std::forward<key_type>(key),
+        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
+        construct_value(new_entry, std::forward<key_type>(key),
                                          std::forward<mapped_type>(value));
-        this->entry_size_++;
+        entry_size_++;
     }
 
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void construct_value_args(node_type * new_entry, Args && ... args) {
+    void construct_value_args(entry_type * new_entry, Args && ... args) {
         assert(new_entry != nullptr);
 
         // Use placement new method to construct value_type.
@@ -1193,70 +1204,70 @@ protected:
 
     template <bool OnlyIfAbsent, typename ReturnType>
     ReturnType insert_unique(const key_type & key, const mapped_type & value) {
-        assert(this->buckets() != nullptr);
+        assert(buckets() != nullptr);
 
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_of(hash_code, this->bucket_mask_);
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code, bucket_mask_);
 
-        node_type * entry = this->find_entry(key, hash_code, index);
+        entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->insert_new_entry(key, value,
+            insert_new_entry(key, value,
                                    hash_code, index);
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_value(entry, value);
+                update_value(entry, value);
             }
         }
 
-        this->updateVersion();
+        updateVersion();
 
         return ReturnType(iterator(entry), (entry == nullptr));
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
     ReturnType insert_unique(const key_type & key, mapped_type && value) {
-        assert(this->buckets() != nullptr);
+        assert(buckets() != nullptr);
 
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_of(hash_code, this->bucket_mask_);
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code, bucket_mask_);
 
-        node_type * entry = this->find_entry(key, hash_code, index);
+        entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->insert_new_entry(key, std::forward<mapped_type>(value),
-                                    hash_code, index);
+            insert_new_entry(key, std::forward<mapped_type>(value),
+                                   hash_code, index);
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_value(entry, std::forward<mapped_type>(value));
+                update_value(entry, std::forward<mapped_type>(value));
             }
         }
 
-        this->updateVersion();
+        updateVersion();
 
         return ReturnType(iterator(entry), (entry == nullptr));
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
     ReturnType insert_unique(key_type && key, mapped_type && value) {
-        assert(this->buckets() != nullptr);
+        assert(buckets() != nullptr);
 
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_of(hash_code, this->bucket_mask_);
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code, bucket_mask_);
 
-        node_type * entry = this->find_entry(key, hash_code, index);
+        entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->insert_new_entry(std::forward<key_type>(key),
-                                    std::forward<mapped_type>(value),
-                                    hash_code, index);
+            insert_new_entry(std::forward<key_type>(key),
+                                   std::forward<mapped_type>(value),
+                                   hash_code, index);
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_value(entry, std::forward<mapped_type>(value));
+                update_value(entry, std::forward<mapped_type>(value));
             }
         }
 
-        this->updateVersion();
+        updateVersion();
 
         return ReturnType(iterator(entry), (entry == nullptr));
     }
@@ -1264,13 +1275,13 @@ protected:
     template <typename ...Args>
     JSTD_INLINE
     void emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
-        node_type * new_entry = this->insert_new_entry_to_bucket(hash_code, index);
-        this->construct_value_args(new_entry, std::forward<Args>(args)...);
-        this->entry_size_++;
+        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
+        construct_value_args(new_entry, std::forward<Args>(args)...);
+        entry_size_++;
     }
 
     JSTD_FORCEINLINE
-    void construct_value(node_type * new_entry, value_type * value) {
+    void construct_value(entry_type * new_entry, value_type * value) {
         assert(new_entry != nullptr);
 
         // Use placement new method to construct value_type [by move assignment].
@@ -1281,28 +1292,28 @@ protected:
 
     JSTD_INLINE
     void emplace_new_entry_from_value(hash_code_t hash_code, index_type index, value_type * value) {
-        node_type * new_entry = this->insert_new_entry_to_bucket(hash_code, index);
-        this->construct_value(new_entry, value);
-        this->entry_size_++;
+        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
+        construct_value(new_entry, value);
+        entry_size_++;
     }
 
     // Update the existed key's value, maybe by move assignment operator.
     JSTD_FORCEINLINE
-    void update_value(node_type * entry, const mapped_type & value) {
+    void update_value(entry_type * entry, const mapped_type & value) {
         assert(entry != nullptr);
         entry->value.second = value;
     }
 
     // Update the existed key's value, maybe by move assignment operator.
     JSTD_FORCEINLINE
-    void update_value(node_type * entry, mapped_type && value) {
+    void update_value(entry_type * entry, mapped_type && value) {
         assert(entry != nullptr);
         entry->value.second = std::forward<mapped_type>(value);
     }
 
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void update_value_args_impl(node_type * entry, const key_type & key, Args && ... args) {
+    void update_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
         assert(entry != nullptr);
         std::allocator<mapped_type> value_allocator;
         value_allocator.destroy(&entry->value.second);
@@ -1310,13 +1321,13 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void update_value_args(node_type * entry, const mapped_type & value) {
+    void update_value_args(entry_type * entry, const mapped_type & value) {
         assert(entry != nullptr);
         entry->value.second = value;
     }
 
     JSTD_FORCEINLINE
-    void update_value_args(node_type * entry, mapped_type && value) {
+    void update_value_args(entry_type * entry, mapped_type && value) {
         assert(entry != nullptr);
         entry->value.second = std::forward<mapped_type>(value);
     }
@@ -1324,9 +1335,9 @@ protected:
     // Update the existed key's value.
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void update_value_args(node_type * entry, Args && ... args) {
+    void update_value_args(entry_type * entry, Args && ... args) {
         assert(entry != nullptr);
-        this->update_value_args_impl(entry, std::forward<Args>(args)...);
+        update_value_args_impl(entry, std::forward<Args>(args)...);
     }
 
     const key_type & get_key(value_type * value) const {
@@ -1335,111 +1346,111 @@ protected:
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
     ReturnType emplace_unique(const key_type & key, Args && ... args) {
-        assert(this->buckets() != nullptr);
+        assert(buckets() != nullptr);
 
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_of(hash_code, this->bucket_mask_);
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code, bucket_mask_);
 
-        node_type * entry = this->find_entry(key, hash_code, index);
+        entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->emplace_new_entry(hash_code, index,
+            emplace_new_entry(hash_code, index,
                                     std::forward<Args>(args)...);
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_value_args(entry, std::forward<Args>(args)...);
+                update_value_args(entry, std::forward<Args>(args)...);
             }
         }
 
-        this->updateVersion();
+        updateVersion();
 
         return ReturnType(iterator(entry), (entry == nullptr));
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
     ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
-        assert(this->buckets() != nullptr);
+        assert(buckets() != nullptr);
 
-        value_type * value_tmp = this->allocator_.create(std::forward<Args>(args)...);
+        value_type * value_tmp = allocator_.create(std::forward<Args>(args)...);
         assert(value_tmp != nullptr);
-        const key_type & key = this->get_key(value_tmp);
+        const key_type & key = get_key(value_tmp);
 
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_of(hash_code, this->bucket_mask_);
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code, bucket_mask_);
 
-        node_type * entry = this->find_entry(key, hash_code, index);
+        entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->emplace_new_entry_from_value(hash_code, index, value_tmp);
+            emplace_new_entry_from_value(hash_code, index, value_tmp);
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_value(entry, std::move(value_tmp->second));
+                update_value(entry, std::move(value_tmp->second));
             }
         }
 
-        this->allocator_.destroy(value_tmp);
-        this->updateVersion();
+        allocator_.destroy(value_tmp);
+        updateVersion();
 
         return ReturnType(iterator(entry), (entry == nullptr));
     }
 
     void updateVersion() {
 #if DICTIONARY_SUPPORT_VERSION
-        ++(this->version_);
+        ++(version_);
 #endif
     }
 
 public:
     inline hash_code_t get_hash(const key_type & key) const {
-        hash_code_t hash_code = this->hasher_(key);
+        hash_code_t hash_code = hasher_(key);
         //return hash_traits<hash_code_t>::filter(hash_code);
-        hash_code = hash_code ^ (hash_code >> 16);
+        //hash_code = hash_code ^ (hash_code >> 16);
         return hash_code;
     }
 
     void clear() {
-        if (likely(this->buckets_ != nullptr)) {
+        if (likely(buckets_ != nullptr)) {
             // Initialize the buckets's data.
-            ::memset((void *)this->buckets_, 0, this->bucket_capacity_ * sizeof(node_type *));
+            ::memset((void *)buckets_, 0, bucket_capacity_ * sizeof(entry_type *));
         }
 
         // Clear settings
-        this->entry_size_ = 0;
+        entry_size_ = 0;
 
         // TODO: clear or rearrange entry chunk and freelist.
 
-        //this->freelist_.clear();
-        //this->entry_chunk_.clear();
+        //freelist_.clear();
+        //entry_chunk_.clear();
     }
 
     void rehash(size_type bucket_count) {
         assert(bucket_count > 0);
-        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
-        this->rehash_internal<false>(new_bucket_capacity);
+        size_type new_bucket_capacity = calc_capacity(bucket_count);
+        rehash_internal<false>(new_bucket_capacity);
     }
 
     void reserve(size_type bucket_count) {
-        this->rehash(bucket_count);
+        rehash(bucket_count);
     }
 
     void shrink_to_fit(size_type bucket_count = 0) {
-        size_type entry_capacity = run_time::round_up_to_pow2(this->entry_size_);
+        size_type entry_capacity = run_time::round_up_to_pow2(entry_size_);
 
         // Choose the maximum size of new bucket capacity and now entry capacity.
         bucket_count = (entry_capacity >= bucket_count) ? entry_capacity : bucket_count;
 
-        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
-        this->rehash_internal<true>(new_bucket_capacity);
+        size_type new_bucket_capacity = calc_capacity(bucket_count);
+        rehash_internal<true>(new_bucket_capacity);
     }
 
     bool contains(const key_type & key) {
-        iterator iter = this->find(key);
-        return (iter != this->end());
+        iterator iter = find(key);
+        return (iter != end());
     }
 
     iterator find(const key_type & key) {
-        if (likely(this->buckets() != nullptr)) {
-            node_type * entry = this->find_entry(key);
+        if (likely(buckets() != nullptr)) {
+            entry_type * entry = find_entry(key);
             return iterator(entry);
         }
 
@@ -1449,55 +1460,55 @@ public:
     // insert(key, value)
 
     insert_return_type insert(const key_type & key, const mapped_type & value) {
-        return this->insert_unique<false, insert_return_type>(key, value);
+        return insert_unique<false, insert_return_type>(key, value);
     }
 
     insert_return_type insert(const key_type & key, mapped_type && value) {
-        return this->insert_unique<false, insert_return_type>(key, std::forward<mapped_type>(value));
+        return insert_unique<false, insert_return_type>(key, std::forward<mapped_type>(value));
     }
 
     insert_return_type insert(key_type && key, mapped_type && value) {
-        return this->insert_unique<false, insert_return_type>(std::forward<key_type>(key),
+        return insert_unique<false, insert_return_type>(std::forward<key_type>(key),
                                                               std::forward<mapped_type>(value));
     }
 
     insert_return_type insert(const value_type & pair) {
-        return this->insert(pair.first, pair.second);
+        return insert(pair.first, pair.second);
     }
 
     insert_return_type insert(value_type && pair) {
         bool is_rvalue = std::is_rvalue_reference<decltype(pair)>::value;
         if (is_rvalue)
-            return this->insert(std::move(pair.first), std::move(pair.second));
+            return insert(std::move(pair.first), std::move(pair.second));
         else
-            return this->insert(pair.first, pair.second);
+            return insert(pair.first, pair.second);
     }
 
     // insert_no_return(key, value)
 
     void insert_no_return(const key_type & key, const mapped_type & value) {
-        this->insert_unique<false, void_warpper>(key, value);
+        insert_unique<false, void_warpper>(key, value);
     }
 
     void insert_no_return(const key_type & key, mapped_type && value) {
-        this->insert_unique<false, void_warpper>(key, std::forward<mapped_type>(value));
+        insert_unique<false, void_warpper>(key, std::forward<mapped_type>(value));
     }
 
     void insert_no_return(key_type && key, mapped_type && value) {
-        this->insert_unique<false, void_warpper>(std::forward<key_type>(key),
+        insert_unique<false, void_warpper>(std::forward<key_type>(key),
                                                  std::forward<mapped_type>(value));
     }
 
     void insert_no_return(const value_type & pair) {
-        this->insert_no_return(pair.first, pair.second);
+        insert_no_return(pair.first, pair.second);
     }
 
     void insert_no_return(value_type && pair) {
         bool is_rvalue = std::is_rvalue_reference<decltype(pair)>::value;
         if (is_rvalue)
-            this->insert_no_return(std::move(pair.first), std::move(pair.second));
+            insert_no_return(std::move(pair.first), std::move(pair.second));
         else
-            this->insert_no_return(pair.first, pair.second);
+            insert_no_return(pair.first, pair.second);
     }
 
     /***************************************************************************/
@@ -1516,48 +1527,48 @@ public:
 
     template <typename ...Args>
     insert_return_type emplace(Args && ... args) {
-        return this->emplace_unique<false, insert_return_type>(
+        return emplace_unique<false, insert_return_type>(
             key_extractor<value_type>::extract(std::forward<Args>(args)...),
             std::forward<Args>(args)...);
     }
 
     template <typename ...Args>
     void emplace_no_return(Args && ... args) {
-        this->emplace_unique<false, void_warpper>(
+        emplace_unique<false, void_warpper>(
             key_extractor<value_type>::extract(std::forward<Args>(args)...),
             std::forward<Args>(args)...);
     }
 
     size_type erase(const key_type & key) {
-        if (likely(this->buckets_ != nullptr)) {
-            hash_code_t hash_code = this->get_hash(key);
-            size_type index = this->index_of(hash_code, this->bucket_mask_);
+        if (likely(buckets_ != nullptr)) {
+            hash_code_t hash_code = get_hash(key);
+            size_type index = index_of(hash_code, bucket_mask_);
 
-            node_type * prev = nullptr;
-            node_type * entry = this->buckets_[index];
+            entry_type * prev = nullptr;
+            entry_type * entry = buckets_[index];
             while (likely(entry != nullptr)) {
                 if (likely(entry->hash_code != hash_code)) {
                     prev = entry;
                     entry = entry->next;
                 }
                 else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    if (likely(key_is_equal_(key, entry->value.first))) {
                         if (likely(prev != nullptr))
                             prev->next = entry->next;
                         else
-                            this->buckets_[index] = entry->next;
+                            buckets_[index] = entry->next;
 
                         assert(entry->flags == 1);
                         entry->flags = 0;
-                        this->freelist_.push_front(entry);
+                        freelist_.push_front(entry);
 
                         // destruct the entry->value
                         value_type * value_ptr = &entry->value;
                         allocator_.destructor(value_ptr);
 
-                        this->entry_size_--;
+                        entry_size_--;
 
-                        this->updateVersion();
+                        updateVersion();
 
                         // Has found
                         return size_type(1);
@@ -1573,16 +1584,120 @@ public:
         return size_type(0);
     }
 
+    double calc_std_deviation() const {
+        std::vector<size_type> bucket_counts;
+        size_type bucket_capacity = bucket_count();
+        bucket_counts.resize(bucket_capacity);
+
+        size_type total_count = 0;
+        for (size_type i = 0; i < bucket_capacity; i++) {
+            size_type count = bucket_size(i);
+            bucket_counts[i] = count;
+            total_count += count;
+        }
+
+        double average_count = total_count / (double)bucket_capacity;
+        double std_errors = 0.0;
+
+        for (size_type i = 0; i < bucket_capacity; i++) {
+            double error = (double)bucket_counts[i] - average_count;
+            std_errors += error * error;
+        }
+
+        std_errors /= (double)bucket_capacity;
+        return ::sqrt(std_errors);
+    }
+
+    double calc_std_errors() const {
+        std::vector<size_type> bucket_counts;
+        size_type entry_capacity = entry_count();
+        size_type bucket_capacity = bucket_count();
+        bucket_counts.resize(bucket_capacity);
+
+        size_type total_count = 0;
+        for (size_type i = 0; i < bucket_capacity; i++) {
+            size_type count = bucket_size(i);
+            bucket_counts[i] = count;
+            total_count += count;
+        }
+
+        double average_count = total_count / (double)entry_capacity;
+        double std_errors = 0.0;
+
+        for (size_type i = 0; i < bucket_capacity; i++) {
+            if (bucket_counts[i] > 0) {
+                double error = (double)bucket_counts[i] - average_count;
+                std_errors += error * error;
+            }
+        }
+
+        std_errors /= (double)entry_capacity;
+        return ::sqrt(std_errors);
+    }
+
+    double calc_usage_rate() const {
+        size_type bucket_capacity = bucket_count();
+
+        size_type usage_count = 0;
+        for (size_type i = 0; i < bucket_capacity; i++) {
+            size_type count = bucket_size(i);
+            if (count > 0)
+                usage_count++;
+        }
+
+        double usage_rate = usage_count / (double)bucket_capacity;
+        return (usage_rate * 100.0);
+    }
+
+    double calc_conflict_rate() const {
+        size_type bucket_capacity = bucket_count();
+
+        size_type conflict_count = 0;
+        for (size_type i = 0; i < bucket_capacity; i++) {
+            size_type count = bucket_size(i);
+            if (count > 1)
+                conflict_count++;
+        }
+
+        double conflict_rate = conflict_count / (double)bucket_capacity;
+        return (conflict_rate * 100.0);
+    }
+
+    size_type get_max_bucket_count() const {
+        size_type bucket_capacity = bucket_count();
+
+        size_type max_bucket_count = 0;
+        for (size_type i = 0; i < bucket_capacity; i++) {
+            size_type count = bucket_size(i);
+            if (count > max_bucket_count)
+                max_bucket_count = count;
+        }
+
+        return max_bucket_count;
+    }
+
+    double calc_coverage_rate() const {
+        return (((double)size() / entry_count()) * 100.0);
+    }
+
     void display_status() {
         printf("---------------------------------------\n");
         printf("  %s\n", this_type::name());
         printf("---------------------------------------\n");
         printf("\n");
 
-        printf("  entry_size      = %" PRIuPTR "\n", this->size());
-        printf("  entry_capacity  = %" PRIuPTR "\n", this->entry_count());
-        printf("  bucket_mask     = %" PRIuPTR "\n", this->bucket_mask());
-        printf("  bucket_capacity = %" PRIuPTR "\n", this->bucket_count());
+        printf("  entry_size       = %" PRIuPTR "\n", size());
+        printf("  entry_capacity   = %" PRIuPTR "\n", entry_count());
+        printf("  bucket_mask      = %" PRIuPTR "\n", bucket_mask());
+        printf("  bucket_capacity  = %" PRIuPTR "\n", bucket_count());
+        printf("\n");
+        printf("  std_deviation    = %0.6f\n", calc_std_deviation());
+        printf("  std_errors       = %0.6f\n", calc_std_errors());
+        printf("  max_bucket_count = %" PRIuPTR "\n", get_max_bucket_count());
+        printf("  coverage_rate    = %0.2f %%\n", calc_coverage_rate());
+        printf("  usage_rate       = %0.2f %%\n", calc_usage_rate());
+        printf("  unused_rate      = %0.2f %%\n", (100.0 - calc_usage_rate()));
+        printf("  conflict_rate    = %0.2f %%\n", calc_conflict_rate());
         printf("\n");
     }
 
@@ -1592,12 +1707,12 @@ public:
         printf("----------------------------------------------------------------------\n");
 
         uint32_t index = 0;
-        for (const_iterator iter = this->cbegin(); iter != this->cend(); ++iter) {
-            std::uint32_t hash_code = this->get_hash(iter->first);
+        for (const_iterator iter = cbegin(); iter != cend(); ++iter) {
+            std::uint32_t hash_code = get_hash(iter->first);
             std::string key_name = iter->first.c_str() + std::string(":");
             printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
                    hash_code,
-                   uint32_t(hash_code & container.bucket_mask()),
+                   uint32_t(hash_code & bucket_mask()),
                    key_name.c_str(),
                    iter->second.c_str());
             index++;

@@ -1763,9 +1763,35 @@ void hashtable_iterator_uinttest()
     }
 }
 
+template <typename Container>
+void hashtable_show_status()
+{
+    std::string field_str[kHeaderFieldSize];
+    std::string index_str[kHeaderFieldSize];
+    for (size_t i = 0; i < kHeaderFieldSize; ++i) {
+        field_str[i].assign(header_fields[i]);
+        char buf[16];
+#ifdef _MSC_VER
+        ::_itoa_s((int)i, buf, 10);
+#else
+        sprintf(buf, "%d", (int)i);
+#endif
+        index_str[i] = buf;
+    }
+
+    Container container(kInitCapacity);
+    for (size_t j = 0; j < kHeaderFieldSize; ++j) {
+        container.emplace(field_str[j], index_str[j]);
+    }
+
+    container.display_status();
+    container.dump_maps();
+}
+
 void hashtable_uinttest()
 {
-    hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
+    hashtable_show_status<jstd::Dictionary<std::string, std::string>>();
+    //hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
 }
 
 void string_view_test()
@@ -1796,7 +1822,7 @@ int main(int argc, char *argv[])
     //string_view_test();
 
     hashtable_uinttest();
-    hashtable_benchmark();
+    //hashtable_benchmark();
 
 #ifdef _WIN32
     ::system("pause");
