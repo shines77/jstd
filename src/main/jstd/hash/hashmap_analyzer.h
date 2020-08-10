@@ -412,14 +412,14 @@ public:
 
     void dump_entries(uint32_t max_entries = 0) {
         printf("\n");
-        printf("   #       hash     index  key                            value\n");
+        printf("   #       hash     index     key                            value\n");
         printf("------------------------------------------------------------------------\n");
 
         uint32_t index = 0;
         hasher hasher_;
         for (const_iterator iter = container_.cbegin(); iter != container_.cend(); ++iter) {
             std::uint32_t hash_code = static_cast<std::uint32_t>(hasher_(iter->first));
-            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
+            printf(" [%3d]: 0x%08X  %-8u  %-30s %s\n", index + 1,
                    hash_code,
                    uint32_t(hash_code & bucket_mask()),
                    iter->first.c_str(),
