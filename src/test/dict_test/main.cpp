@@ -1537,6 +1537,8 @@ void hashtable_uinttest()
     if (dict_words_is_ready && dict_words.size() > 0) {
         hashtable_dict_words_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
         hashtable_dict_words_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
+
+        hashtable_dict_words_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
     }
     else {
         hashtable_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
