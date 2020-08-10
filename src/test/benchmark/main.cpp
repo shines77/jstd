@@ -56,6 +56,7 @@
 
 #include <jstd/hash/hash_table.h>
 #include <jstd/hash/dictionary.h>
+#include <jstd/hash/hashmap_analyzer.h>
 #include <jstd/string/string_view.h>
 #include <jstd/system/Console.h>
 #include <jstd/test/StopWatch.h>
@@ -1459,7 +1460,7 @@ void hashtable_iterator_uinttest()
 }
 
 template <typename Container>
-void hashtable_show_status()
+void hashtable_show_status(const std::string & name)
 {
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -1473,31 +1474,41 @@ void hashtable_show_status()
         container.emplace(field_str[i], index_str[i]);
     }
 
-    container.display_status();
-    container.dump_entries();
+    HashMapAnalyzer<Container> analyzer(container);
+    analyzer.set_name(name);
+    analyzer.start_analyse();
+
+    analyzer.display_status();
+    analyzer.dump_entries();
 }
 
 template <typename Container>
-void hashtable_dict_words_show_status()
+void hashtable_dict_words_show_status(const std::string & name)
 {
     Container container(kInitCapacity);
     for (size_t i = 0; i < dict_words.size(); i++) {
         container.emplace(dict_words[i], std::to_string(i));
     }
 
-    container.display_status();
-    container.dump_entries(100);
+    HashMapAnalyzer<Container> analyzer(container);
+    analyzer.set_name(name);
+    analyzer.start_analyse();
+
+    analyzer.display_status();
+    analyzer.dump_entries(100);
 }
 
 void hashtable_uinttest()
 {
     if (dict_words_is_ready && dict_words.size() > 0) {
-        hashtable_dict_words_show_status<jstd::Dictionary<std::string, std::string>>();
-        hashtable_dict_words_show_status<jstd::Dictionary_Time31<std::string, std::string>>();
+        hashtable_dict_words_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
+        hashtable_dict_words_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
     }
     else {
-        hashtable_show_status<jstd::Dictionary<std::string, std::string>>();
-        hashtable_show_status<jstd::Dictionary_Time31<std::string, std::string>>();
+        hashtable_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
+        hashtable_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
+
+        hashtable_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
     }
     
     //hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
@@ -1564,7 +1575,7 @@ int main(int argc, char * argv[])
     //string_view_test();
 
     hashtable_uinttest();
-    hashtable_benchmark();
+    //hashtable_benchmark();
 
     jstd::Console::ReadKey(true);
     return 0;

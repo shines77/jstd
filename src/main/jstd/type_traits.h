@@ -109,6 +109,114 @@ struct remove_all {
             >::type type;
 };
 
+template <typename Caller, typename Function, typename = void>
+struct is_call_possible : public std::false_type {};
+
+template <typename Caller, typename ReturnType, typename ... Args>
+struct is_call_possible<Caller, ReturnType(Args...),
+    typename std::enable_if<
+        std::is_same<ReturnType, void>::value ||
+        std::is_convertible<decltype(
+            std::declval<Caller>().operator()(std::declval<Args>()...)
+            //          ^^^^^^^^^^ replace this with the member you need.
+        ), ReturnType>::value
+    >::type
+> : public std::true_type {};
+
+//
+// See: https://stackoverflow.com/questions/17201329/c11-ways-of-finding-if-a-type-has-member-function-or-supports-operator
+//
+
+#define TYPE_SUPPORTS(ClassName, Expr)                          \
+template <typename U>                                           \
+struct ClassName {                                              \
+private:                                                        \
+    template <typename>                                         \
+    static constexpr std::false_type test(...);                 \
+                                                                \
+    template <typename T = U>                                   \
+    static decltype((Expr), std::true_type{}) test(int);        \
+                                                                \
+public:                                                         \
+    static constexpr bool value = decltype(test<U>(0))::value;  \
+};
+
+namespace detail {
+    TYPE_SUPPORTS(SupportsBegin, std::begin(std::declval<T>()));
+}
+
+template <typename T>
+class has_size {
+private:
+    typedef char Yes;
+    typedef Yes No[2];
+
+    template <typename C>
+    static auto Test(void *)
+        -> decltype(size_t{ std::declval<C const>().size() }, Yes{ });
+
+    template <typename>
+    static No & Test(...);
+
+public:
+    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+};
+
+template <typename T>
+class has_entry_count {
+private:
+    typedef char Yes;
+    typedef Yes No[2];
+
+    template <typename C>
+    static auto Test(void *)
+        -> decltype(size_t{ std::declval<C const>().entry_count() }, Yes{ });
+
+    template <typename>
+    static No & Test(...);
+
+public:
+    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+};
+
+template <typename T>
+class call_entry_count {
+public:
+    typedef typename T::size_type size_type;
+
+    struct No {
+        char data[2];
+    };
+
+private:
+    typedef char Yes;
+    //typedef Yes No[2];
+
+    static No s_No;
+
+    template <typename C>
+    static auto Test(const C & t, size_type & count, void *)
+        -> decltype(size_t{ std::declval<C const>().entry_count() }, Yes{ }) {
+        count = t.entry_count();
+        return Yes{ };
+    };
+
+    template <typename C>
+    static No & Test(const C & t, size_type & count, ...) {
+        return s_No;
+    }
+
+public:
+    static size_type entry_count(const T & t) {
+        size_type count = 0;
+        Test(t, count, 0);
+        return count;
+    }
+};
+
+template <typename T>
+typename call_entry_count<T>::No call_entry_count<T>::s_No;
+
 } // namespace jstd
 
 #endif // JSTD_TYPE_TRAITS_H
