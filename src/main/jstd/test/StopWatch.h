@@ -9,8 +9,8 @@
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
-#endif // WIN32_LEAN_AND_MEAN
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
 #endif // _WIN32

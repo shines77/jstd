@@ -29,7 +29,7 @@ public:
     static void Write(const char * fmt, ...) {
         va_list arg_list;
         va_start(arg_list, fmt);
-        vprintf(fmt, arg_list);
+        ::vprintf(fmt, arg_list);
         va_end(arg_list);
     }
 
@@ -37,7 +37,7 @@ public:
         va_list arg_list;
         if (fmt != nullptr) {
             va_start(arg_list, fmt);
-            vprintf(fmt, arg_list);
+            ::vprintf(fmt, arg_list);
             va_end(arg_list);
         }
         printf("\n");
@@ -74,22 +74,18 @@ public:
     }
 
     static int ReadKeyLine(bool displayTips = true, bool echoInput = false,
-                           bool newLine = true, bool enabledCpuWarmup = false) {
-        if (enabledCpuWarmup)
-            newLine = true;
-
-        int keyCode = ReadKey(displayTips, echoInput, newLine, enabledCpuWarmup);
-
-        if (newLine) {
-            printf("\n");
-        }
-        return keyCode;
+                           bool enabledCpuWarmup = false) {
+        return ReadKey(displayTips, echoInput, true, enabledCpuWarmup);
     }
 
-    static int Read() {
-        int keyCode = 0;
-        // TODO: Read the inputs.
-        return keyCode;
+    static int ReadInput(const char * fmt, ...) {
+        va_list arg_list;
+        va_start(arg_list, fmt);
+        ::vprintf(fmt, arg_list);
+        va_end(arg_list);
+        
+        int result = ::vscanf(fmt, arg_list);
+        return result;
     }
 };
 

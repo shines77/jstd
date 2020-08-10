@@ -250,6 +250,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\export.h">
       <Filter>src\basic</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\ProcessMemInfo.h">
+      <Filter>src\test</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">
