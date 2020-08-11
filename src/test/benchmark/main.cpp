@@ -1479,6 +1479,8 @@ public:
     typedef std::size_t size_type;
 
 private:
+    std::string name1_;
+    std::string name2_;
     std::vector<BenchmarkCategory *> category_list_;
 
     void destroy() {
@@ -1500,6 +1502,27 @@ public:
 
     size_type category_size() const {
         return category_list_.size();
+    }
+
+    std::string & getName1() {
+        return this->name1_;
+    }
+
+    std::string & getName2() {
+        return this->name2_;
+    }
+
+    const std::string & getName1() const {
+        return this->name1_;
+    }
+
+    const std::string & getName2() const {
+        return this->name2_;
+    }
+
+    void setName(const std::string & name1, const std::string & name2) {
+        this->name1_ = name1;
+        this->name2_ = name2;
     }
 
     BenchmarkCategory * getCategory(size_type index) {
@@ -1524,6 +1547,56 @@ public:
             return true;
         }
         return false;
+    }
+
+    /*******************************************************************************************************
+       Test                                          std::unordered_map         jstd::Dictionary     Ratio
+      ------------------------------------------------------------------------------------------------------
+       hash_map<std::string, std::string>          checksum     time         checksum    time
+
+       hash_map<K, V>/find                    | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
+       hash_map<K, V>/insert                  | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
+       hash_map<K, V>/emplace                 | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
+       hash_map<K, V>/erase                   | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
+      ------------------------------------------------------------------------------------------------------
+    *******************************************************************************************************/
+    void printResult() {
+        printf(" Test                                    %23s  %23s     Ratio\n",
+               this->name1_.c_str(), this->name2_.c_str());
+        printf("------------------------------------------------------------------------------------------------------\n");
+
+        for (size_type catId = 0; catId < category_size(); catId++) {
+            BenchmarkCategory * category = getCategory(catId);
+            if (category != nullptr) {
+                if (category->name().size() <= 40)
+                    printf(" %-40s    checksum    time         checksum    time\n", category->name().c_str());
+                else
+                    printf(" %-52s"          "    time         checksum    time\n", category->name().c_str());
+                printf("\n");
+
+                size_type result_count = category->size();
+                for (size_type i = 0; i < result_count; i++) {
+                    const Result & result = category->getResult(i);
+                    double ratio;
+                    if (result.elaspedTime2 != 0.0)
+                        ratio = result.elaspedTime1 / result.elaspedTime2;
+                    else
+                        ratio = 0.0;
+                    printf(" %-38s | %11" PRIuPTR " %7.2f ms | %11" PRIuPTR " %7.2f ms |   %0.2f\n",
+                           result.name.c_str(),
+                           result.checksum1, result.elaspedTime1,
+                           result.checksum2, result.elaspedTime2,
+                           ratio);
+                }
+
+                if (catId < (category_size() - 1))
+                    printf("\n");
+            }
+        }
+
+        printf("\n");
+        printf("------------------------------------------------------------------------------------------------------\n");
+        printf("\n");
     }
 };
 
@@ -1716,7 +1789,7 @@ void hashmap_benchmark_single(const std::string & cat_name,
     test_hashmap_find<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
     test_hashmap_find<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
 
-    result.addResult(cat_id, "hashmap<K, V>/find", elapsedTime1, checksum1, elapsedTime2, checksum2);
+    result.addResult(cat_id, "hash_map<K, V>/find", elapsedTime1, checksum1, elapsedTime2, checksum2);
 
     //
     // test hashmap<K, V>/insert
@@ -1724,7 +1797,7 @@ void hashmap_benchmark_single(const std::string & cat_name,
     test_hashmap_insert<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
     test_hashmap_insert<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
 
-    result.addResult(cat_id, "hashmap<K, V>/insert", elapsedTime1, checksum1, elapsedTime2, checksum2);
+    result.addResult(cat_id, "hash_map<K, V>/insert", elapsedTime1, checksum1, elapsedTime2, checksum2);
 
     //
     // test hashmap<K, V>/emplace
@@ -1732,7 +1805,7 @@ void hashmap_benchmark_single(const std::string & cat_name,
     test_hashmap_emplace<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
     test_hashmap_emplace<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
 
-    result.addResult(cat_id, "hashmap<K, V>/emplace", elapsedTime1, checksum1, elapsedTime2, checksum2);
+    result.addResult(cat_id, "hash_map<K, V>/emplace", elapsedTime1, checksum1, elapsedTime2, checksum2);
 
     //
     // test hashmap<K, V>/erase
@@ -1740,12 +1813,13 @@ void hashmap_benchmark_single(const std::string & cat_name,
     test_hashmap_erase<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
     test_hashmap_erase<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
 
-    result.addResult(cat_id, "hashmap<K, V>/erase", elapsedTime1, checksum1, elapsedTime2, checksum2);
+    result.addResult(cat_id, "hash_map<K, V>/erase", elapsedTime1, checksum1, elapsedTime2, checksum2);
 }
 
 void hashmap_benchmark_all()
 {
     BenchmarkResult test_result;
+    test_result.setName("std::unordered_map", "jstd::Dictionary");
 
     //
     // std::unordered_map<std::string, std::string>
@@ -1827,6 +1901,8 @@ void hashmap_benchmark_all()
                              test_data_uu, test_result);
 
     printf("\n\n");
+
+    test_result.printResult();
 }
 
 bool read_dict_file(const std::string & filename)
