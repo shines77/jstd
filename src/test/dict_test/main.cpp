@@ -204,6 +204,8 @@ struct hash<jstd::StringRef> {
     }
 };
 
+} // namespace jstd
+
 namespace test {
 
 template <typename Key, typename Value>
@@ -1367,18 +1369,15 @@ void hashtable_rehash2_benchmark()
 void hashtable_benchmark()
 {
     hashtable_find_benchmark();
-    hashtable_ref_find_benchmark();
-
     hashtable_insert_benchmark();
-    hashtable_ref_insert_benchmark();
-
     hashtable_emplace_benchmark();
-    hashtable_ref_emplace_benchmark();
-
     hashtable_erase_benchmark();
-    hashtable_ref_erase_benchmark();
-
     hashtable_insert_erase_benchmark();
+
+    hashtable_ref_find_benchmark();
+    hashtable_ref_insert_benchmark();
+    hashtable_ref_emplace_benchmark();
+    hashtable_ref_erase_benchmark();
     hashtable_ref_insert_erase_benchmark();
 
     hashtable_rehash_benchmark();
@@ -1570,8 +1569,6 @@ void string_view_test()
     printf("str1 = %s\n", str1.c_str());
 }
 
-} // namespace jstd
-
 bool read_dict_file(const std::string & filename)
 {
     bool is_ok = false;
@@ -1613,7 +1610,7 @@ int main(int argc, char * argv[])
     //string_view_test();
 
     hashtable_uinttest();
-    //hashtable_benchmark();
+    hashtable_benchmark();
 
     jstd::Console::ReadKey(true);
     return 0;

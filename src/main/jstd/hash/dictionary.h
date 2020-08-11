@@ -1457,6 +1457,15 @@ public:
         return iterator(nullptr);   // Error: buckets data is invalid
     }
 
+    const_iterator find(const key_type & key) const {
+        if (likely(buckets() != nullptr)) {
+            entry_type * entry = find_entry(key);
+            return const_iterator(entry);
+        }
+
+        return const_iterator(nullptr);   // Error: buckets data is invalid
+    }
+
     // insert(key, value)
 
     insert_return_type insert(const key_type & key, const mapped_type & value) {

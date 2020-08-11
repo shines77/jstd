@@ -204,6 +204,8 @@ struct hash<jstd::StringRef> {
     }
 };
 
+} // namespace jstd
+
 namespace test {
 
 template <typename Key, typename Value>
@@ -1385,192 +1387,429 @@ void hashtable_benchmark()
     hashtable_rehash2_benchmark();
 }
 
-template <typename Container>
-void hashtable_iterator_uinttest()
-{
-    std::string field_str[kHeaderFieldSize];
-    std::string index_str[kHeaderFieldSize];
-    for (size_t i = 0; i < kHeaderFieldSize; ++i) {
-        field_str[i].assign(header_fields[i]);
-        index_str[i] = std::to_string(i);
+//
+// An individual benchmark result.
+//
+struct Result {
+    typedef std::size_t size_type;
+
+    size_type   catId;
+    std::string name;
+    double      elaspedTime1;
+    size_type   checksum1;
+    double      elaspedTime2;
+    size_type   checksum2;
+
+    Result(size_type catId, const std::string & name,
+           double elaspedTime1, size_type checksum1,
+           double elaspedTime2, size_type checksum2)
+        : catId(catId), name(name),
+          elaspedTime1(elaspedTime1), checksum1(checksum1),
+          elaspedTime2(elaspedTime2), checksum2(checksum2) {
     }
+    Result(const Result & src)
+        : catId(src.catId), name(src.name),
+          elaspedTime1(src.elaspedTime1), checksum1(src.checksum1),
+          elaspedTime2(src.elaspedTime2), checksum2(src.checksum2) {
+    }
+    Result(Result && rhs)
+        : catId(size_type(-1)),
+          elaspedTime1(0.0), checksum1(0),
+          elaspedTime2(0.0), checksum2(0) {
+        swap(rhs);
+    }
+
+    void swap(Result & rhs) {
+        if (&rhs != this) {
+            std::swap(this->catId,          rhs.catId);
+            std::swap(this->name,           rhs.name);
+            std::swap(this->elaspedTime1,   rhs.elaspedTime1);
+            std::swap(this->checksum1,      rhs.checksum1);
+            std::swap(this->elaspedTime2,   rhs.elaspedTime2);
+            std::swap(this->checksum2,      rhs.checksum2);
+        }
+    }
+};
+
+class BenchmarkCategory {
+public:
+    typedef std::size_t size_type;
+
+private:
+    size_type           catId;
+    std::string         name_;
+    std::vector<Result> result_list_;
+
+public:
+    BenchmarkCategory(const std::string & name) : catId(size_type(-1)), name_(name) {}
+    ~BenchmarkCategory() {}
+
+    size_type size() const { return result_list_.size(); }
+
+    std::string & name() {
+        return this->name_;
+    }
+
+    const std::string & name() const {
+        return this->name_;
+    }
+
+    void setName(const std::string & name) {
+        this->name_ = name;
+    }
+
+    Result & getResult(size_type index) {
+        return result_list_[index];
+    }
+
+    const Result & getResult(size_type index) const {
+        return result_list_[index];
+    }
+
+    void addResult(size_type catId, const std::string & name,
+                   double time1, size_type checksum1,
+                   double time2, size_type checksum2) {
+        Result result(catId, name, time1, checksum1, time2, checksum2);
+        result_list_.push_back(std::move(result));
+    }
+};
+
+class BenchmarkResult {
+public:
+    typedef std::size_t size_type;
+
+private:
+    std::vector<BenchmarkCategory *> category_list_;
+
+    void destroy() {
+        for (size_type i = 0; i < category_list_.size(); i++) {
+            BenchmarkCategory * category = category_list_[i];
+            if (category != nullptr) {
+                delete category;
+                category_list_[i] = nullptr;
+            }
+        }
+        category_list_.clear();
+    }
+
+public:
+    BenchmarkResult() {}
+    ~BenchmarkResult() {
+        destroy();
+    }
+
+    size_type category_size() const {
+        return category_list_.size();
+    }
+
+    BenchmarkCategory * getCategory(size_type index) {
+        if (index < category_list_.size())
+            return category_list_[index];
+        else
+            return nullptr;
+    }
+
+    size_type addCategory(const std::string & name) {
+        BenchmarkCategory * category = new BenchmarkCategory(name);
+        category_list_.push_back(category);
+        return (category_list_.size() - 1);
+    }
+
+    bool addResult(size_type catId, const std::string & name,
+                   double elaspedTime1, size_type checksum1,
+                   double elaspedTime2, size_type checksum2) {
+        BenchmarkCategory * category = getCategory(catId);
+        if (category != nullptr) {
+            category->addResult(catId, name, elaspedTime1, checksum1, elaspedTime2, checksum2);
+            return true;
+        }
+        return false;
+    }
+};
+
+template <typename Container, typename Key, typename Value>
+void test_hashmap_find(const std::vector<std::pair<Key, Value>> & test_data,
+                       double & elapsedTime, std::size_t & check_sum)
+{
+    typedef typename Container::const_iterator const_iterator;
+
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length);
+    else
+        repeat_times = 0;
+    std::size_t checksum = 0;
 
     Container container(kInitCapacity);
-    for (size_t j = 0; j < kHeaderFieldSize; ++j) {
-        container.emplace(field_str[j], index_str[j]);
+    for (std::size_t i = 0; i < data_length; i++) {
+        container.emplace(test_data[i].first, test_data[i].second);
     }
 
-    container.display_status();
-
-    typedef typename Container::iterator                iterator;
-    typedef typename Container::const_iterator          const_iterator;
-    typedef typename Container::local_iterator          local_iterator;
-    typedef typename Container::const_local_iterator    const_local_iterator;
-
-    typedef typename Container::hasher hasher;
-
-    hasher hasher_;
-
-    {
-        //     " [  1]: 0x7289F843  3      From:                          13"
-        printf("\n");
-        printf("   #       hash     index  key                            value\n");
-        printf("----------------------------------------------------------------------\n");
-
-        uint32_t index = 0;
-        for (iterator iter = container.begin(); iter != container.end(); ++iter) {
-            std::uint32_t hash_code = container.get_hash(iter->first);
-            std::string key_name = iter->first.c_str() + std::string(":");
-            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
-                   hash_code,
-                   uint32_t(hash_code & container.bucket_mask()),
-                   key_name.c_str(),
-                   iter->second.c_str());
-            index++;
+    jtest::StopWatch sw;
+    sw.start();
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        for (std::size_t i = 0; i < data_length; i++) {
+            const_iterator iter = container.find(test_data[i].first);
+            if (iter != container.end()) {
+                checksum++;
+            }
         }
-        printf("\n\n");
     }
+    sw.stop();
 
-    {
-        printf("\n");
-        printf("   #       hash     index  key                            value\n");
-        printf("----------------------------------------------------------------------\n");
+    elapsedTime = sw.getElapsedMillisec();
+    check_sum = checksum;
 
-        uint32_t index = 0;
-        for (local_iterator iter = container.l_begin(); iter != container.l_end(); ++iter) {
-            std::uint32_t hash_code = container.get_hash(iter->value.first);
-            std::uint32_t hash_code2 = iter->hash_code;
-            assert(hash_code == hash_code2);
-            std::string key_name = iter->value.first.c_str() + std::string(":");
-            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
-                   hash_code,
-                   uint32_t(hash_code & container.bucket_mask()),
-                   key_name.c_str(),
-                   iter->value.second.c_str());
-            index++;
-        }
-        printf("\n\n");
-    }
-
-    {
-        printf("\n");
-        printf("   #       hash     index  key                            value\n");
-        printf("----------------------------------------------------------------------\n");
-
-        uint32_t index = 0;
-        for (const_iterator iter = container.cbegin(); iter != container.cend(); ++iter) {
-            std::uint32_t hash_code = container.get_hash(iter->first);
-            std::string key_name = iter->first.c_str() + std::string(":");
-            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
-                   hash_code,
-                   uint32_t(hash_code & container.bucket_mask()),
-                   key_name.c_str(),
-                   iter->second.c_str());
-            index++;
-        }
-        printf("\n\n");
-    }
-
-    {
-        printf("\n");
-        printf("   #       hash     index  key                            value\n");
-        printf("----------------------------------------------------------------------\n");
-
-        uint32_t index = 0;
-        for (const_local_iterator iter = container.l_cbegin(); iter != container.l_cend(); ++iter) {
-            std::uint32_t hash_code = container.get_hash(iter->value.first);
-            std::uint32_t hash_code2 = iter->hash_code;
-            assert(hash_code == hash_code2);
-            std::string key_name = iter->value.first.c_str() + std::string(":");
-            printf(" [%3d]: 0x%08X  %-5u  %-30s %s\n", index + 1,
-                   hash_code,
-                   uint32_t(hash_code & container.bucket_mask()),
-                   key_name.c_str(),
-                   iter->value.second.c_str());
-            index++;
-        }
-        printf("\n\n");
-    }
+    printf("---------------------------------------------------------------------------\n");
+    if (jstd::has_name<Container>::value)
+        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    else
+        printf(" %-36s  ", "std::unordered_map<K, V>");
+    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, elapsedTime);
 }
 
-template <typename Container>
-void hashtable_show_status(const std::string & name)
+template <typename Container, typename Key, typename Value>
+void test_hashmap_insert(const std::vector<std::pair<Key, Value>> & test_data,
+                         double & elapsedTime, std::size_t & check_sum)
 {
-    std::string field_str[kHeaderFieldSize];
-    std::string index_str[kHeaderFieldSize];
-    for (size_t i = 0; i < kHeaderFieldSize; ++i) {
-        field_str[i].assign(header_fields[i]);
-        index_str[i] = std::to_string(i);
+    typedef typename Container::iterator iterator;
+
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length);
+    else
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.insert(std::make_pair(test_data[i].first, test_data[i].second));
+        }
+        checksum += container.size();
+        sw.stop();
+
+        totalTime += sw.getElapsedMillisec();
     }
 
-    Container container(kInitCapacity);
-    for (size_t i = 0; i < kHeaderFieldSize; ++i) {
-        container.emplace(field_str[i], index_str[i]);
-    }
+    elapsedTime = totalTime;
+    check_sum = checksum;
 
-    HashMapAnalyzer<Container> analyzer(container);
-    analyzer.set_name(name);
-    analyzer.start_analyse();
-
-    analyzer.display_status();
-    analyzer.dump_entries();
+    Container container;
+    printf("---------------------------------------------------------------------------\n");
+    if (jstd::has_name<Container>::value)
+        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    else
+        printf(" %-36s  ", "std::unordered_map<K, V>");
+    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
 }
 
-template <typename Container>
-void hashtable_dict_words_show_status(const std::string & name)
+template <typename Container, typename Key, typename Value>
+void test_hashmap_emplace(const std::vector<std::pair<Key, Value>> & test_data,
+                          double & elapsedTime, std::size_t & check_sum)
 {
-    Container container(kInitCapacity);
-    for (size_t i = 0; i < dict_words.size(); i++) {
-        container.emplace(dict_words[i], std::to_string(i));
+    typedef typename Container::iterator iterator;
+
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length);
+    else
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.emplace(test_data[i].first, test_data[i].second);
+        }
+        checksum += container.size();
+        sw.stop();
+
+        totalTime += sw.getElapsedMillisec();
     }
 
-    HashMapAnalyzer<Container> analyzer(container);
-    analyzer.set_name(name);
-    analyzer.start_analyse();
+    elapsedTime = totalTime;
+    check_sum = checksum;
 
-    analyzer.display_status();
-    analyzer.dump_entries(100);
+    Container container;
+    printf("---------------------------------------------------------------------------\n");
+    if (jstd::has_name<Container>::value)
+        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    else
+        printf(" %-36s  ", "std::unordered_map<K, V>");
+    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
 }
 
-void hashtable_uinttest()
+template <typename Container, typename Key, typename Value>
+void test_hashmap_erase(const std::vector<std::pair<Key, Value>> & test_data,
+                        double & elapsedTime, std::size_t & check_sum)
 {
-    if (dict_words_is_ready && dict_words.size() > 0) {
-        hashtable_dict_words_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
-        hashtable_dict_words_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
+    typedef typename Container::iterator iterator;
 
-        hashtable_dict_words_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length);
+    else
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.emplace(test_data[i].first, test_data[i].second);
+        }
+        checksum += container.size();
+
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.erase(test_data[i].first);
+        }
+        sw.stop();
+
+        assert(container.size() == 0);
+        checksum += container.size();
+
+        totalTime += sw.getElapsedMillisec();
+    }
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    Container container;
+    printf("---------------------------------------------------------------------------\n");
+    if (jstd::has_name<Container>::value)
+        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    else
+        printf(" %-36s  ", "std::unordered_map<K, V>");
+    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+}
+
+template <typename Container1, typename Container2, typename Key, typename Value>
+void hashmap_benchmark_single(const std::string & cat_name,
+                              Container1 & container1, Container2 & container2,
+                              const std::vector<std::pair<Key, Value>> & test_data,
+                              BenchmarkResult & result)
+{
+    std::size_t cat_id = result.addCategory(cat_name);
+
+    double elapsedTime1, elapsedTime2;
+    std::size_t checksum1, checksum2;
+
+    //
+    // test hashmap<K, V>/find
+    //
+    test_hashmap_find<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
+    test_hashmap_find<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hashmap<K, V>/find", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/insert
+    //
+    test_hashmap_insert<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
+    test_hashmap_insert<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hashmap<K, V>/insert", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/emplace
+    //
+    test_hashmap_emplace<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
+    test_hashmap_emplace<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hashmap<K, V>/emplace", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/erase
+    //
+    test_hashmap_erase<Container1, Key, Value>(test_data, elapsedTime1, checksum1);
+    test_hashmap_erase<Container2, Key, Value>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hashmap<K, V>/erase", elapsedTime1, checksum1, elapsedTime2, checksum2);
+}
+
+void hashmap_benchmark_all()
+{
+    BenchmarkResult test_result;
+
+    //
+    // std::unordered_map<std::string, std::string>
+    //
+    std::vector<std::pair<std::string, std::string>> test_data_ss;
+
+    if (!dict_words_is_ready) {
+        std::string field_str[kHeaderFieldSize];
+        std::string index_str[kHeaderFieldSize];
+        for (size_t i = 0; i < kHeaderFieldSize; i++) {
+            test_data_ss.push_back(std::make_pair(std::string(header_fields[i]), std::to_string(i)));
+        }
     }
     else {
-        hashtable_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
-        hashtable_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
-
-        hashtable_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
+        for (size_t i = 0; i < dict_words.size(); i++) {
+            test_data_ss.push_back(std::make_pair(dict_words[i], std::to_string(i)));
+        }
     }
-    
-    //hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
+
+    std::unordered_map<std::string, std::string> std_map_ss;
+    jstd::Dictionary<std::string, std::string>   jstd_dict_ss;
+
+    hashmap_benchmark_single("hash_map<std::string, std::string>",
+                             std_map_ss, jstd_dict_ss,
+                             test_data_ss, test_result);
+
+    printf("\n\n");
+
+    //
+    // std::unordered_map<jstd::string_view, jstd::string_view>
+    //
+    std::vector<std::pair<jstd::string_view, jstd::string_view>> test_data_svsv;
+
+    for (size_t i = 0; i < test_data_ss.size(); i++) {
+        test_data_svsv.push_back(std::make_pair(test_data_ss[i].first, test_data_ss[i].second));
+    }
+
+    std::unordered_map<jstd::string_view, jstd::string_view> std_map_svsv;
+    jstd::Dictionary<jstd::string_view, jstd::string_view>   jstd_dict_svsv;
+
+    hashmap_benchmark_single("hash_map<jstd::string_view, jstd::string_view>",
+                             std_map_svsv, jstd_dict_svsv,
+                             test_data_svsv, test_result);
+
+    printf("\n\n");
+
+    //
+    // std::unordered_map<int, int>
+    //
+    std::vector<std::pair<int, int>> test_data_ii;
+
+    for (size_t i = 0; i < test_data_ss.size(); i++) {
+        test_data_ii.push_back(std::make_pair(int(i), int(i)));
+    }
+
+    std::unordered_map<int, int> std_map_ii;
+    jstd::Dictionary<int, int>   jstd_dict_ii;
+
+    hashmap_benchmark_single("hash_map<int, int>",
+                             std_map_ii, jstd_dict_ii,
+                             test_data_ii, test_result);
+
+    printf("\n\n");
 }
-
-void string_view_test()
-{
-    string_view sv1(header_fields[4]);
-    //sv1[2] = 'a';  // Error, readonly
-
-    std::string str1("12345676890");
-
-    printf("str1 = %s\n", str1.c_str());
-
-    string_view sv2("abcdefg");
-    std::size_t n2 = sv2.copy((char *)str1.data(), 4, 0);
-
-    printf("str1 = %s\n", str1.c_str());
-
-    string_view sv3(str1);
-    sv3[2] = 'q';
-
-    printf("str1 = %s\n", str1.c_str());
-}
-
-} // namespace jstd
 
 bool read_dict_file(const std::string & filename)
 {
@@ -1610,10 +1849,7 @@ int main(int argc, char * argv[])
         jtest::CPU::warmup(1000);
     }
 
-    //string_view_test();
-
-    hashtable_uinttest();
-    //hashtable_benchmark();
+    hashmap_benchmark_all();
 
     jstd::Console::ReadKey(true);
     return 0;

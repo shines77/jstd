@@ -9,6 +9,7 @@
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
 
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -150,6 +151,9 @@ namespace detail {
 // See: https://stackoverflow.com/questions/18570285/using-sfinae-to-detect-a-member-function
 //
 
+//
+// has_size
+//
 template <typename T>
 class has_size {
 public:
@@ -196,6 +200,9 @@ public:
     static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
 };
 
+//
+// has_entry_count
+//
 template <typename T>
 class has_entry_count {
 public:
@@ -252,6 +259,62 @@ public:
 
 template <typename T>
 typename call_entry_count<T>::No call_entry_count<T>::s_No;
+
+//
+// has_name
+//
+template <typename T>
+class has_name {
+private:
+    typedef char Yes;
+    typedef Yes  No[2];
+
+    template <typename C>
+    static auto Test(void *)
+        -> decltype(std::string{ std::declval<C const>().name() }, Yes{ });
+
+    template <typename>
+    static No & Test(...);
+
+public:
+    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+};
+
+template <typename T>
+class call_name {
+public:
+    struct No {
+        char data[2];
+    };
+
+private:
+    typedef char Yes;
+
+    static No s_No;
+
+    template <typename C>
+    static auto Test(const C & t, std::string & sname, void *)
+        -> decltype(std::string{ std::declval<C const>().name() }, Yes{ }) {
+        sname = C::name();
+        return Yes{ };
+    };
+
+    template <typename C>
+    static No & Test(const C & t, std::string & sname, ...) {
+        return s_No;
+    }
+
+public:
+    static std::string name() {
+        T t;
+        std::string sname;
+        Test(t, sname, 0);
+        return sname;
+    }
+};
+
+template <typename T>
+typename call_name<T>::No call_name<T>::s_No;
 
 } // namespace jstd
 
