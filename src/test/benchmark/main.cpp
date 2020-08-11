@@ -1755,12 +1755,12 @@ void hashmap_benchmark_all()
     if (!dict_words_is_ready) {
         std::string field_str[kHeaderFieldSize];
         std::string index_str[kHeaderFieldSize];
-        for (size_t i = 0; i < kHeaderFieldSize; i++) {
+        for (std::size_t i = 0; i < kHeaderFieldSize; i++) {
             test_data_ss.push_back(std::make_pair(std::string(header_fields[i]), std::to_string(i)));
         }
     }
     else {
-        for (size_t i = 0; i < dict_words.size(); i++) {
+        for (std::size_t i = 0; i < dict_words.size(); i++) {
             test_data_ss.push_back(std::make_pair(dict_words[i], std::to_string(i)));
         }
     }
@@ -1779,7 +1779,7 @@ void hashmap_benchmark_all()
     //
     std::vector<std::pair<jstd::string_view, jstd::string_view>> test_data_svsv;
 
-    for (size_t i = 0; i < test_data_ss.size(); i++) {
+    for (std::size_t i = 0; i < test_data_ss.size(); i++) {
         test_data_svsv.push_back(std::make_pair(test_data_ss[i].first, test_data_ss[i].second));
     }
 
@@ -1797,7 +1797,7 @@ void hashmap_benchmark_all()
     //
     std::vector<std::pair<int, int>> test_data_ii;
 
-    for (size_t i = 0; i < test_data_ss.size(); i++) {
+    for (std::size_t i = 0; i < test_data_ss.size(); i++) {
         test_data_ii.push_back(std::make_pair(int(i), int(i)));
     }
 
@@ -1807,6 +1807,24 @@ void hashmap_benchmark_all()
     hashmap_benchmark_single("hash_map<int, int>",
                              std_map_ii, jstd_dict_ii,
                              test_data_ii, test_result);
+
+    printf("\n\n");
+
+    //
+    // std::unordered_map<size_t, size_t>
+    //
+    std::vector<std::pair<std::size_t, std::size_t>> test_data_uu;
+
+    for (std::size_t i = 0; i < test_data_ss.size(); i++) {
+        test_data_uu.push_back(std::make_pair(i, i));
+    }
+
+    std::unordered_map<std::size_t, std::size_t> std_map_uu;
+    jstd::Dictionary<std::size_t, std::size_t>   jstd_dict_uu;
+
+    hashmap_benchmark_single("hash_map<std::size_t, std::size_t>",
+                             std_map_uu, jstd_dict_uu,
+                             test_data_uu, test_result);
 
     printf("\n\n");
 }
