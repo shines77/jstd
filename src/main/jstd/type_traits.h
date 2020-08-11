@@ -146,15 +146,48 @@ namespace detail {
     TYPE_SUPPORTS(SupportsBegin, std::begin(std::declval<T>()));
 }
 
+//
+// See: https://stackoverflow.com/questions/18570285/using-sfinae-to-detect-a-member-function
+//
+
 template <typename T>
 class has_size {
+public:
+    typedef typename T::size_type size_type;
+
+private:
+  typedef char Yes;
+  typedef Yes  No[2];
+
+  template <typename U, U>
+  struct really_has;
+
+  template <typename C>
+  static Yes & Test(really_has<size_type (C::*)() const, &C::size> *);
+
+  // EDIT: and you can detect one of several overloads... by overloading :)
+  template <typename C>
+  static Yes & Test(really_has<size_type (C::*)(), &C::size> *);
+
+  template <typename>
+  static No & Test(...);
+
+public:
+    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+};
+
+template <typename T>
+class has_size_cxx11 {
+public:
+    typedef typename T::size_type size_type;
+
 private:
     typedef char Yes;
-    typedef Yes No[2];
+    typedef Yes  No[2];
 
     template <typename C>
     static auto Test(void *)
-        -> decltype(size_t{ std::declval<C const>().size() }, Yes{ });
+        -> decltype(size_type{ std::declval<C const>().size() }, Yes{ });
 
     template <typename>
     static No & Test(...);
@@ -165,13 +198,16 @@ public:
 
 template <typename T>
 class has_entry_count {
+public:
+    typedef typename T::size_type size_type;
+
 private:
     typedef char Yes;
-    typedef Yes No[2];
+    typedef Yes  No[2];
 
     template <typename C>
     static auto Test(void *)
-        -> decltype(size_t{ std::declval<C const>().entry_count() }, Yes{ });
+        -> decltype(size_type{ std::declval<C const>().entry_count() }, Yes{ });
 
     template <typename>
     static No & Test(...);
@@ -191,13 +227,12 @@ public:
 
 private:
     typedef char Yes;
-    //typedef Yes No[2];
 
     static No s_No;
 
     template <typename C>
     static auto Test(const C & t, size_type & count, void *)
-        -> decltype(size_t{ std::declval<C const>().entry_count() }, Yes{ }) {
+        -> decltype(size_type{ std::declval<C const>().entry_count() }, Yes{ }) {
         count = t.entry_count();
         return Yes{ };
     };
