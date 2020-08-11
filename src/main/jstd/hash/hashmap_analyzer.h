@@ -110,7 +110,7 @@ public:
     }
 
     size_type entry_count() const {
-        bool supported = jstd::has_entry_count<container_type>::value;
+        bool supported = has_entry_count<container_type>::value;
         if (supported)
             return call_entry_count<container_type>::entry_count(container_);
         else
@@ -129,14 +129,14 @@ public:
         return container_.bucket_size(n);
     }
 
-    std::string name() {
+    std::string & name() {
         if (this->name_.c_str() == nullptr || this->name_.size() == 0) {
             this->name_ = "Unknown HashMap<K, V>";
         }
         return this->name_;
     }
 
-    const std::string name() const {
+    const std::string &  name() const {
         if (this->name_.c_str() == nullptr || this->name_.size() == 0) {
             this->name_ = "Unknown HashMap<K, V>";
         }
