@@ -1612,6 +1612,6 @@ int main(int argc, char * argv[])
     hashtable_uinttest();
     hashtable_benchmark();
 
-    jstd::Console::ReadKey(true);
+    jstd::Console::ReadKey();
     return 0;
 }
