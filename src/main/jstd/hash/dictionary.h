@@ -1330,8 +1330,8 @@ protected:
         static int display_count = 0;
         display_count++;
         if (display_count < 50) {
-            if (has_c_str<typename key_type, char>::value)
-                printf("update_value_args_impl(), key = %s\n", call_c_str<typename key_type, char>::c_str(key));
+            if (has_c_str<key_type, char>::value)
+                printf("update_value_args_impl(), key = %s\n", call_c_str<key_type, char>::c_str(key));
             else
                 printf("update_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
         }
