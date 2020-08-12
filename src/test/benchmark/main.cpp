@@ -71,14 +71,15 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
+#include <map>
+#include <unordered_map>
 #include <atomic>
 #include <thread>
 #include <ratio>
 #include <chrono>
 #include <memory>
 #include <utility>
-#include <map>
-#include <unordered_map>
 
 using namespace jstd;
 
@@ -474,7 +475,7 @@ void test_hashmap_find(const Vector & test_data,
             if (iter != container.end()) {
                 checksum++;
             }
-#ifdef NDEBUG
+//#ifndef NDEBUG
             else {
                 static int err_count = 0;
                 err_count++;
@@ -482,7 +483,7 @@ void test_hashmap_find(const Vector & test_data,
                     print_error(i, test_data[i].first, test_data[i].second);
                 }
             }
-#endif
+//#endif
         }
     }
     sw.stop();
@@ -502,8 +503,6 @@ template <typename Container, typename Vector>
 void test_hashmap_insert(const Vector & test_data,
                          double & elapsedTime, std::size_t & check_sum)
 {
-    typedef typename Container::iterator iterator;
-
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
@@ -542,8 +541,6 @@ template <typename Container, typename Vector>
 void test_hashmap_emplace(const Vector & test_data,
                           double & elapsedTime, std::size_t & check_sum)
 {
-    typedef typename Container::iterator iterator;
-
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
@@ -582,8 +579,6 @@ template <typename Container, typename Vector>
 void test_hashmap_erase(const Vector & test_data,
                         double & elapsedTime, std::size_t & check_sum)
 {
-    typedef typename Container::iterator iterator;
-
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
@@ -609,7 +604,7 @@ void test_hashmap_erase(const Vector & test_data,
         sw.stop();
 
         assert(container.size() == 0);
-#ifdef NDEBUG
+#ifndef NDEBUG
         if (container.size() != 0) {
             static int err_count = 0;
             err_count++;

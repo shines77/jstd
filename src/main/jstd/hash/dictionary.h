@@ -1326,7 +1326,7 @@ protected:
     JSTD_FORCEINLINE
     void update_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
         assert(entry != nullptr);
-#ifdef NDEBUG
+#ifndef NDEBUG
         static int display_count = 0;
         display_count++;
         if (display_count < 50) {
