@@ -1326,18 +1326,31 @@ protected:
     JSTD_FORCEINLINE
     void update_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
         assert(entry != nullptr);
-#ifndef NDEBUG
+//#ifndef NDEBUG
         static int display_count = 0;
         display_count++;
-        if (display_count < 50) {
+        if (display_count < 30) {
             if (has_c_str<key_type, char>::value)
                 printf("update_value_args_impl(), key = %s\n", call_c_str<key_type, char>::c_str(key));
             else
                 printf("update_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
         }
-#endif        
+//#endif
+#if 0
         value_allocator_.destroy(&entry->value.second);
         value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
+#elif 0
+        mapped_type * second = value_allocator_.allocate(1);
+        value_allocator_.construct(second, std::forward<Args>(args)...);
+
+        entry->value.second = std::move(*second);
+
+        value_allocator_.destroy(second);
+        value_allocator_.deallocate(second, 1);
+#else
+        mapped_type second(std::forward<Args>(args)...);
+        entry->value.second = std::move(second);
+#endif
     }
 
     JSTD_FORCEINLINE

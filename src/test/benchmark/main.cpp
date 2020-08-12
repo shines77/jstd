@@ -604,7 +604,7 @@ void test_hashmap_erase(const Vector & test_data,
         sw.stop();
 
         assert(container.size() == 0);
-#ifndef NDEBUG
+//#ifndef NDEBUG
         if (container.size() != 0) {
             static int err_count = 0;
             err_count++;
@@ -612,7 +612,7 @@ void test_hashmap_erase(const Vector & test_data,
                 printf("container.size() = %" PRIuPTR "\n", container.size());
             }
         }
-#endif
+//#endif
         checksum += container.size();
         totalTime += sw.getElapsedMillisec();
     }

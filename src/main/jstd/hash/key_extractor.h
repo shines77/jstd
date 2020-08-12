@@ -81,7 +81,7 @@ struct key_extractor {
     }
 
     template <class Arg1>
-    static key_type const extract(key_type && key, Arg1 const &) {
+    static key_type const & extract(key_type && key, Arg1 const &) {
         return key;
     }
 
