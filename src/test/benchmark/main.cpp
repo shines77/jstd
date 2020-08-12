@@ -1600,6 +1600,33 @@ public:
     }
 };
 
+template <typename Key, typename Value>
+void print_error(std::size_t index, const Key & key, const Value & value)
+{
+    std::string skey   = std::to_string(key);
+    std::string svalue = std::to_string(value);
+
+    printf("[%6" PRIuPTR "]: key = \"%s\", value = \"%s\"\n",
+           index + 1, skey.c_str(), svalue.c_str());
+}
+
+template <>
+void print_error(std::size_t index, const std::string & key, const std::string & value)
+{
+    printf("[%6" PRIuPTR "]: key = \"%s\", value = \"%s\"\n",
+           index + 1, key.c_str(), value.c_str());
+}
+
+template <>
+void print_error(std::size_t index, const jstd::string_view & key, const jstd::string_view & value)
+{
+    std::string skey   = key.toString();
+    std::string svalue = value.toString();
+
+    printf("[%6" PRIuPTR "]: key = \"%s\", value = \"%s\"\n",
+           index + 1, skey.c_str(), svalue.c_str());
+}
+
 template <typename Container, typename Key, typename Value>
 void test_hashmap_find(const std::vector<std::pair<Key, Value>> & test_data,
                        double & elapsedTime, std::size_t & check_sum)
@@ -1626,6 +1653,13 @@ void test_hashmap_find(const std::vector<std::pair<Key, Value>> & test_data,
             const_iterator iter = container.find(test_data[i].first);
             if (iter != container.end()) {
                 checksum++;
+            }
+            else {
+                static int err_count = 0;
+                err_count++;
+                if (err_count < 20) {
+                    print_error(i, test_data[i].first, test_data[i].second);
+                }
             }
         }
     }
@@ -1665,16 +1699,15 @@ void test_hashmap_insert(const std::vector<std::pair<Key, Value>> & test_data,
         for (std::size_t i = 0; i < data_length; i++) {
             container.insert(std::make_pair(test_data[i].first, test_data[i].second));
         }
-        checksum += container.size();
         sw.stop();
 
+        checksum += container.size();
         totalTime += sw.getElapsedMillisec();
     }
 
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    Container container;
     printf("---------------------------------------------------------------------------\n");
     if (jstd::has_name<Container>::value)
         printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
@@ -1706,16 +1739,15 @@ void test_hashmap_emplace(const std::vector<std::pair<Key, Value>> & test_data,
         for (std::size_t i = 0; i < data_length; i++) {
             container.emplace(test_data[i].first, test_data[i].second);
         }
-        checksum += container.size();
         sw.stop();
 
+        checksum += container.size();
         totalTime += sw.getElapsedMillisec();
     }
 
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    Container container;
     printf("---------------------------------------------------------------------------\n");
     if (jstd::has_name<Container>::value)
         printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
@@ -1755,15 +1787,21 @@ void test_hashmap_erase(const std::vector<std::pair<Key, Value>> & test_data,
         sw.stop();
 
         assert(container.size() == 0);
-        checksum += container.size();
+        if (container.size() != 0) {
+            static int err_count = 0;
+            err_count++;
+            if (err_count < 20) {
+                printf("container.size() = %" PRIuPTR "\n", container.size());
+            }
+        }
 
+        checksum += container.size();
         totalTime += sw.getElapsedMillisec();
     }
 
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    Container container;
     printf("---------------------------------------------------------------------------\n");
     if (jstd::has_name<Container>::value)
         printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
