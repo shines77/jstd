@@ -53,12 +53,13 @@ template < typename Key, typename Value,
            std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
            typename Hasher = hash<Key, std::uint32_t, HashFunc>,
            typename KeyEqual = equal_to<Key>,
-           typename Allocator = allocator<std::pair<const Key, Value>, Alignment, false> >
+           typename Allocator = allocator<std::pair<const Key, Value>, Alignment, true> >
 class BasicDictionary {
 public:
     typedef Key                             key_type;
     typedef Value                           mapped_type;
     typedef std::pair<const Key, Value>     value_type;
+    typedef std::pair<Key, Value>           n_value_type;
 
     typedef Hasher                          hasher;
     typedef Hasher                          hasher_type;
@@ -320,6 +321,8 @@ protected:
 
     allocator<entry_type *> bucket_allocator_;
     allocator<entry_type>   entry_allocator_;
+
+    allocator<std::pair<Key, Value>, Alignment, allocator_type::kThrowEx> n_allocator_;
 
     std::allocator<mapped_type>                     value_allocator_;
     typename std::allocator<value_type>::allocator  pair_allocator_;
@@ -681,7 +684,7 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    entry_type * get_free_entry(hash_code_t hash_code, index_type & index) {
+    entry_type * got_a_free_entry(hash_code_t hash_code, index_type & index) {
         if (likely(freelist_.is_empty())) {
             if (unlikely(entry_chunk_.is_full())) {
                 size_type old_size = size();
@@ -1127,213 +1130,39 @@ protected:
         return nullptr;  // Not found
     }
 
-    entry_type * insert_new_entry_to_bucket(hash_code_t hash_code, index_type & index) {
-        entry_type * new_entry = get_free_entry(hash_code, index);
-        assert(new_entry != nullptr);
-
-        new_entry->next = buckets_[index];
-        new_entry->hash_code = hash_code;
-        new_entry->flags = 1;
-        new_entry->owner = this;
-        buckets_[index] = new_entry;
-
-        return new_entry;
+    JSTD_FORCEINLINE
+    const key_type & get_key(value_type * value) const {
+        return key_extractor<value_type>::extract(*const_cast<const value_type *>(value));
     }
 
     JSTD_FORCEINLINE
-    void construct_value(entry_type * new_entry, const key_type & key,
-                                                 const mapped_type & value) {
-        assert(new_entry != nullptr);
-
-        // Use placement new method to construct value_type.
-        void * value_ptr = (void *)&new_entry->value;
-        value_type * new_value = allocator_.constructor(value_ptr, key, value);
-        assert(new_value == &new_entry->value);
-    }
-
-    JSTD_FORCEINLINE
-    void construct_value(entry_type * new_entry, const key_type & key,
-                                                 mapped_type && value) {
-        assert(new_entry != nullptr);
-
-        // Use placement new method to construct value_type.
-        void * value_ptr = (void *)&new_entry->value;
-        value_type * new_value = allocator_.constructor(value_ptr,
-                                        key, std::forward<mapped_type>(value));
-        assert(new_value == &new_entry->value);
-    }
-
-    JSTD_FORCEINLINE
-    void construct_value(entry_type * new_entry, key_type && key,
-                                                mapped_type && value) {
-        assert(new_entry != nullptr);
-
-        // Use placement new method to construct value_type.
-        void * value_ptr = (void *)&new_entry->value;
-        value_type * new_value = allocator_.constructor(value_ptr,
-                                        std::forward<key_type>(key),
-                                        std::forward<mapped_type>(value));
-        assert(new_value == &new_entry->value);
-    }
-
-    JSTD_FORCEINLINE
-    void insert_new_entry(const key_type & key, const mapped_type & value,
-                          hash_code_t hash_code, index_type index) {
-        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
-        construct_value(new_entry, key, value);
-        entry_size_++;
-    }
-
-    JSTD_FORCEINLINE
-    void insert_new_entry(const key_type & key, mapped_type && value,
-                          hash_code_t hash_code, index_type index) {
-        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
-        construct_value(new_entry, key, std::forward<mapped_type>(value));
-        entry_size_++;
-    }
-
-    JSTD_FORCEINLINE
-    void insert_new_entry(key_type && key, mapped_type && value,
-                          hash_code_t hash_code, index_type index) {
-        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
-        construct_value(new_entry, std::forward<key_type>(key),
-                                         std::forward<mapped_type>(value));
-        entry_size_++;
-    }
-
-    template <typename ...Args>
-    JSTD_FORCEINLINE
-    void construct_value_args(entry_type * new_entry, Args && ... args) {
-        assert(new_entry != nullptr);
-
-        // Use placement new method to construct value_type.
-        void * value_ptr = (void *)&new_entry->value;
-        value_type * new_value = allocator_.constructor(value_ptr,
-                                                        std::forward<Args>(args)...);
-        assert(new_value == &new_entry->value);
-    }
-
-    template <bool OnlyIfAbsent, typename ReturnType>
-    ReturnType insert_unique(const key_type & key, const mapped_type & value) {
-        assert(buckets() != nullptr);
-
-        hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code);
-
-        entry_type * entry = find_entry(key, hash_code, index);
-        if (likely(entry == nullptr)) {
-            insert_new_entry(key, value,
-                                   hash_code, index);
-        }
-        else {
-            if (!OnlyIfAbsent) {
-                update_value(entry, value);
-            }
-        }
-
-        updateVersion();
-
-        return ReturnType(iterator(entry), (entry == nullptr));
-    }
-
-    template <bool OnlyIfAbsent, typename ReturnType>
-    ReturnType insert_unique(const key_type & key, mapped_type && value) {
-        assert(buckets() != nullptr);
-
-        hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code);
-
-        entry_type * entry = find_entry(key, hash_code, index);
-        if (likely(entry == nullptr)) {
-            insert_new_entry(key, std::forward<mapped_type>(value),
-                                   hash_code, index);
-        }
-        else {
-            if (!OnlyIfAbsent) {
-                update_value(entry, std::forward<mapped_type>(value));
-            }
-        }
-
-        updateVersion();
-
-        return ReturnType(iterator(entry), (entry == nullptr));
-    }
-
-    template <bool OnlyIfAbsent, typename ReturnType>
-    ReturnType insert_unique(key_type && key, mapped_type && value) {
-        assert(buckets() != nullptr);
-
-        hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code);
-
-        entry_type * entry = find_entry(key, hash_code, index);
-        if (likely(entry == nullptr)) {
-            insert_new_entry(std::forward<key_type>(key),
-                                   std::forward<mapped_type>(value),
-                                   hash_code, index);
-        }
-        else {
-            if (!OnlyIfAbsent) {
-                update_value(entry, std::forward<mapped_type>(value));
-            }
-        }
-
-        updateVersion();
-
-        return ReturnType(iterator(entry), (entry == nullptr));
-    }
-
-    template <typename ...Args>
-    JSTD_INLINE
-    void emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
-        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
-        construct_value_args(new_entry, std::forward<Args>(args)...);
-        entry_size_++;
-    }
-
-    JSTD_FORCEINLINE
-    void construct_value(entry_type * new_entry, value_type * value) {
-        assert(new_entry != nullptr);
-
-        // Use placement new method to construct value_type [by move assignment].
-        void * value_ptr = (void *)&new_entry->value;
-        value_type * new_value = allocator_.constructor(value_ptr, std::move(*value));
-        assert(new_value == &new_entry->value);
-    }
-
-    JSTD_INLINE
-    void emplace_new_entry_from_value(hash_code_t hash_code, index_type index, value_type * value) {
-        entry_type * new_entry = insert_new_entry_to_bucket(hash_code, index);
-        construct_value(new_entry, value);
-        entry_size_++;
+    const key_type & get_key(const value_type & value) const {
+        return key_extractor<value_type>::extract(value);
     }
 
     // Update the existed key's value, maybe by move assignment operator.
     JSTD_FORCEINLINE
-    void update_value(entry_type * entry, const mapped_type & value) {
-        assert(entry != nullptr);
+    void update_mapped_value(entry_type * entry, const mapped_type & value) {
         entry->value.second = value;
     }
 
     // Update the existed key's value, maybe by move assignment operator.
     JSTD_FORCEINLINE
-    void update_value(entry_type * entry, mapped_type && value) {
-        assert(entry != nullptr);
+    void update_mapped_value(entry_type * entry, mapped_type && value) {
         entry->value.second = std::forward<mapped_type>(value);
     }
 
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void update_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
-        assert(entry != nullptr);
+    void update_mapped_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
 //#ifndef NDEBUG
         static int display_count = 0;
         display_count++;
         if (display_count < 30) {
             if (has_c_str<key_type, char>::value)
-                printf("update_value_args_impl(), key = %s\n", call_c_str<key_type, char>::c_str(key));
+                printf("update_mapped_value_args_impl(), key = %s\n", call_c_str<key_type, char>::c_str(key));
             else
-                printf("update_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
+                printf("update_mapped_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
         }
 //#endif
 #if 0
@@ -1354,27 +1183,232 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void update_value_args(entry_type * entry, const mapped_type & value) {
-        assert(entry != nullptr);
+    void update_mapped_value_args(entry_type * entry, const mapped_type & value) {
         entry->value.second = value;
     }
 
     JSTD_FORCEINLINE
-    void update_value_args(entry_type * entry, mapped_type && value) {
-        assert(entry != nullptr);
+    void update_mapped_value_args(entry_type * entry, mapped_type && value) {
         entry->value.second = std::forward<mapped_type>(value);
     }
 
-    // Update the existed key's value.
     template <typename ...Args>
     JSTD_FORCEINLINE
-    void update_value_args(entry_type * entry, Args && ... args) {
-        assert(entry != nullptr);
-        update_value_args_impl(entry, std::forward<Args>(args)...);
+    void update_mapped_value_args(entry_type * entry, Args && ... args) {
+        update_mapped_value_args_impl(entry, std::forward<Args>(args)...);
     }
 
-    const key_type & get_key(value_type * value) const {
-        return key_extractor<value_type>::extract(*const_cast<const value_type *>(value));
+    JSTD_FORCEINLINE
+    void construct_value(entry_type * new_entry, const key_type & key,
+                                                 const mapped_type & value) {
+        // Use placement new method to construct value_type.
+        allocator_.constructor(&new_entry->value, key, value);
+    }
+
+    JSTD_FORCEINLINE
+    void construct_value(entry_type * new_entry, const key_type & key,
+                                                 mapped_type && value) {
+        // Use placement new method to construct value_type.
+        allocator_.constructor(&new_entry->value, key,
+                               std::forward<mapped_type>(value));
+    }
+
+    JSTD_FORCEINLINE
+    void construct_value(entry_type * new_entry, key_type && key,
+                                                 mapped_type && value) {
+        // Use placement new method to construct value_type.
+        allocator_.constructor(&new_entry->value,
+                               std::forward<key_type>(key),
+                               std::forward<mapped_type>(value));
+    }
+
+    JSTD_FORCEINLINE
+    void construct_value(entry_type * new_entry, value_type * value) {
+        // Use placement new method to construct value_type [by move assignment].
+        allocator_.constructor(&new_entry->value, std::move(*value));
+    }
+
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void construct_value_args(entry_type * new_entry, Args && ... args) {
+        // Use placement new method to construct value_type.
+        allocator_.constructor(&new_entry->value, std::forward<Args>(args)...);
+    }
+
+    JSTD_FORCEINLINE
+    void update_value(entry_type * old_entry, const key_type & key,
+                                              const mapped_type & value) {
+        value_type * value_tmp = allocator_.create(key, value);
+        old_entry->value = std::move(*value_tmp);
+        allocator_.destroy(value_tmp);
+    }
+
+    JSTD_FORCEINLINE
+    void update_value(entry_type * old_entry, const key_type & key,
+                                              mapped_type && value) {
+        value_type * value_tmp = allocator_.create(key, std::forward<mapped_type>(value));
+        old_entry->value = std::move(*value_tmp);
+        allocator_.destroy(value_tmp);
+    }
+
+    JSTD_FORCEINLINE
+    void update_value(entry_type * old_entry, key_type && key,
+                                              mapped_type && value) {
+        value_type * value_tmp = allocator_.create(std::forward<key_type>(key),
+                                                   std::forward<mapped_type>(value));
+        old_entry->value = std::move(*value_tmp);
+        allocator_.destroy(value_tmp);
+    }
+
+    JSTD_FORCEINLINE
+    void update_value(entry_type * old_entry, const value_type & value) {
+        old_entry->value = value;
+    }
+
+    JSTD_FORCEINLINE
+    void update_value(entry_type * old_entry, value_type && value) {
+        n_value_type * value_ptr = (n_value_type *)(&old_entry->value);
+        *value_ptr = std::forward<value_type>(value);
+    }
+
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void update_value_args(entry_type * old_entry, Args && ... args) {
+        n_value_type * value_tmp = n_allocator_.create(std::forward<Args>(args)...);
+
+        n_value_type * value_ptr = (n_value_type *)(&old_entry->value);
+        *value_ptr = std::move(*value_tmp);
+
+        n_allocator_.destroy(value_tmp);
+    }
+
+    JSTD_FORCEINLINE
+    void insert_to_bucket(entry_type * new_entry, hash_code_t hash_code,
+                          index_type index) {
+        assert(new_entry != nullptr);
+
+        new_entry->next = buckets_[index];
+        new_entry->hash_code = hash_code;
+        new_entry->flags = 1;
+        new_entry->owner = this;
+        buckets_[index] = new_entry;
+    }
+
+    JSTD_FORCEINLINE
+    void insert_new_entry(const key_type & key, const mapped_type & value,
+                          hash_code_t hash_code, index_type index) {
+        entry_type * new_entry = got_a_free_entry(hash_code, index);
+        insert_to_bucket(new_entry, hash_code, index);
+        construct_value(new_entry, key, value);
+        entry_size_++;
+    }
+
+    JSTD_FORCEINLINE
+    void insert_new_entry(const key_type & key, mapped_type && value,
+                          hash_code_t hash_code, index_type index) {
+        entry_type * new_entry = got_a_free_entry(hash_code, index);
+        insert_to_bucket(new_entry, hash_code, index);
+        construct_value(new_entry, key, std::forward<mapped_type>(value));
+        entry_size_++;
+    }
+
+    JSTD_FORCEINLINE
+    void insert_new_entry(key_type && key, mapped_type && value,
+                          hash_code_t hash_code, index_type index) {
+        entry_type * new_entry = got_a_free_entry(hash_code, index);
+        insert_to_bucket(new_entry, hash_code, index);
+        construct_value(new_entry, std::forward<key_type>(key),
+                                   std::forward<mapped_type>(value));
+        entry_size_++;
+    }
+
+    template <bool OnlyIfAbsent, typename ReturnType>
+    ReturnType insert_unique(const key_type & key, const mapped_type & value) {
+        assert(buckets() != nullptr);
+
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code);
+
+        entry_type * entry = find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            insert_new_entry(key, value, hash_code, index);
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                update_mapped_value(entry, value);
+            }
+        }
+
+        updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
+    }
+
+    template <bool OnlyIfAbsent, typename ReturnType>
+    ReturnType insert_unique(const key_type & key, mapped_type && value) {
+        assert(buckets() != nullptr);
+
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code);
+
+        entry_type * entry = find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            insert_new_entry(key, std::forward<mapped_type>(value),
+                             hash_code, index);
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                update_mapped_value(entry, std::forward<mapped_type>(value));
+            }
+        }
+
+        updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
+    }
+
+    template <bool OnlyIfAbsent, typename ReturnType>
+    ReturnType insert_unique(key_type && key, mapped_type && value) {
+        assert(buckets() != nullptr);
+
+        hash_code_t hash_code = get_hash(key);
+        index_type index = index_of(hash_code);
+
+        entry_type * entry = find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            insert_new_entry(std::forward<key_type>(key),
+                             std::forward<mapped_type>(value),
+                             hash_code, index);
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                // If key is a rvalue, we move it.
+                key_type key_tmp = std::forward<key_type>(key);
+                update_mapped_value(entry, std::forward<mapped_type>(value));
+            }
+        }
+
+        updateVersion();
+
+        return ReturnType(iterator(entry), (entry == nullptr));
+    }
+
+    template <typename ...Args>
+    JSTD_INLINE
+    void emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
+        entry_type * new_entry = got_a_free_entry(hash_code, index);
+        insert_to_bucket(new_entry, hash_code, index);
+        construct_value_args(new_entry, std::forward<Args>(args)...);
+        entry_size_++;
+    }
+
+    JSTD_INLINE
+    void emplace_new_entry_from_value(hash_code_t hash_code,
+                                      index_type index, value_type * value) {
+        entry_type * new_entry = got_a_free_entry(hash_code, index);
+        insert_to_bucket(new_entry, hash_code, index);
+        construct_value(new_entry, value);
+        entry_size_++;
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
@@ -1417,7 +1451,7 @@ protected:
         }
         else {
             if (!OnlyIfAbsent) {
-                update_value(entry, std::move(value_tmp->second));
+                update_value(entry, std::move(*value_tmp));
             }
         }
 

@@ -19,12 +19,12 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <memory>   // For std::pointer_traits<T>
-#include <limits>   // For std::numeric_limits<T>::max()
+#include <memory>       // For std::pointer_traits<T>
+#include <limits>       // For std::numeric_limits<T>::max()
+//#include <type_traits>  // std::alignment_of<T>
 
-#include <new>      // ::operator new, ::operator new[], ::operator delete
+#include <new>          // ::operator new, ::operator new[], ::operator delete
 
-#define JSTD_MINIMUM_ALIGNMENT   4
 #define JSTD_DEFAULT_ALIGNMENT   alignof(std::max_align_t)
 
 namespace jstd {
@@ -108,9 +108,8 @@ std::size_t aligned_to(std::size_t size, std::size_t alignment)
 
 template <typename T>
 struct align_of {
-    static const std::size_t value =
-        (alignof(T) > alignof(std::max_align_t)) ?
-         alignof(T) : alignof(std::max_align_t);
+    static const std::size_t value = alignof(T);
+    //static constexpr std::size_t value = std::alignment_of<T>::value;
 };
 
 template <class Derive, class T, std::size_t Alignment = align_of<T>::value>
@@ -302,7 +301,7 @@ inline bool operator != (const allocator_base<DeriverT, T, AlignmentT> & lhs,
     return !(std::is_same<DeriverT, DeriverU>::value && (AlignmentT == AlignmentU));
 }
 
-template <class T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = false>
+template <class T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = true>
 struct allocator : public allocator_base<
             allocator<T, Alignment, ThrowEx>, T, Alignment> {
     typedef allocator<T, Alignment, ThrowEx>        this_type;
@@ -317,6 +316,7 @@ struct allocator : public allocator_base<
     typedef typename base_type::difference_type     difference_type;
     typedef typename base_type::size_type           size_type;
 
+    static const bool kThrowEx = ThrowEx;
     static const size_type kAlignOf = base_type::kAlignOf;
     static const size_type kAlignment = base_type::kAlignment;
 
@@ -388,6 +388,8 @@ struct std_new_allocator : public allocator_base<
     typedef typename base_type::difference_type         difference_type;
     typedef typename base_type::size_type               size_type;
 
+    static const bool kThrowEx = true;
+
     std_new_allocator() noexcept {}
     std_new_allocator(const this_type & other) noexcept {}
     template <typename U>
@@ -423,7 +425,7 @@ struct std_new_allocator : public allocator_base<
     }
 
     bool is_auto_release() { return true; }
-    bool is_nothrow() { return false; }
+    bool is_nothrow() { return !kThrowEx; }
 };
 
 template <class T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = false>
@@ -440,6 +442,8 @@ struct nothrow_allocator : public allocator_base<
 
     typedef typename base_type::difference_type         difference_type;
     typedef typename base_type::size_type               size_type;
+
+    static const bool kThrowEx = ThrowEx;
 
     nothrow_allocator() noexcept {}
     nothrow_allocator(const this_type & other) noexcept {}
@@ -498,6 +502,8 @@ struct malloc_allocator : public allocator_base<
     typedef typename base_type::difference_type     difference_type;
     typedef typename base_type::size_type           size_type;
 
+    static const bool kThrowEx = ThrowEx;
+
     malloc_allocator() noexcept {}
     malloc_allocator(const this_type & other) noexcept {}
     template <typename U>
@@ -531,7 +537,7 @@ struct malloc_allocator : public allocator_base<
     }
 
     bool is_auto_release() { return true; }
-    bool is_nothrow() { return false; }
+    bool is_nothrow() { return !ThrowEx; }
 };
 
 template <class T, std::size_t Alignment = align_of<T>::value>
@@ -548,6 +554,8 @@ struct dummy_allocator : public allocator_base<
 
     typedef typename base_type::difference_type     difference_type;
     typedef typename base_type::size_type           size_type;
+
+    static const bool kThrowEx = false;
 
     dummy_allocator() noexcept {}
     dummy_allocator(const this_type & other) noexcept {}
@@ -578,7 +586,7 @@ struct dummy_allocator : public allocator_base<
     }
 
     bool is_auto_release() { return false; }
-    bool is_nothrow() { return false; }
+    bool is_nothrow() { return !kThrowEx; }
 };
 
 } // namespace jstd
