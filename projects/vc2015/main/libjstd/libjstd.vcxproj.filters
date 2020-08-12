@@ -256,6 +256,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hashmap_analyzer.h">
       <Filter>src\hash</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_view_array.h">
+      <Filter>src\string</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">

@@ -201,6 +201,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_utils.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_view.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_stl.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\string_view_array.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_forward.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_reverse.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\popcnt.h" />

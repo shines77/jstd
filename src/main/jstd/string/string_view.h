@@ -64,10 +64,14 @@ public:
     basic_string_view(const char_type(&data)[N])
         : data_(data), length_(N - 1) {}
     basic_string_view(const string_type & src)
-        : data_(src.c_str()), length_(src.size()) {}
+        : data_(src.c_str()), length_(src.size()) {
+    }
     basic_string_view(const this_type & src)
-        : data_(src.data()), length_(src.length()) {}
-    ~basic_string_view() { /* Do nothing! */ }
+        : data_(src.c_str()), length_(src.size()) {
+    }
+    ~basic_string_view() {
+        /* Do nothing! */
+    }
 
     const char_type * data() const { return this->data_; }
     const char_type * c_str() const { return this->data(); }
@@ -350,7 +354,7 @@ public:
         return this->compare(s1, rcount1, s2, rcount2);
     }
 
-    string_type toString() const {
+    string_type to_string() const {
         return std::move(string_type(this->data_, this->length_));
     }
 }; // class basic_string_view<CharTy>

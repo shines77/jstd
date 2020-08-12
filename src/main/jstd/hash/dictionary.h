@@ -44,6 +44,8 @@
 #include "jstd/hash/key_extractor.h"
 #include "jstd/support/PowerOf2.h"
 
+#define USE_JAVA_FIND_ENTRY     1
+
 namespace jstd {
 
 template < typename Key, typename Value,
@@ -319,6 +321,9 @@ protected:
     allocator<entry_type *> bucket_allocator_;
     allocator<entry_type>   entry_allocator_;
 
+    std::allocator<mapped_type>                     value_allocator_;
+    typename std::allocator<value_type>::allocator  pair_allocator_;
+
     // Default initial capacity is 16.
     static const size_type kDefaultInitialCapacity = 16;
     // Minimum capacity is 8.
@@ -440,12 +445,20 @@ protected:
         return capacity;
     }
 
+    inline index_type index_of(hash_code_t hash_code) const {
+        return (index_type)((size_type)hash_code & bucket_mask());
+    }
+
     inline index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
         return (index_type)((size_type)hash_code & capacity_mask);
     }
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
+    inline index_type index_of(size_type hash_code) const {
+        return (index_type)(hash_code & bucket_mask());
+    }
+
     inline index_type index_of(size_type hash_code, size_type capacity_mask) const {
         return (index_type)(hash_code & capacity_mask);
     }
@@ -655,7 +668,7 @@ protected:
             entry_type * entry = buckets_[index];
             while (likely(entry != nullptr)) {
                 hash_code_t hash_code = entry->hash_code;
-                index_type now_index = index_of(hash_code, bucket_mask_);
+                index_type now_index = index_of(hash_code);
                 assert(now_index == index);
                 assert(entry->flags == 1);
 
@@ -668,7 +681,7 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    entry_type * get_free_entry(hash_code_t & hash_code, index_type & index) {
+    entry_type * get_free_entry(hash_code_t hash_code, index_type & index) {
         if (likely(freelist_.is_empty())) {
             if (unlikely(entry_chunk_.is_full())) {
                 size_type old_size = size();
@@ -680,7 +693,7 @@ protected:
                 assert(new_size == old_size);
 
                 // Recalculate the bucket index.
-                index = index_of(hash_code, bucket_mask_);
+                index = index_of(hash_code);
             }
 
             // Get a unused entry.
@@ -983,14 +996,12 @@ protected:
         }
     }
 
-#define USE_JAVA_FIND_ENTRY 1
-
 #if USE_JAVA_FIND_ENTRY
 
     JSTD_FORCEINLINE
     entry_type * find_entry(const key_type & key) {
         hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code, bucket_mask_);
+        index_type index = index_of(hash_code);
 
         entry_type * first = buckets_[index];
         if (likely(first != nullptr)) {
@@ -1052,7 +1063,7 @@ protected:
     JSTD_FORCEINLINE
     entry_type * find_entry(const key_type & key) {
         hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code, bucket_mask_);
+        index_type index = index_of(hash_code);
 
         entry_type * entry = buckets_[index];
         while (likely(entry != nullptr)) {
@@ -1061,7 +1072,7 @@ protected:
             }
             else {
                 if (likely(key_is_equal_(key, entry->value.first))) {
-                    return iterator(entry);
+                    return entry;
                 }
                 entry = entry->next;
             }
@@ -1094,7 +1105,7 @@ protected:
     JSTD_FORCEINLINE
     entry_type * find_before(const key_type & key, entry_type *& before, size_type & index) {
         hash_code_t hash_code = get_hash(key);
-        index = index_of(hash_code, bucket_mask_);
+        index = index_of(hash_code);
 
         assert(buckets() != nullptr);
         entry_type * prev = nullptr;
@@ -1116,7 +1127,7 @@ protected:
         return nullptr;  // Not found
     }
 
-    entry_type * insert_new_entry_to_bucket(hash_code_t hash_code, index_type index) {
+    entry_type * insert_new_entry_to_bucket(hash_code_t hash_code, index_type & index) {
         entry_type * new_entry = get_free_entry(hash_code, index);
         assert(new_entry != nullptr);
 
@@ -1131,7 +1142,7 @@ protected:
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, const key_type & key,
-                                                const mapped_type & value) {
+                                                 const mapped_type & value) {
         assert(new_entry != nullptr);
 
         // Use placement new method to construct value_type.
@@ -1142,7 +1153,7 @@ protected:
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, const key_type & key,
-                                                mapped_type && value) {
+                                                 mapped_type && value) {
         assert(new_entry != nullptr);
 
         // Use placement new method to construct value_type.
@@ -1207,7 +1218,7 @@ protected:
         assert(buckets() != nullptr);
 
         hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code, bucket_mask_);
+        index_type index = index_of(hash_code);
 
         entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
@@ -1230,7 +1241,7 @@ protected:
         assert(buckets() != nullptr);
 
         hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code, bucket_mask_);
+        index_type index = index_of(hash_code);
 
         entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
@@ -1253,7 +1264,7 @@ protected:
         assert(buckets() != nullptr);
 
         hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code, bucket_mask_);
+        index_type index = index_of(hash_code);
 
         entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
@@ -1315,9 +1326,18 @@ protected:
     JSTD_FORCEINLINE
     void update_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
         assert(entry != nullptr);
-        std::allocator<mapped_type> value_allocator;
-        value_allocator.destroy(&entry->value.second);
-        value_allocator.construct(&entry->value.second, std::forward<Args>(args)...);
+#ifndef NDEBUG
+        static int display_count = 0;
+        display_count++;
+        if (display_count < 50) {
+            if (has_c_str<typename key_type, char>::value)
+                printf("update_value_args_impl(), key = %s\n", call_c_str<typename key_type, char>::c_str(key));
+            else
+                printf("update_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
+        }
+#endif        
+        value_allocator_.destroy(&entry->value.second);
+        value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
     }
 
     JSTD_FORCEINLINE
@@ -1349,12 +1369,12 @@ protected:
         assert(buckets() != nullptr);
 
         hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code, bucket_mask_);
+        index_type index = index_of(hash_code);
 
         entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
             emplace_new_entry(hash_code, index,
-                                    std::forward<Args>(args)...);
+                              std::forward<Args>(args)...);
         }
         else {
             if (!OnlyIfAbsent) {
@@ -1376,7 +1396,7 @@ protected:
         const key_type & key = get_key(value_tmp);
 
         hash_code_t hash_code = get_hash(key);
-        index_type index = index_of(hash_code, bucket_mask_);
+        index_type index = index_of(hash_code);
 
         entry_type * entry = find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
@@ -1551,7 +1571,7 @@ public:
     size_type erase(const key_type & key) {
         if (likely(buckets_ != nullptr)) {
             hash_code_t hash_code = get_hash(key);
-            size_type index = index_of(hash_code, bucket_mask_);
+            size_type index = index_of(hash_code);
 
             entry_type * prev = nullptr;
             entry_type * entry = buckets_[index];

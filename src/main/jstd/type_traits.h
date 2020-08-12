@@ -160,24 +160,24 @@ public:
     typedef typename T::size_type size_type;
 
 private:
-  typedef char Yes;
-  typedef Yes  No[2];
+    typedef char Yes;
+    typedef char No[2];
 
-  template <typename U, U>
-  struct really_has;
+    template <typename U, U>
+    struct really_has;
 
-  template <typename C>
-  static Yes & Test(really_has<size_type (C::*)() const, &C::size> *);
+    template <typename C>
+    static Yes & Check(really_has<size_type (C::*)() const, &C::size> *);
 
-  // EDIT: and you can detect one of several overloads... by overloading :)
-  template <typename C>
-  static Yes & Test(really_has<size_type (C::*)(), &C::size> *);
+    // EDIT: and you can detect one of several overloads... by overloading :)
+    template <typename C>
+    static Yes & Check(really_has<size_type (C::*)(), &C::size> *);
 
-  template <typename>
-  static No & Test(...);
+    template <typename>
+    static No & Check(...);
 
 public:
-    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
 };
 
 template <typename T>
@@ -187,17 +187,17 @@ public:
 
 private:
     typedef char Yes;
-    typedef Yes  No[2];
+    typedef char No[2];
 
     template <typename C>
-    static auto Test(void *)
+    static auto Check(void *)
         -> decltype(size_type{ std::declval<C const>().size() }, Yes{ });
 
     template <typename>
-    static No & Test(...);
+    static No & Check(...);
 
 public:
-    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
 };
 
 //
@@ -210,17 +210,17 @@ public:
 
 private:
     typedef char Yes;
-    typedef Yes  No[2];
+    typedef char No[2];
 
     template <typename C>
-    static auto Test(void *)
+    static auto Check(void *)
         -> decltype(size_type{ std::declval<C const>().entry_count() }, Yes{ });
 
     template <typename>
-    static No & Test(...);
+    static No & Check(...);
 
 public:
-    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
 };
 
 template <typename T>
@@ -228,31 +228,30 @@ class call_entry_count {
 public:
     typedef typename T::size_type size_type;
 
-    struct No {
-        char data[2];
-    };
-
 private:
     typedef char Yes;
+    struct No {
+        char data[2];
+    };   
 
     static No s_No;
 
     template <typename C>
-    static auto Test(const C & t, size_type & count, void *)
+    static auto Call_entry_count(const C & t, size_type & count, void *)
         -> decltype(size_type{ std::declval<C const>().entry_count() }, Yes{ }) {
         count = t.entry_count();
         return Yes{ };
     };
 
-    template <typename C>
-    static No & Test(const C & t, size_type & count, ...) {
+    template <typename>
+    static No & Call_entry_count(...) {
         return s_No;
     }
 
 public:
     static size_type entry_count(const T & t) {
         size_type count = 0;
-        Test(t, count, 0);
+        Call_entry_count<T>(t, count, 0);
         return count;
     }
 };
@@ -267,54 +266,163 @@ template <typename T>
 class has_name {
 private:
     typedef char Yes;
-    typedef Yes  No[2];
+    typedef char No[2];
 
     template <typename C>
-    static auto Test(void *)
+    static auto Check(void *)
         -> decltype(std::string{ std::declval<C const>().name() }, Yes{ });
 
     template <typename>
-    static No & Test(...);
+    static No & Check(...);
 
 public:
-    static bool const value = (sizeof(Test<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
 };
 
 template <typename T>
 class call_name {
-public:
-    struct No {
-        char data[2];
-    };
-
 private:
     typedef char Yes;
+    struct No {
+        char data[2];
+    };   
 
     static No s_No;
 
     template <typename C>
-    static auto Test(const C & t, std::string & sname, void *)
+    static auto Call_name(const C & t, std::string & sname, void *)
         -> decltype(std::string{ std::declval<C const>().name() }, Yes{ }) {
         sname = C::name();
         return Yes{ };
     };
 
-    template <typename C>
-    static No & Test(const C & t, std::string & sname, ...) {
+    template <typename>
+    static No & Call_name(...) {
         return s_No;
     }
 
 public:
     static std::string name() {
-        T t;
         std::string sname;
-        Test(t, sname, 0);
+        T t;
+        Call_name<T>(t, sname, 0);
         return sname;
     }
 };
 
 template <typename T>
 typename call_name<T>::No call_name<T>::s_No;
+
+//
+// has_c_str
+//
+
+template <typename T, typename CharTy>
+class has_c_str {
+private:
+    typedef char Yes;
+    typedef char No[2];
+
+    template <typename U, U>
+    struct really_has;
+
+    template <typename C>
+    static Yes & Check(really_has<const CharTy * (C::*)() const, &C::c_str> *);
+
+    template <typename>
+    static No & Check(...);
+
+public:
+    static const bool value = (sizeof(Check<T>(0)) == sizeof(Yes));
+};
+
+template <typename T, typename CharTy>
+class call_c_str {
+private:
+    typedef char Yes;
+    struct No {
+        char data[2];
+    };    
+
+    static No s_No;
+
+    template <typename U, U>
+    struct really_has;
+
+    template <typename C>
+    static const CharTy * Call_c_str(const C & s, really_has<const CharTy * (C::*)() const, &C::c_str> *) {
+        return s.c_str();
+    }
+
+    template <typename C>
+    static CharTy * Call_c_str(C & s, really_has<CharTy * (C::*)(), &C::c_str> *) {
+        return s.c_str();
+    }
+
+    template <typename>
+    static const CharTy * Call_c_str(...) {
+        return nullptr;
+    }
+
+public:
+    static const CharTy * c_str(const T & s) {
+        const CharTy * data = Call_c_str<T>(s, 0);
+        return data;
+    }
+};
+
+template <typename T, typename CharTy>
+typename call_c_str<T, CharTy>::No call_c_str<T, CharTy>::s_No;
+
+template <typename T, typename CharTy>
+class has_c_str2 {
+private:
+    typedef char Yes;
+    typedef char No[2];
+
+    template <typename C>
+    static auto Check(void *)
+        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ });
+
+    template <typename>
+    static No & Check(...);
+
+public:
+    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
+};
+
+template <typename T, typename CharTy>
+class call_c_str2 {
+private:
+    typedef char Yes;
+    struct No {
+        char data[2];
+    };   
+
+    static No s_No;
+
+    template <typename C>
+    static auto Call_c_str(const C & s, const CharTy *& data, void *)
+        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ }) {
+        data = s.c_str();
+        return Yes{ };
+    }
+
+    template <typename>
+    static No & Call_c_str(...) {
+        return s_No;
+    }
+
+public:
+    static const CharTy * c_str(const T & s) {
+        const CharTy * data = (const CharTy *)&s;
+        Call_c_str<T>(s, data, 0);
+        return data;
+    }
+};
+
+template <typename T, typename CharTy>
+typename call_c_str2<T, CharTy>::No call_c_str2<T, CharTy>::s_No;
 
 } // namespace jstd
 

@@ -39,12 +39,12 @@ struct no_key_t {
 
 //////////////////////////////////////////////////////////////////////////
 //
-// pair_extractor<T>
+// key_extractor<T>
 //
-// Used to get the types from a pair without instantiating it.
+// Used to get the type and value from argument list.
 //
 
-template <typename ValueType>
+template <class ValueType>
 struct key_extractor {
     typedef ValueType   value_type;
     typedef typename std::remove_const<
@@ -66,17 +66,22 @@ struct key_extractor {
     }
 
     template <class Second>
-    static key_type const & extract(std::add_rvalue_reference<std::pair<key_type, Second>> const & val) {
+    static key_type const & extract(std::pair<key_type, Second> && val) {
         return val.first;
     }
 
     template <class Second>
-    static key_type const & extract(std::add_rvalue_reference<std::pair<const key_type, Second>> const & val) {
+    static key_type const & extract(std::pair<const key_type, Second> && val) {
         return val.first;
     }
 
     template <class Arg1>
     static key_type const & extract(key_type const & key, Arg1 const &) {
+        return key;
+    }
+
+    template <class Arg1>
+    static key_type const extract(key_type && key, Arg1 const &) {
         return key;
     }
 
@@ -86,6 +91,11 @@ struct key_extractor {
 
     template <class Arg>
     static no_key_t extract(Arg const &) {
+        return no_key_t();
+    }
+
+    template <class Arg>
+    static no_key_t extract(Arg &&) {
         return no_key_t();
     }
 
