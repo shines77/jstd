@@ -474,7 +474,7 @@ void test_hashmap_find(const Vector & test_data,
             if (iter != container.end()) {
                 checksum++;
             }
-#ifndef NDEBUG
+#ifdef NDEBUG
             else {
                 static int err_count = 0;
                 err_count++;
@@ -609,7 +609,7 @@ void test_hashmap_erase(const Vector & test_data,
         sw.stop();
 
         assert(container.size() == 0);
-#ifndef NDEBUG
+#ifdef NDEBUG
         if (container.size() != 0) {
             static int err_count = 0;
             err_count++;

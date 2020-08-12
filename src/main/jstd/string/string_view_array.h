@@ -19,6 +19,8 @@ namespace jstd {
 
 template <typename First, typename Second>
 struct string_view_pair {
+    typedef string_view_pair<First, Second> this_type;
+
     typedef First   first_type;
     typedef Second  second_type;
 
@@ -29,7 +31,32 @@ struct string_view_pair {
     string_view_pair(const first_type & first, const second_type & second)
         : first(first), second(second) {
     }
+    string_view_pair(const string_view_pair & src)
+        : first(src.first), second(src.second) {
+    }
+    string_view_pair(string_view_pair && src)
+        : first(std::forward<first_type>(src.first)),
+          second(std::forward<second_type>(src.second)) {
+    }
     ~string_view_pair() {}
+
+    this_type & operator = (const string_view_pair & rhs) {
+        this->first = rhs.first;
+        this->second = rhs.second;
+        return *this;
+    }
+
+    this_type & operator = (string_view_pair && rhs) {
+        this->swap(rhs);
+        return *this;
+    }
+
+    void swap(string_view_pair & rhs) {
+        if (&rhs != this) {
+            std::swap(this->first, rhs.first);
+            std::swap(this->second, rhs.second);
+        }
+    }
 };
 
 template <typename First, typename Second>
