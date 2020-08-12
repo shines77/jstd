@@ -371,58 +371,58 @@ public:
     }
 };
 
-template <typename T, typename CharTy>
-typename call_c_str<T, CharTy>::No call_c_str<T, CharTy>::s_No;
-
-template <typename T, typename CharTy>
-class has_c_str2 {
-private:
-    typedef char Yes;
-    typedef char No[2];
-
-    template <typename C>
-    static auto Check(void *)
-        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ });
-
-    template <typename>
-    static No & Check(...);
-
-public:
-    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
-};
-
-template <typename T, typename CharTy>
-class call_c_str2 {
-private:
-    typedef char Yes;
-    struct No {
-        char data[2];
-    };   
-
-    static No s_No;
-
-    template <typename C>
-    static auto Call_c_str(const C & s, const CharTy *& data, void *)
-        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ }) {
-        data = s.c_str();
-        return Yes{ };
-    }
-
-    template <typename>
-    static No & Call_c_str(...) {
-        return s_No;
-    }
-
-public:
-    static const CharTy * c_str(const T & s) {
-        const CharTy * data = (const CharTy *)&s;
-        Call_c_str<T>(s, data, 0);
-        return data;
-    }
-};
-
-template <typename T, typename CharTy>
-typename call_c_str2<T, CharTy>::No call_c_str2<T, CharTy>::s_No;
+//template <typename T, typename CharTy>
+//typename call_c_str<T, CharTy>::No call_c_str<T, CharTy>::s_No;
+//
+//template <typename T, typename CharTy>
+//class has_c_str2 {
+//private:
+//    typedef char Yes;
+//    typedef char No[2];
+//
+//    template <typename C>
+//    static auto Check(void *)
+//        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ });
+//
+//    template <typename>
+//    static No & Check(...);
+//
+//public:
+//    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
+//};
+//
+//template <typename T, typename CharTy>
+//class call_c_str2 {
+//private:
+//    typedef char Yes;
+//    struct No {
+//        char data[2];
+//    };   
+//
+//    static No s_No;
+//
+//    template <typename C>
+//    static auto Call_c_str(const C & s, const CharTy *& data, void *)
+//        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ }) {
+//        data = s.c_str();
+//        return Yes{ };
+//    }
+//
+//    template <typename>
+//    static No & Call_c_str(...) {
+//        return s_No;
+//    }
+//
+//public:
+//    static const CharTy * c_str(const T & s) {
+//        const CharTy * data = (const CharTy *)&s;
+//        Call_c_str<T>(s, data, 0);
+//        return data;
+//    }
+//};
+//
+//template <typename T, typename CharTy>
+//typename call_c_str2<T, CharTy>::No call_c_str2<T, CharTy>::s_No;
 
 } // namespace jstd
 
