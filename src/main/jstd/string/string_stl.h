@@ -33,6 +33,8 @@ namespace stl {
 template <typename CharTy>
 inline
 bool StrEqual(const CharTy * str1, const CharTy * str2) {
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
     return libc::StrEqual(str1, str2);
 }
 
@@ -87,17 +89,24 @@ bool StrEqualUnsafe(const StringTy & str1, const StringTy & str2) {
 template <typename CharTy>
 inline
 bool StrEqualSafe(const CharTy * str1, const CharTy * str2, std::size_t count) {
-    if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
-        assert(str1 != nullptr && str2 != nullptr);
-        return StrEqual(str1, str2, count);
-    }
-    else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
-        assert((str1 == nullptr && str2 != nullptr) ||
-               (str1 != nullptr && str2 == nullptr));
-        return (count == 0);
+    if (likely(count != 0)) {
+        if (likely(str1 != nullptr)) {
+            if (likely(str2 != nullptr)) {
+                assert(str1 != nullptr && str2 != nullptr);
+                return StrEqual(str1, str2, count);
+            }
+            else {
+                assert(str1 != nullptr && str2 == nullptr);
+                return false;
+            }
+        }
+        else {
+            assert(str1 == nullptr);
+            return (str2 == nullptr);
+        }
     }
     else {
-        assert(str1 == nullptr && str2 == nullptr);
+        // All strings of length is 0, see it as a empty string.
         return true;
     }
 }
@@ -105,19 +114,18 @@ bool StrEqualSafe(const CharTy * str1, const CharTy * str2, std::size_t count) {
 template <typename CharTy>
 inline
 bool StrEqualSafe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2) {
-    if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
-        assert(str1 != nullptr && str2 != nullptr);
-        return StrEqual(str1, len1, str2, len2);
-    }
-    else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
-        assert((str1 == nullptr && str2 != nullptr) ||
-               (str1 != nullptr && str2 == nullptr));
-        // For efficiency, use this method faster than (len1 == 0 && len2 == 0).
-        return (len1 == len2);
+    if (likely(len1 != len2)) {
+        // The length of str1 and str2 is different, the string must be not equal.
+        return false;
     }
     else {
-        assert(str1 == nullptr && str2 == nullptr);
-        return true;
+        if (likely(str1 != str2)) {
+            return StrEqualSafe(str1, str2, len1);
+        }
+        else {
+            // The str1 and str2 is a same string.
+            return true;
+        }
     }
 }
 
@@ -147,7 +155,7 @@ int StrCmp(const CharTy * str1, const CharTy * str2, std::size_t count) {
 
 /*********************************************************************
 
-// Maybe this is superfluous -- paint a snake with feet.
+// Maybe this is superfluous -- paint a snake with feet. ^_^
 
 template <>
 inline
@@ -191,20 +199,24 @@ int StrCmpUnsafe(const StringTy & str1, const StringTy & str2) {
 template <typename CharTy>
 inline
 int StrCmpSafe(const CharTy * str1, const CharTy * str2, std::size_t count) {
-    if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
-        assert(str1 != nullptr && str2 != nullptr);
-        return StrCmp(str1, str2, count);
-    }
-    else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
-        assert((str1 == nullptr && str2 != nullptr) ||
-               (str1 != nullptr && str2 == nullptr));
-        if (likely(str1 != nullptr))
-            return ((count != 0) ? CompareResult::IsBigger : CompareResult::IsEqual);
-        else
-            return ((count != 0) ? CompareResult::IsSmaller : CompareResult::IsEqual);
+    if (likely(count != 0)) {
+        if (likely(str1 != nullptr)) {
+            if (likely(str2 != nullptr)) {
+                assert(str1 != nullptr && str2 != nullptr);
+                return StrCmp(str1, str2, count);
+            }
+            else {
+                assert(str1 != nullptr && str2 == nullptr);
+                return CompareResult::IsBigger;
+            }
+        }
+        else {
+            assert(str1 == nullptr);
+            return ((str2 != nullptr) ? CompareResult::IsSmaller : CompareResult::IsEqual);
+        }
     }
     else {
-        assert(str1 == nullptr && str2 == nullptr);
+        // All strings of length is 0, see it as a empty string.
         return CompareResult::IsEqual;
     }
 }
@@ -212,21 +224,19 @@ int StrCmpSafe(const CharTy * str1, const CharTy * str2, std::size_t count) {
 template <typename CharTy>
 inline
 int StrCmpSafe(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2) {
-    if (likely(((uintptr_t)str1 & (uintptr_t)str2) != 0)) {
-        assert(str1 != nullptr && str2 != nullptr);
-        return StrCmp(str1, len1, str2, len2);
-    }
-    else if (likely(((uintptr_t)str1 | (uintptr_t)str2) != 0)) {
-        assert((str1 == nullptr && str2 != nullptr) ||
-               (str1 != nullptr && str2 == nullptr));
-        if (likely(str1 != nullptr))
+    if (likely(str1 != nullptr)) {
+        if (likely(str2 != nullptr)) {
+            assert(str1 != nullptr && str2 != nullptr);
+            return StrCmp(str1, len1, str2, len2);
+        }
+        else {
+            assert(str1 != nullptr && str2 == nullptr);
             return ((len1 != 0) ? CompareResult::IsBigger : CompareResult::IsEqual);
-        else
-            return ((len2 != 0) ? CompareResult::IsSmaller : CompareResult::IsEqual);
+        }
     }
     else {
-        assert(str1 == nullptr && str2 == nullptr);
-        return CompareResult::IsEqual;
+        assert(str1 == nullptr);
+        return ((str2 == nullptr || len2 == 0) ? CompareResult::IsEqual : CompareResult::IsSmaller);
     }
 }
 

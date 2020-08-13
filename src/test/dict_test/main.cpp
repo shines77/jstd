@@ -38,7 +38,7 @@
 #endif // __SSE4_2__
 
 // String compare mode
-#define STRING_UTILS_LIBC       0
+#define STRING_UTILS_STL        0
 #define STRING_UTILS_U64        1
 #define STRING_UTILS_SSE42      2
 
