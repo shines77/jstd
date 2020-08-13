@@ -38,7 +38,7 @@
 #endif // __SSE4_2__
 
 // String compare mode
-#define STRING_UTILS_LIBC       0
+#define STRING_UTILS_STL        0
 #define STRING_UTILS_U64        1
 #define STRING_UTILS_SSE42      2
 
@@ -184,7 +184,7 @@ template <>
 struct hash<jstd::StringRef> {
     typedef std::uint32_t   result_type;
 
-    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
 
     result_type operator()(const jstd::StringRef & key) const {
         return hash_helper_.getHashCode(key);
@@ -199,7 +199,7 @@ template <>
 struct hash<jstd::StringRef> {
     typedef std::uint32_t   result_type;
 
-    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
 
     result_type operator()(const jstd::StringRef & key) const {
         return hash_helper_.getHashCode(key);
@@ -457,7 +457,7 @@ void test_hashmap_find(const Vector & test_data,
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations / data_length);
+        repeat_times = (kIterations / data_length) + 1;
     else
         repeat_times = 0;
     std::size_t checksum = 0;
@@ -506,7 +506,7 @@ void test_hashmap_insert(const Vector & test_data,
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations / data_length);
+        repeat_times = (kIterations / data_length) + 1;
     else
         repeat_times = 0;
 
@@ -544,7 +544,7 @@ void test_hashmap_emplace(const Vector & test_data,
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations / data_length);
+        repeat_times = (kIterations / data_length) + 1;
     else
         repeat_times = 0;
 
@@ -582,7 +582,7 @@ void test_hashmap_erase(const Vector & test_data,
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations / data_length);
+        repeat_times = (kIterations / data_length) + 1;
     else
         repeat_times = 0;
 

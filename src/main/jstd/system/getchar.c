@@ -3,7 +3,28 @@
 
 #include <stdio.h>
 
-#if defined(__GNUC__) || (defined(__clang__) && !defined(_MSC_VER)) || defined(__linux__)
+#if defined(_MSC_VER) || defined(_ICL) || defined(__INTEL_COMPILER) || defined(__MINGW32__)
+
+#include <conio.h>
+
+/* Read 1 character without echo */
+int jstd_getch(void)
+{
+    return _getch();
+}
+
+/* Read 1 character with echo */
+int jstd_getche(void)
+{
+    int ch = _getch();
+    if (ch != EOF)
+        printf("%c", (char)ch);
+    else
+        printf("EOF: (%d)", ch);
+    return ch;
+}
+
+#elif defined(__GNUC__) || (defined(__clang__) && !defined(_MSC_VER)) || defined(__linux__)
 
 #include <termios.h>
 
@@ -67,27 +88,6 @@ int jstd_getch(void)
 int jstd_getche(void)
 {
     return jstd_getch_term(1);
-}
-
-#elif defined(_MSC_VER) || defined(_ICL) || defined(__INTEL_COMPILER) || defined(__MINGW32__)
-
-#include <conio.h>
-
-/* Read 1 character without echo */
-int jstd_getch(void)
-{
-    return _getch();
-}
-
-/* Read 1 character with echo */
-int jstd_getche(void)
-{
-    int ch = _getch();
-    if (ch != EOF)
-        printf("%c", (char)ch);
-    else
-        printf("EOF: (%d)", ch);
-    return ch;
 }
 
 #else /* other unknown os */

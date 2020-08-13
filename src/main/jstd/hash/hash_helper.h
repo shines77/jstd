@@ -153,6 +153,32 @@ struct hash_helper<T *, ResultType, HashFunc> {
     }
 };
 
+template <typename T,
+          typename ResultType = std::uint32_t,
+          std::size_t HashFunc = HashFunc_Default>
+struct string_hash_helper {
+    typedef ResultType  result_type;
+
+    typedef typename std::remove_pointer<
+                typename std::remove_cv<
+                    typename std::remove_reference<T>::type
+                >::type
+            >::type     key_type;
+
+    typedef typename T::value_type char_type;
+
+    static ResultType getHashCode(const key_type & key) {
+        if (HashFunc == HashFunc_CRC32C)
+            return static_cast<result_type>(crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(char_type)));
+        else if (HashFunc == HashFunc_Time31)
+            return static_cast<result_type>(hashes::Times31(key.c_str(), key.size()));
+        else if (HashFunc == HashFunc_Time31Std)
+            return static_cast<result_type>(hashes::Times31_std(key.c_str(), key.size()));
+        else
+            return static_cast<result_type>(crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(char_type)));
+    }
+};
+
 #if JSTD_HAVE_SSE42_CRC32C
 
 /***************************************************************************

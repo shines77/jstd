@@ -272,6 +272,8 @@ static std::uint32_t BKDRHash(const CharTy * key, std::size_t len)
 
     typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
+    len *= sizeof(CharTy);
+
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
     std::uint32_t hash = 0;
@@ -307,6 +309,8 @@ static std::uint32_t BKDRHash_31(const CharTy * key, std::size_t len)
 
     typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
 
+    len *= sizeof(CharTy);
+
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
     std::uint32_t hash = 0;
@@ -338,6 +342,8 @@ static std::uint32_t BKDRHash_31_std(const CharTy * key, std::size_t len)
     static const std::uint32_t seed = 31U;   // 31, 33, 131, 1313, 13131, 131313, etc ...
 
     typedef typename jstd::char_traits<CharTy>::uchar_type UCharTy;
+
+    len *= sizeof(CharTy);
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
