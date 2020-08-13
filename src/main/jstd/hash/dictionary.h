@@ -1155,7 +1155,7 @@ protected:
     template <typename ...Args>
     JSTD_FORCEINLINE
     void update_mapped_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
-//#ifndef NDEBUG
+#ifndef NDEBUG
         static int display_count = 0;
         display_count++;
         if (display_count < 30) {
@@ -1164,7 +1164,7 @@ protected:
             else
                 printf("update_mapped_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
         }
-//#endif
+#endif
 #if 0
         value_allocator_.destroy(&entry->value.second);
         value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
