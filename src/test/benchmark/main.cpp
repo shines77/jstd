@@ -66,6 +66,8 @@
 
 //#include <jstd/all.h>
 
+#include "Benchmark.h"
+
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -82,9 +84,12 @@
 #include <utility>
 
 using namespace jstd;
+using namespace jtest;
 
-std::vector<std::string> dict_words;
-bool dict_words_is_ready = false;
+static std::vector<std::string> dict_words;
+
+static std::string dict_filename;
+static bool dict_words_is_ready = false;
 
 static const std::size_t kInitCapacity = 16;
 
@@ -207,219 +212,6 @@ struct hash<jstd::StringRef> {
 };
 
 } // namespace jstd
-
-//
-// An individual benchmark result.
-//
-struct Result {
-    typedef std::size_t size_type;
-
-    size_type   catId;
-    std::string name;
-    double      elaspedTime1;
-    size_type   checksum1;
-    double      elaspedTime2;
-    size_type   checksum2;
-
-    Result(size_type catId, const std::string & name,
-           double elaspedTime1, size_type checksum1,
-           double elaspedTime2, size_type checksum2)
-        : catId(catId), name(name),
-          elaspedTime1(elaspedTime1), checksum1(checksum1),
-          elaspedTime2(elaspedTime2), checksum2(checksum2) {
-    }
-    Result(const Result & src)
-        : catId(src.catId), name(src.name),
-          elaspedTime1(src.elaspedTime1), checksum1(src.checksum1),
-          elaspedTime2(src.elaspedTime2), checksum2(src.checksum2) {
-    }
-    Result(Result && rhs)
-        : catId(size_type(-1)),
-          elaspedTime1(0.0), checksum1(0),
-          elaspedTime2(0.0), checksum2(0) {
-        swap(rhs);
-    }
-
-    void swap(Result & rhs) {
-        if (&rhs != this) {
-            std::swap(this->catId,          rhs.catId);
-            std::swap(this->name,           rhs.name);
-            std::swap(this->elaspedTime1,   rhs.elaspedTime1);
-            std::swap(this->checksum1,      rhs.checksum1);
-            std::swap(this->elaspedTime2,   rhs.elaspedTime2);
-            std::swap(this->checksum2,      rhs.checksum2);
-        }
-    }
-};
-
-class BenchmarkCategory {
-public:
-    typedef std::size_t size_type;
-
-private:
-    size_type           catId;
-    std::string         name_;
-    std::vector<Result> result_list_;
-
-public:
-    BenchmarkCategory(const std::string & name) : catId(size_type(-1)), name_(name) {}
-    ~BenchmarkCategory() {}
-
-    size_type size() const { return result_list_.size(); }
-
-    std::string & name() {
-        return this->name_;
-    }
-
-    const std::string & name() const {
-        return this->name_;
-    }
-
-    void setName(const std::string & name) {
-        this->name_ = name;
-    }
-
-    Result & getResult(size_type index) {
-        return result_list_[index];
-    }
-
-    const Result & getResult(size_type index) const {
-        return result_list_[index];
-    }
-
-    void addResult(size_type catId, const std::string & name,
-                   double time1, size_type checksum1,
-                   double time2, size_type checksum2) {
-        Result result(catId, name, time1, checksum1, time2, checksum2);
-        result_list_.push_back(std::move(result));
-    }
-};
-
-class BenchmarkResult {
-public:
-    typedef std::size_t size_type;
-
-private:
-    std::string name1_;
-    std::string name2_;
-    std::vector<BenchmarkCategory *> category_list_;
-
-    void destroy() {
-        for (size_type i = 0; i < category_list_.size(); i++) {
-            BenchmarkCategory * category = category_list_[i];
-            if (category != nullptr) {
-                delete category;
-                category_list_[i] = nullptr;
-            }
-        }
-        category_list_.clear();
-    }
-
-public:
-    BenchmarkResult() {}
-    ~BenchmarkResult() {
-        destroy();
-    }
-
-    size_type category_size() const {
-        return category_list_.size();
-    }
-
-    std::string & getName1() {
-        return this->name1_;
-    }
-
-    std::string & getName2() {
-        return this->name2_;
-    }
-
-    const std::string & getName1() const {
-        return this->name1_;
-    }
-
-    const std::string & getName2() const {
-        return this->name2_;
-    }
-
-    void setName(const std::string & name1, const std::string & name2) {
-        this->name1_ = name1;
-        this->name2_ = name2;
-    }
-
-    BenchmarkCategory * getCategory(size_type index) {
-        if (index < category_list_.size())
-            return category_list_[index];
-        else
-            return nullptr;
-    }
-
-    size_type addCategory(const std::string & name) {
-        BenchmarkCategory * category = new BenchmarkCategory(name);
-        category_list_.push_back(category);
-        return (category_list_.size() - 1);
-    }
-
-    bool addResult(size_type catId, const std::string & name,
-                   double elaspedTime1, size_type checksum1,
-                   double elaspedTime2, size_type checksum2) {
-        BenchmarkCategory * category = getCategory(catId);
-        if (category != nullptr) {
-            category->addResult(catId, name, elaspedTime1, checksum1, elaspedTime2, checksum2);
-            return true;
-        }
-        return false;
-    }
-
-    /*******************************************************************************************************
-       Test                                          std::unordered_map         jstd::Dictionary     Ratio
-      ------------------------------------------------------------------------------------------------------
-       hash_map<std::string, std::string>          checksum     time         checksum    time
-
-       hash_map<K, V>/find                    | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
-       hash_map<K, V>/insert                  | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
-       hash_map<K, V>/emplace                 | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
-       hash_map<K, V>/erase                   | 98765432109   100.00 ms | 98765432109   30.00 ms |   3.33
-      ------------------------------------------------------------------------------------------------------
-    *******************************************************************************************************/
-    void printResult() {
-        printf(" Test                                    %23s  %23s     Ratio\n",
-               this->name1_.c_str(), this->name2_.c_str());
-        printf("------------------------------------------------------------------------------------------------------\n");
-
-        for (size_type catId = 0; catId < category_size(); catId++) {
-            BenchmarkCategory * category = getCategory(catId);
-            if (category != nullptr) {
-                if (category->name().size() <= 40)
-                    printf(" %-40s    checksum    time         checksum    time\n", category->name().c_str());
-                else
-                    printf(" %-52s"          "    time         checksum    time\n", category->name().c_str());
-                printf("\n");
-
-                size_type result_count = category->size();
-                for (size_type i = 0; i < result_count; i++) {
-                    const Result & result = category->getResult(i);
-                    double ratio;
-                    if (result.elaspedTime2 != 0.0)
-                        ratio = result.elaspedTime1 / result.elaspedTime2;
-                    else
-                        ratio = 0.0;
-                    printf(" %-38s | %11" PRIuPTR " %7.2f ms | %11" PRIuPTR " %7.2f ms |   %0.2f\n",
-                           result.name.c_str(),
-                           result.checksum1, result.elaspedTime1,
-                           result.checksum2, result.elaspedTime2,
-                           ratio);
-                }
-
-                if (catId < (category_size() - 1))
-                    printf("\n");
-            }
-        }
-
-        printf("\n");
-        printf("------------------------------------------------------------------------------------------------------\n");
-        printf("\n");
-    }
-};
 
 template <typename Key, typename Value>
 void print_error(std::size_t index, const Key & key, const Value & value)
@@ -677,6 +469,9 @@ void hashmap_benchmark_all()
     BenchmarkResult test_result;
     test_result.setName("std::unordered_map", "jstd::Dictionary");
 
+    jtest::StopWatch sw;
+    sw.start();
+
     //
     // std::unordered_map<std::string, std::string>
     //
@@ -699,8 +494,8 @@ void hashmap_benchmark_all()
     jstd::Dictionary<std::string, std::string>   jstd_dict_ss;
 
     hashmap_benchmark_single("hash_map<std::string, std::string>",
-                                std_map_ss, jstd_dict_ss,
-                                test_data_ss, test_result);
+                             std_map_ss, jstd_dict_ss,
+                             test_data_ss, test_result);
 
     printf("\n\n");
 
@@ -726,8 +521,8 @@ void hashmap_benchmark_all()
             jstd::Dictionary<jstd::string_view, jstd::string_view>   jstd_dict_svsv;
 
             hashmap_benchmark_single("hash_map<jstd::string_view, jstd::string_view>",
-                                        std_map_svsv, jstd_dict_svsv,
-                                        test_data_svsv, test_result);
+                                     std_map_svsv, jstd_dict_svsv,
+                                     test_data_svsv, test_result);
 
             printf("\n\n");
         }
@@ -746,8 +541,8 @@ void hashmap_benchmark_all()
             jstd::Dictionary<int, int>   jstd_dict_ii;
 
             hashmap_benchmark_single("hash_map<int, int>",
-                                        std_map_ii, jstd_dict_ii,
-                                        test_data_ii, test_result);
+                                     std_map_ii, jstd_dict_ii,
+                                     test_data_ii, test_result);
 
             printf("\n\n");
         }
@@ -766,17 +561,19 @@ void hashmap_benchmark_all()
             jstd::Dictionary<std::size_t, std::size_t>   jstd_dict_uu;
 
             hashmap_benchmark_single("hash_map<std::size_t, std::size_t>",
-                                        std_map_uu, jstd_dict_uu,
-                                        test_data_uu, test_result);
+                                     std_map_uu, jstd_dict_uu,
+                                     test_data_uu, test_result);
 
             printf("\n\n");
         }
     }
 
-    test_result.printResult();
+    sw.stop();
+
+    test_result.printResult(dict_filename, sw.getElapsedMillisec());
 }
 
-bool read_dict_file(const std::string & filename)
+bool read_dict_words(const std::string & filename)
 {
     bool is_ok = false;
     try {
@@ -806,8 +603,9 @@ int main(int argc, char * argv[])
 {
     if (argc == 2) {
         std::string filename = argv[1];
-        bool read_ok = read_dict_file(filename);
+        bool read_ok = read_dict_words(filename);
         dict_words_is_ready = read_ok;
+        dict_filename = filename;
     }
 
     jtest::CPU::warmup(1000);
