@@ -261,9 +261,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c">
       <Filter>src\system</Filter>
     </ClCompile>

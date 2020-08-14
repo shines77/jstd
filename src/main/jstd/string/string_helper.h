@@ -16,6 +16,7 @@
 #include <cstdint>  // for std::intptr_t
 #include <cstddef>  // for std::ptrdiff_t
 #include <string>
+#include <memory>
 
 #include "jstd/string/string_view.h"
 

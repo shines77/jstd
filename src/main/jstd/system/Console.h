@@ -6,17 +6,17 @@
 #pragma once
 #endif
 
-#include "jstd/internal/NonCopyable.h"
-
-#include "jstd/system/getchar.h"
-#include "jstd/test/CPUWarmUp.h"
-
 #include <stdio.h>
 #include <stdarg.h>
 
 #ifdef _MSC_VER
 #include <conio.h>
 #endif // _MSC_VER
+
+#include "jstd/internal/NonCopyable.h"
+
+#include "jstd/system/getchar.h"
+#include "jstd/test/CPUWarmUp.h"
 
 namespace jstd {
 

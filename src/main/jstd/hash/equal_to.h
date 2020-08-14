@@ -10,10 +10,8 @@
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 
-#include <string.h>
 #include <string>
 
-#include "jstd/string/string_stl.h"
 #include "jstd/string/string_utils.h"
 
 namespace jstd {

@@ -15,6 +15,17 @@
 #include <string.h>
 #include <math.h>
 
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <atomic>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <unordered_map>
+
 /* SIMD support features */
 #define JSTD_HAVE_MMX           1
 #define JSTD_HAVE_SSE           1
@@ -54,7 +65,6 @@
 #include <jstd/basic/stdint.h>
 #include <jstd/basic/inttypes.h>
 
-#include <jstd/hash/hash_table.h>
 #include <jstd/hash/dictionary.h>
 #include <jstd/hash/hashmap_analyzer.h>
 #include <jstd/string/string_view.h>
@@ -67,21 +77,6 @@
 //#include <jstd/all.h>
 
 #include "Benchmark.h"
-
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <map>
-#include <unordered_map>
-#include <atomic>
-#include <thread>
-#include <ratio>
-#include <chrono>
-#include <memory>
-#include <utility>
 
 using namespace jstd;
 using namespace jtest;

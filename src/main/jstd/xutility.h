@@ -7,7 +7,6 @@
 #endif
 
 #include "jstd/basic/stdint.h"
-#include "jstd/type_traits.h"
 
 #include <cstdint>
 #include <cstddef>
@@ -15,6 +14,8 @@
 #include <memory>
 
 #include <type_traits>
+
+#include "jstd/type_traits.h"
 
 namespace jstd {
 namespace detail {

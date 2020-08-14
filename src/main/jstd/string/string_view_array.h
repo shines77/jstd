@@ -8,10 +8,10 @@
 
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
-#include "jstd/string/string_view.h"
 
 #include <cstdint>
 #include <cstddef>
+#include <memory>
 #include <vector>
 #include <exception>
 

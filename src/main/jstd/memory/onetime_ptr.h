@@ -8,8 +8,6 @@
 
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
-#include "jstd/allocator.h"
-#include "jstd/type_traits.h"
 
 #include <stdint.h>
 #include <stddef.h>
@@ -21,6 +19,9 @@
 #include <memory>
 #include <type_traits>
 #include <functional>
+
+#include "jstd/allocator.h"
+#include "jstd/type_traits.h"
 
 namespace jstd {
 

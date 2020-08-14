@@ -15,10 +15,10 @@
 #include <string>
 #include <type_traits>
 
-#include "jstd/string/string_libc.h"
-#include "jstd/string/string_stl.h"
 #include "jstd/hash/hash.h"
 #include "jstd/hash/crc32c.h"
+#include "jstd/string/string_libc.h"
+#include "jstd/string/string_stl.h"
 
 #define HASH_HELPER_CHAR(KeyType, ResultType, HashFuncId, HashFunc)             \
     template <>                                                                 \

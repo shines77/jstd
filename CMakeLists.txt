@@ -200,7 +200,6 @@ include_directories(src/unittest)
 include_directories(src/test/dict_test)
 
 set(SOURCE_FILES
-    src/main/jstd/lib.cpp
     src/main/jstd/system/getchar.c
     src/main/jstd/system/sleep.c
     src/main/jstd/system/crtdbg_env.c
@@ -227,7 +226,6 @@ include_directories(src/unittest)
 include_directories(src/test/benchmark)
 
 set(SOURCE_FILES
-    src/main/jstd/lib.cpp
     src/main/jstd/system/getchar.c
     src/main/jstd/system/sleep.c
     src/main/jstd/system/crtdbg_env.c

@@ -221,7 +221,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\basic\assert-c.c" />
-    <ClCompile Include="..\..\..\..\src\main\jstd\lib.cpp" />
     <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c" />
     <ClCompile Include="..\..\..\..\src\main\jstd\system\getchar.c" />
     <ClCompile Include="..\..\..\..\src\main\jstd\system\sleep.c" />

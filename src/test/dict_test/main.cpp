@@ -15,6 +15,18 @@
 #include <string.h>
 #include <math.h>
 
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <atomic>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <map>
+#include <unordered_map>
+
 /* SIMD support features */
 #define JSTD_HAVE_MMX           1
 #define JSTD_HAVE_SSE           1
@@ -64,20 +76,6 @@
 #include <jstd/test/ProcessMemInfo.h>
 
 //#include <jstd/all.h>
-
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <sstream>
-#include <string>
-#include <atomic>
-#include <thread>
-#include <ratio>
-#include <chrono>
-#include <memory>
-#include <utility>
-#include <map>
-#include <unordered_map>
 
 using namespace jstd;
 

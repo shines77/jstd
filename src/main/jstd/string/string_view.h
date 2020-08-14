@@ -17,6 +17,7 @@
 #include <cstddef>  // for std::ptrdiff_t
 #include <cstring>
 #include <string>
+#include <memory>
 #include <type_traits>
 #include <stdexcept>
 

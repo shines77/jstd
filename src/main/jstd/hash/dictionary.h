@@ -24,6 +24,14 @@
 #include <utility>
 #include <type_traits>
 
+#include "jstd/allocator.h"
+#include "jstd/iterator.h"
+#include "jstd/hash/hash_helper.h"
+#include "jstd/hash/equal_to.h"
+#include "jstd/hash/dictionary_traits.h"
+#include "jstd/hash/key_extractor.h"
+#include "jstd/support/PowerOf2.h"
+
 #ifndef ENABLE_JSTD_DICTIONARY
 
 #define ENABLE_JSTD_DICTIONARY                  1
@@ -35,14 +43,6 @@
 #define DICTIONARY_SUPPORT_VERSION              0
 
 #endif // ENABLE_JSTD_DICTIONARY
-
-#include "jstd/allocator.h"
-#include "jstd/iterator.h"
-#include "jstd/hash/hash_helper.h"
-#include "jstd/hash/equal_to.h"
-#include "jstd/hash/dictionary_traits.h"
-#include "jstd/hash/key_extractor.h"
-#include "jstd/support/PowerOf2.h"
 
 #define USE_JAVA_FIND_ENTRY     1
 
@@ -72,6 +72,7 @@ public:
     typedef BasicDictionary<Key, Value, HashFunc, Alignment, Hasher, KeyEqual, Allocator>
                                             this_type;
 
+    // hash_entry
     struct hash_entry {
         typedef hash_entry *                    node_pointer;
         typedef hash_entry &                    node_reference;
@@ -101,6 +102,7 @@ public:
     typedef typename hash_entry::const_node_pointer     const_node_pointer;
     typedef typename hash_entry::const_node_reference   const_node_reference;
 
+    // entry_list
     struct entry_list {
         entry_type * entries;
         size_type    capacity;
@@ -111,6 +113,7 @@ public:
         ~entry_list() {}
     };
 
+    // free_list<T>
     template <typename T>
     class free_list {
     public:
@@ -231,6 +234,7 @@ public:
 
     typedef std::pair<iterator, bool>   insert_return_type;
 
+    // entry_chunk<T>
     template <typename T>
     class entry_chunk {
     public:
@@ -302,8 +306,8 @@ public:
     typedef entry_chunk<entry_type> entry_chunk_t;
 
 protected:
-    entry_type **            buckets_;
-    entry_type *             entries_;
+    entry_type **           buckets_;
+    entry_type *            entries_;
     size_type               bucket_mask_;
     size_type               bucket_capacity_;
     size_type               entry_size_;
@@ -467,8 +471,7 @@ protected:
     }
 #endif // __amd64__
 
-    JSTD_FORCEINLINE
-    index_type index_for(hash_code_t hash_code) const {
+    inline index_type index_for(hash_code_t hash_code) const {
         return (index_type)((size_type)hash_code & bucket_mask_);
     }
 
@@ -644,24 +647,10 @@ protected:
             prev--;
         }
 
-#if 1
         entry_type * last_entry = entries + capacity - 1;
         last_entry->next = freelist_.head();
         freelist_.set_head(entries);
         freelist_.inflate(capacity);
-#else
-        entry_type * last_entry = entries + capacity - 1;
-        last_entry->next = nullptr;
-
-        entry_type * tail = freelist_.back();
-        if (likely(tail == nullptr)) {
-            freelist_.set_list(entries, capacity);
-        }
-        else {
-            tail->next = entries;
-            freelist_.inflate(capacity);
-        }
-#endif
     }
 
     size_type count_entries_size() {
@@ -741,10 +730,58 @@ protected:
                 entries_list_.emplace_back(new_entries, entry_capacity);
 
                 entry_chunk_.init(new_entries, 0, entry_capacity);
-
                 //init_entries_chunk(new_entries, entry_capacity);
 
                 freelist_.clear();
+            }
+        }
+    }
+
+    void rehash_all_entries(entry_type ** new_buckets, size_type new_bucket_capacity) {
+        assert(buckets_ != nullptr);
+        assert(new_buckets != nullptr);
+        assert(new_bucket_capacity > 0);
+        assert(run_time::is_pow2(new_bucket_capacity));
+
+        size_type new_bucket_mask = new_bucket_capacity - 1;
+
+        for (size_type index = 0; index < bucket_capacity_; index++) {
+            entry_type * entry = buckets_[index];
+            if (likely(entry != nullptr)) {
+                entry_type * first_entry = nullptr;
+                entry_type * prev_entry = nullptr;
+                do {
+                    hash_code_t hash_code = entry->hash_code;
+                    index_type new_index = index_of(hash_code, new_bucket_mask);
+                    if (likely(new_index != index)) {
+                        if (prev_entry != nullptr) {
+                            prev_entry->next = entry->next;
+                        }
+                        entry_type * next_entry = entry->next;
+
+                        entry->next = new_buckets[new_index];
+                        new_buckets[new_index] = entry;
+
+                        entry = next_entry;
+                    }
+                    else {
+                        prev_entry = entry;
+                        entry = entry->next;
+                        if (unlikely(first_entry == nullptr)) {
+                            first_entry = prev_entry;
+                        }
+                    }
+                } while (likely(entry != nullptr));
+
+                if (likely(first_entry != nullptr)) {
+                    index_type new_index;
+                    if (likely(new_bucket_capacity >= bucket_capacity_))
+                        new_index = index;
+                    else
+                        new_index = index_of(index, new_bucket_mask);
+
+                    new_buckets[new_index] = first_entry;
+                }
             }
         }
     }
@@ -803,55 +840,6 @@ protected:
                     }
 
                     new_buckets[new_index] = new_entry;
-                }
-            }
-        }
-    }
-
-    void rehash_all_entries(entry_type ** new_buckets, size_type new_bucket_capacity) {
-        assert(buckets_ != nullptr);
-        assert(new_buckets != nullptr);
-        assert(new_bucket_capacity > 0);
-        assert(run_time::is_pow2(new_bucket_capacity));
-
-        size_type new_bucket_mask = new_bucket_capacity - 1;
-
-        for (size_type index = 0; index < bucket_capacity_; index++) {
-            entry_type * entry = buckets_[index];
-            if (likely(entry != nullptr)) {
-                entry_type * first_entry = nullptr;
-                entry_type * prev_entry = nullptr;
-                do {
-                    hash_code_t hash_code = entry->hash_code;
-                    index_type new_index = index_of(hash_code, new_bucket_mask);
-                    if (likely(new_index != index)) {
-                        if (prev_entry != nullptr) {
-                            prev_entry->next = entry->next;
-                        }
-                        entry_type * next_entry = entry->next;
-
-                        entry->next = new_buckets[new_index];
-                        new_buckets[new_index] = entry;
-
-                        entry = next_entry;
-                    }
-                    else {
-                        prev_entry = entry;
-                        entry = entry->next;
-                        if (unlikely(first_entry == nullptr)) {
-                            first_entry = prev_entry;
-                        }
-                    }
-                } while (likely(entry != nullptr));
-
-                if (likely(first_entry != nullptr)) {
-                    index_type new_index;
-                    if (likely(new_bucket_capacity >= bucket_capacity_))
-                        new_index = index;
-                    else
-                        new_index = index_of(index, new_bucket_mask);
-
-                    new_buckets[new_index] = first_entry;
                 }
             }
         }
@@ -964,8 +952,8 @@ protected:
         }
     }
 
-    void inflate_entries(size_type size = 1) {
-        size_type new_entry_capacity = run_time::round_up_to_pow2(entry_size_ + size);
+    void inflate_entries(size_type delta_size = 1) {
+        size_type new_entry_capacity = run_time::round_up_to_pow2(entry_size_ + delta_size);
 
         // If new entry capacity is too small, exit directly.
         if (likely(new_entry_capacity > entry_capacity_)) {

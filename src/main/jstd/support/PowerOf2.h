@@ -13,8 +13,6 @@
 #include "jstd/support/bitscan_reverse.h"
 #include "jstd/support/bitscan_forward.h"
 
-#include "jstd/type_traits.h"   // For jstd::integral_utils<T>
-
 #include <stddef.h>
 #include <assert.h>
 
@@ -23,6 +21,8 @@
 #include <cassert>
 #include <type_traits>
 #include <limits>       // For std::numeric_limits<T>::max()
+
+#include "jstd/type_traits.h"   // For jstd::integral_utils<T>
 
 //////////////////////////////////////////////////////////////////////////
 //
