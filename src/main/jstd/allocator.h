@@ -336,6 +336,11 @@ struct allocator : public allocator_base<
 
     ~allocator() {}
 
+    template <typename Other>
+    struct rebind {
+        typedef allocator<Other, Alignment, ThrowEx> type;
+    };
+
     pointer allocate(size_type count = 1) {
         pointer ptr;
         if (kAlignment != 0)
@@ -406,6 +411,11 @@ struct std_new_allocator : public allocator_base<
 
     ~std_new_allocator() {}
 
+    template <typename Other>
+    struct rebind {
+        typedef std_new_allocator<Other, Alignment> type;
+    };
+
     pointer allocate(size_type count = 1) {
         // ::operator new[](size_type n) maybe throw a std::bad_alloc() exception.
         pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type)));
@@ -460,6 +470,11 @@ struct nothrow_allocator : public allocator_base<
     }
 
     ~nothrow_allocator() {}
+
+    template <typename Other>
+    struct rebind {
+        typedef nothrow_allocator<Other, Alignment, ThrowEx> type;
+    };
 
     pointer allocate(size_type count = 1) {
         pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type), std::nothrow));
@@ -520,6 +535,11 @@ struct malloc_allocator : public allocator_base<
 
     ~malloc_allocator() {}
 
+    template <typename Other>
+    struct rebind {
+        typedef malloc_allocator<Other, Alignment, ThrowEx> type;
+    };
+
     pointer allocate(size_type count = 1) {
         pointer ptr = static_cast<pointer>(std::malloc(count * sizeof(value_type)));
         return ptr;
@@ -572,6 +592,11 @@ struct dummy_allocator : public allocator_base<
     }
 
     ~dummy_allocator() {}
+
+    template <typename Other>
+    struct rebind {
+        typedef dummy_allocator<Other, Alignment> type;
+    };
 
     pointer allocate(size_type count = 1) {
         return nullptr;
