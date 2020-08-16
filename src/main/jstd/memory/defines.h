@@ -9,9 +9,13 @@
 #include "jstd/basic/stddef.h"
 
 #ifndef MUST_BE_A_DERIVED_CLASS_OF
+#if 0
+#define MUST_BE_A_DERIVED_CLASS_OF(Base, Derived)
+#else
 #define MUST_BE_A_DERIVED_CLASS_OF(Base, Derived) \
         static_assert(!std::is_base_of<Base, Derived>::value, \
             "Error: [" JSTD_TO_STRING(Base) "] must be a derived class of [" JSTD_TO_STRING(Derived) "].")
+#endif
 #endif
 
 namespace jstd {
@@ -36,6 +40,20 @@ struct delete_helper<T, true> {
         delete[] p;
     }
 };
+
+template <typename T>
+void swap(T & a, T & b, typename std::enable_if<!std::is_pointer<T>::value>::type * p = nullptr) {
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
+
+template <typename T>
+void swap(T* & a, T* & b, typename std::enable_if<std::is_pointer<T>::value>::type * p = nullptr) {
+    T* tmp = a;
+    a = b;
+    b = tmp;
+}
 
 } // namespace jstd
 
