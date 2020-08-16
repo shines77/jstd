@@ -52,21 +52,21 @@ public:
         MUST_BE_A_DERIVED_CLASS_OF(T, Other);
     }
 
-    shiftable_ptr(this_type & src) {
+    shiftable_ptr(this_type & src) : value_(nullptr), shifted_(false) {
         this->shift_from(src);
     }
 
-    shiftable_ptr(this_type && src) {
+    shiftable_ptr(this_type && src) : value_(nullptr), shifted_(false) {
         this->swap(src);
     }
 
     template <typename Other>
-    shiftable_ptr(shiftable_ptr<Other> & src) {
+    shiftable_ptr(shiftable_ptr<Other> & src) : value_(nullptr), shifted_(false) {
         this->shift_from(src);
     }
 
     template <typename Other>
-    shiftable_ptr(shiftable_ptr<Other> && src) {
+    shiftable_ptr(shiftable_ptr<Other> && src) : value_(nullptr), shifted_(false) {
         this->swap(std::forward<this_type>(src));
     }
 
@@ -267,23 +267,25 @@ protected:
     allocator_type  allocator_;
 
 public:
-    custom_shiftable_ptr(this_type & src) {
+    custom_shiftable_ptr(this_type & src) : value_(nullptr), shifted_(false) {
         this->shift_from(src);
     }
 
-    custom_shiftable_ptr(this_type && src) {
+    custom_shiftable_ptr(this_type && src) : value_(nullptr), shifted_(false) {
         this->swap(std::forward<this_type>(src));
     }
 
     template <typename Other>
     custom_shiftable_ptr(custom_shiftable_ptr<Other, Alignment,
-                         typename Allocator::template rebind<Other>::type> & src) {
+                         typename Allocator::template rebind<Other>::type> & src)
+        : value_(nullptr), shifted_(false) {
         this->shift_from(src);
     }
 
     template <typename Other>
     custom_shiftable_ptr(custom_shiftable_ptr<Other, Alignment,
-                         typename Allocator::template rebind<Other>::type> && src) {
+                         typename Allocator::template rebind<Other>::type> && src)
+        : value_(nullptr), shifted_(false) {
         this->swap(std::forward<this_type>(src));
     }
 
