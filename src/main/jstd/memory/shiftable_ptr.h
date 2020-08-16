@@ -88,7 +88,7 @@ protected:
     template <typename ...Args>
     JSTD_FORCEINLINE
     void create_impl(Args && ... args) {
-        this->value_   = new element_type(::forward<Args>(args)...);
+        this->value_   = new element_type(std::forward<Args>(args)...);
         this->shifted_ = false;
     }
 
@@ -381,6 +381,10 @@ public:
 
     void reset(this_type & src) {
         this->set(src);
+    }
+
+    void reset(this_type && src) {
+        this->swap(src);
     }
 
     void copy_from(const this_type & src) {
