@@ -20,17 +20,10 @@
 #include <vector>
 #include <type_traits>
 
-#ifndef ENABLE_JSTD_DICTIONARY
+#define ENABLE_JSTD_DICTIONARY_V2               1
 
-#define ENABLE_JSTD_DICTIONARY                  1
-#define DICTIONARY_ENTRY_USE_PLACEMENT_NEW      1
-
-// The entry's pair whether release on erase the entry.
-#define DICTIONARY_ENTRY_RELEASE_ON_ERASE       1
-#define DICTIONARY_USE_FAST_REHASH_MODE         1
-#define DICTIONARY_SUPPORT_VERSION              0
-
-#endif // ENABLE_JSTD_DICTIONARY
+#define DICTIONARY_V2_USE_FAST_REHASH_MODE      1
+#define DICTIONARY_V2_SUPPORT_VERSION           0
 
 // This macro must define before include file "jstd/nothrow_new.h".
 #undef  JSTD_USE_NOTHROW_NEW
@@ -197,7 +190,7 @@ protected:
     size_type               entry_size_;
     size_type               entry_capacity_;
     free_list_t             freelist_;
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V2_SUPPORT_VERSION
     size_type               version_;
 #endif
     std::vector<entry_list> entries_list_;
@@ -233,7 +226,7 @@ public:
     BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
         : buckets_(nullptr), entries_(nullptr),
           bucket_mask_(0), entry_size_(0), entry_capacity_(0)
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V2_SUPPORT_VERSION
           , version_(1) /* Since 0 means that the version attribute is not supported,
                            the initial value of version starts from 1. */
 #endif
@@ -286,7 +279,7 @@ public:
     bool empty() const { return (this->size() == 0); }
 
     size_type version() const {
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V2_SUPPORT_VERSION
         return this->version_;
 #else
         return 0;   /* Return 0 means that the version attribute is not supported. */
@@ -454,7 +447,7 @@ protected:
                     //free_list new_freelist;
                     //fill_freelist(new_freelist, new_entries, new_entry_capacity);
 
-#if DICTIONARY_USE_FAST_REHASH_MODE
+#if DICTIONARY_V2_USE_FAST_REHASH_MODE
                     // Recalculate the bucket of all keys.
                     if (likely(this->entries_ != nullptr)) {
                         entry_type * new_entry = new_entries;
@@ -512,7 +505,7 @@ protected:
                     // Free old buckets data.
                     this->free_buckets();
 
-#else // !DICTIONARY_USE_FAST_REHASH_MODE
+#else // !DICTIONARY_V2_USE_FAST_REHASH_MODE
 
                     // Recalculate the bucket of all keys.
                     if (likely(this->buckets_ != nullptr)) {
@@ -543,7 +536,7 @@ protected:
                         this->free_buckets();
                     }
 
-#endif // DICTIONARY_USE_FAST_REHASH_MODE
+#endif // DICTIONARY_V2_USE_FAST_REHASH_MODE
 
                     // Save settings
                     this->buckets_ = new_buckets;
@@ -606,7 +599,7 @@ protected:
     }
 
     void updateVersion() {
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V2_SUPPORT_VERSION
         ++(this->version_);
 #endif
     }

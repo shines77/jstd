@@ -108,7 +108,8 @@ std::size_t aligned_to(std::size_t size, std::size_t alignment)
 
 template <typename T>
 struct align_of {
-    static const std::size_t value = alignof(T);
+    static const std::size_t value = (alignof(T) >= alignof(std::max_align_t))
+                                    ? alignof(T) :  alignof(std::max_align_t);
     //static constexpr std::size_t value = std::alignment_of<T>::value;
 };
 

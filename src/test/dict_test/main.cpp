@@ -70,6 +70,7 @@
 #include <jstd/hash/dictionary.h>
 #include <jstd/hash/hashmap_analyzer.h>
 #include <jstd/string/string_view.h>
+#include <jstd/memory/shiftable_ptr.h>
 #include <jstd/system/Console.h>
 #include <jstd/test/StopWatch.h>
 #include <jstd/test/CPUWarmUp.h>
@@ -1567,6 +1568,39 @@ void string_view_test()
     printf("str1 = %s\n", str1.c_str());
 }
 
+void shiftable_ptr_test()
+{
+    {
+        jstd::shiftable_ptr<int> i = new int(100);
+        jstd::shiftable_ptr<int> j = i;
+        printf("i.value() = 0x%p, j.value() = 0x%p, j = %d\n\n",
+               i.value(), j.value(), *j);
+    }
+
+    {
+        jstd::shiftable_ptr<int> m = new int(99);
+        jstd::shiftable_ptr<int> n = m;
+        m = new int(0);
+        printf("m.value() = 0x%p, n.value() = 0x%p, m = %d, n = %d\n\n",
+               m.value(), n.value(), *m, *n);
+    }
+
+    {
+        jstd::custom_shiftable_ptr<int> i(100);
+        jstd::custom_shiftable_ptr<int> j = i;
+        printf("custom_shiftable_ptr<T>: i.value() = 0x%p, j.value() = 0x%p, j = %d\n\n",
+               i.value(), j.value(), *j);
+    }
+
+    {
+        jstd::custom_shiftable_ptr<int> m(99);
+        jstd::custom_shiftable_ptr<int> n = m;
+        m.reset(jstd::custom_shiftable_ptr<int>(88));
+        printf("custom_shiftable_ptr<T>: m.value() = 0x%p, n.value() = 0x%p, m = %d, n = %d\n\n",
+               m.value(), n.value(), *m, *n);
+    }
+}
+
 bool read_dict_file(const std::string & filename)
 {
     bool is_ok = false;
@@ -1606,9 +1640,10 @@ int main(int argc, char * argv[])
     }
 
     //string_view_test();
+    //shiftable_ptr_test();
 
     hashtable_uinttest();
-    hashtable_benchmark();
+    //hashtable_benchmark();
 
     jstd::Console::ReadKey();
     return 0;

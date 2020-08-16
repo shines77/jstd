@@ -32,19 +32,10 @@
 #include "jstd/hash/key_extractor.h"
 #include "jstd/support/PowerOf2.h"
 
-#ifndef ENABLE_JSTD_DICTIONARY
+#define ENABLE_JSTD_DICTIONARY          1
+#define DICTIONARY_SUPPORT_VERSION      0
 
-#define ENABLE_JSTD_DICTIONARY                  1
-#define DICTIONARY_ENTRY_USE_PLACEMENT_NEW      1
-
-// The entry's pair whether release on erase the entry.
-#define DICTIONARY_ENTRY_RELEASE_ON_ERASE       1
-#define DICTIONARY_USE_FAST_REHASH_MODE         1
-#define DICTIONARY_SUPPORT_VERSION              0
-
-#endif // ENABLE_JSTD_DICTIONARY
-
-#define USE_JAVA_FIND_ENTRY     1
+#define USE_JAVA_FIND_ENTRY             1
 
 namespace jstd {
 
@@ -83,9 +74,9 @@ public:
         hash_entry * next;
         hash_code_t  hash_code;
         uint32_t     flags;
-        this_type *  owner;
         alignas(Alignment)
         value_type   value;
+        this_type *  owner;
 
         hash_entry() : next(nullptr), hash_code(0), flags(0), owner(nullptr) {}
 
@@ -312,11 +303,12 @@ protected:
     size_type               bucket_capacity_;
     size_type               entry_size_;
     size_type               entry_capacity_;
-    entry_chunk_t           entry_chunk_;
-    free_list_t             freelist_;
 #if DICTIONARY_SUPPORT_VERSION
     size_type               version_;
 #endif
+    entry_chunk_t           entry_chunk_;
+    free_list_t             freelist_;
+
     std::vector<entry_list> entries_list_;
 
     hasher_type             hasher_;
@@ -352,7 +344,7 @@ protected:
     static const hash_code_t kReplacedHash = hash_traits<hash_code_t>::kReplacedHash;
 
 public:
-    BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
+    explicit BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
         : buckets_(nullptr), entries_(nullptr),
           bucket_mask_(0), bucket_capacity_(0), entry_size_(0), entry_capacity_(0)
 #if DICTIONARY_SUPPORT_VERSION
@@ -1604,12 +1596,14 @@ public:
     }
 
     size_type erase(const key_type & key) {
-        if (likely(buckets_ != nullptr)) {
-            hash_code_t hash_code = get_hash(key);
-            size_type index = index_of(hash_code);
+        assert(this->buckets_ != nullptr);
+
+        if (likely(this->entry_size_ != 0)) {
+            hash_code_t hash_code = this->get_hash(key);
+            size_type index = this->index_of(hash_code);
 
             entry_type * prev = nullptr;
-            entry_type * entry = buckets_[index];
+            entry_type * entry = this->buckets_[index];
             while (likely(entry != nullptr)) {
                 if (likely(entry->hash_code != hash_code)) {
                     prev = entry;
@@ -1624,15 +1618,19 @@ public:
 
                         assert(entry->flags == 1);
                         entry->flags = 0;
-                        freelist_.push_front(entry);
+                        this->freelist_.push_front(entry);
 
                         // destruct the entry->value
-                        value_type * value_ptr = &entry->value;
-                        allocator_.destructor(value_ptr);
+                        this->allocator_.destructor(&entry->value);
 
-                        entry_size_--;
-
-                        updateVersion();
+                        this->entry_size_--;
+                        if (this->bucket_capacity_ > kDefaultInitialCapacity &&
+                            this->entry_size_ < this->bucket_capacity_ * 3 / 16) {
+                            this->shrink_to_fit();
+                        }
+                        else {
+                            this->updateVersion();
+                        }
 
                         // Has found
                         return size_type(1);

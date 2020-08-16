@@ -19,17 +19,13 @@
 #include <vector>
 #include <type_traits>
 
-#ifndef ENABLE_JSTD_DICTIONARY
-
-#define ENABLE_JSTD_DICTIONARY                  1
-#define DICTIONARY_ENTRY_USE_PLACEMENT_NEW      1
+#define ENABLE_JSTD_DICTIONARY_V1               1
+#define DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW   1
 
 // The entry's pair whether release on erase the entry.
-#define DICTIONARY_ENTRY_RELEASE_ON_ERASE       1
-#define DICTIONARY_USE_FAST_REHASH_MODE         1
-#define DICTIONARY_SUPPORT_VERSION              0
-
-#endif // ENABLE_JSTD_DICTIONARY
+#define DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE    1
+#define DICTIONARY_V1_USE_FAST_REHASH_MODE      1
+#define DICTIONARY_V1_SUPPORT_VERSION           0
 
 // This macro must define before include file "jstd/nothrow_new.h".
 #undef  JSTD_USE_NOTHROW_NEW
@@ -176,7 +172,7 @@ protected:
     size_type       entry_size_;
     size_type       entry_capacity_;
     free_list       freelist_;
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V1_SUPPORT_VERSION
     size_type       version_;
 #endif
     hasher_type     hasher_;
@@ -208,7 +204,7 @@ public:
     BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
         : buckets_(nullptr), entries_(nullptr), bucket_mask_(0), bucket_capacity_(0),
           entry_size_(0), entry_capacity_(0)
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V1_SUPPORT_VERSION
           , version_(1) /* Since 0 means that the version attribute is not supported,
                            the initial value of version starts from 1. */
 #endif
@@ -261,7 +257,7 @@ public:
     bool empty() const { return (this->size() == 0); }
 
     size_type version() const {
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V1_SUPPORT_VERSION
         return this->version_;
 #else
         return 0;   /* Return 0 means that the version attribute is not supported. */
@@ -329,7 +325,7 @@ protected:
             this->bucket_capacity_ = bucket_capacity;
 
             // The array of entries.
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
             // entry_type * new_entries = (entry_type *)operator new(
             //                             entry_capacity * sizeof(entry_type), std::nothrow);
             entry_type * new_entries = JSTD_PLACEMENT_NEW(entry_type, entry_capacity);
@@ -365,7 +361,7 @@ protected:
     }
 
     void free_entries() {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
         assert(this->entries_ != nullptr);
         //operator delete((void *)this->entries_, std::nothrow);
         //jstd::nothrow_deleter::free(this->entries_);
@@ -374,15 +370,15 @@ protected:
         //operator delete((void *)this->entries_, std::nothrow);
         //jstd::nothrow_deleter::destroy(this->entries_);
         JSTD_DELETE_ARRAY(this->entries_);
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#endif // DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
     }
 
     void destroy_entries() {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
         assert(this->entries_ != nullptr);
         entry_type * entry = this->entries_;
         for (size_type i = 0; i < this->entry_size_; i++) {
-#if DICTIONARY_ENTRY_RELEASE_ON_ERASE
+#if DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE
             if (likely(entry->hash_code != kInvalidHash)) {
                 assert(entry != nullptr);
                 value_type * __pair = &entry->value;
@@ -394,13 +390,13 @@ protected:
             value_type * __pair = &entry->value;
             assert(__pair != nullptr);
             __pair->~value_type();
-#endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
+#endif // DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE
             ++entry;
         }
 
         // Free the entries buffer.
         this->free_entries();
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#endif // DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
     }
 
     // Linked the entries to the free list.
@@ -462,7 +458,7 @@ protected:
                 ::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
 
                 // The the array of entries.
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
                 // entry_type * new_entries = (entry_type *)operator new(
                 //                             sizeof(entry_type) * new_entry_capacity, std::nothrow);
                 entry_type * new_entries = JSTD_PLACEMENT_NEW(entry_type, new_entry_capacity);
@@ -475,7 +471,7 @@ protected:
                     //free_list new_freelist;
                     //fill_freelist(new_freelist, new_entries, new_entry_capacity);
 
-#if DICTIONARY_USE_FAST_REHASH_MODE
+#if DICTIONARY_V1_USE_FAST_REHASH_MODE
                     // Recalculate the bucket of all keys.
                     if (likely(this->entries_ != nullptr)) {
                         entry_type * new_entry = new_entries;
@@ -487,7 +483,7 @@ protected:
                             assert(new_entry != nullptr);
                             assert(old_entry != nullptr);
                             if (likely(old_entry->hash_code != kInvalidHash)) {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
                                 // Swap old_entry and new_entry.
                                 new_entry->next = old_entry->next;
                                 new_entry->hash_code = old_entry->hash_code;
@@ -502,25 +498,25 @@ protected:
                                 value_type * pair_ptr = &old_entry->value;
                                 assert(pair_ptr != nullptr);
                                 pair_ptr->~value_type();
-#else // !DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#else // !DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
                                 // Swap old_entry and new_entry.
                                 //new_entry->next = old_entry->next;
                                 new_entry->hash_code = old_entry->hash_code;
                                 new_entry->value.swap(old_entry->value);
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#endif // DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
                                 ++new_entry;
                                 ++old_entry;
                                 ++new_count;
                             }
                             else {
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-#if (DICTIONARY_ENTRY_RELEASE_ON_ERASE == 0)
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
+#if (DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE == 0)
                                 // pair_type class placement delete
                                 value_type * pair_ptr = &old_entry->value;
                                 assert(pair_ptr != nullptr);
                                 pair_ptr->~value_type();
-#endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#endif // DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE
+#endif // DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
                                 ++old_entry;
                             }
                         }
@@ -548,7 +544,7 @@ protected:
                     // Free old buckets data.
                     this->free_buckets();
 
-#else // !DICTIONARY_USE_FAST_REHASH_MODE
+#else // !DICTIONARY_V1_USE_FAST_REHASH_MODE
 
                     // Recalculate the bucket of all keys.
                     if (likely(this->buckets_ != nullptr)) {
@@ -579,7 +575,7 @@ protected:
                         this->free_buckets();
                     }
 
-#endif // DICTIONARY_USE_FAST_REHASH_MODE
+#endif // DICTIONARY_V1_USE_FAST_REHASH_MODE
 
                     // Setting status
                     this->buckets_ = new_buckets;
@@ -645,7 +641,7 @@ protected:
     }
 
     void updateVersion() {
-#if DICTIONARY_SUPPORT_VERSION
+#if DICTIONARY_V1_SUPPORT_VERSION
         ++(this->version_);
 #endif
     }
@@ -656,7 +652,7 @@ public:
         if (likely(this->buckets_ != nullptr)) {
             if (likely(this->entries_ != nullptr)) {
                 // Free all entries.
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
                 this->destroy_entries();
 #else
                 //jstd::nothrow_deleter::destroy(this->entries_);
@@ -771,7 +767,7 @@ public:
                 new_entry->hash_code = hash_code;
                 this->buckets_[index] = new_entry;
 
-#if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
+#if (DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW != 0) && (DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
                 void * pair_buf = (void *)&(new_entry->value);
                 value_type * new_pair = new (pair_buf) value_type(key, value);
@@ -821,7 +817,7 @@ public:
                 new_entry->hash_code = hash_code;
                 this->buckets_[index] = new_entry;
 
-#if (DICTIONARY_ENTRY_USE_PLACEMENT_NEW != 0) && (DICTIONARY_ENTRY_RELEASE_ON_ERASE != 0)
+#if (DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW != 0) && (DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE != 0)
                 // pair_type class placement new
                 void * pair_buf = (void *)&(new_entry->value);
                 value_type * new_pair = new (pair_buf) value_type(std::forward<key_type>(key),
@@ -896,13 +892,13 @@ public:
                         entry->hash_code = kInvalidHash;
                         this->freelist_.push_front(entry);
 
-#if DICTIONARY_ENTRY_USE_PLACEMENT_NEW
-#if DICTIONARY_ENTRY_RELEASE_ON_ERASE
+#if DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
+#if DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE
                         // pair_type class placement delete
                         value_type * pair_ptr = &entry->value;
                         assert(pair_ptr != nullptr);
                         pair_ptr->~value_type();
-#endif // DICTIONARY_ENTRY_RELEASE_ON_ERASE
+#endif // DICTIONARY_V1_ENTRY_RELEASE_ON_ERASE
 #else
 #ifdef _MSC_VER
                         entry->value.first.clear();
@@ -911,7 +907,7 @@ public:
                         entry->value.first = std::move(key_type());
                         entry->value.second = std::move(mapped_type());
 #endif // _MSC_VER
-#endif // DICTIONARY_ENTRY_USE_PLACEMENT_NEW
+#endif // DICTIONARY_ENTRY_V1_USE_PLACEMENT_NEW
 
                         this->updateVersion();
 
