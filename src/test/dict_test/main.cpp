@@ -1571,33 +1571,67 @@ void string_view_test()
 void shiftable_ptr_test()
 {
     {
-        jstd::shiftable_ptr<int> i = new int(100);
-        jstd::shiftable_ptr<int> j = i;
-        printf("i.value() = 0x%p, j.value() = 0x%p, j = %d\n\n",
-               i.value(), j.value(), *j);
+        {
+            jstd::shiftable_ptr<int> i = new int(100);
+            jstd::shiftable_ptr<int> j = i;
+            printf("i.value() = 0x%p, j.value() = 0x%p, j = %d\n\n",
+                   i.get(), j.get(), *j);
+        }
+
+        {
+            jstd::shiftable_ptr<int> m = new int(99);
+            jstd::shiftable_ptr<int> n = m;
+            m = new int(0);
+            printf("m.value() = 0x%p, n.value() = 0x%p, m = %d, n = %d\n\n",
+                   m.get(), n.get(), *m, *n);
+        }
+
+        {
+            jstd::custom_shiftable_ptr<int> i(100);
+            jstd::custom_shiftable_ptr<int> j = i;
+            printf("custom_shiftable_ptr<T>: i.value() = 0x%p, j.value() = 0x%p, j = %d\n\n",
+                   i.get(), j.get(), *j);
+        }
+
+        {
+            jstd::custom_shiftable_ptr<int> m(99);
+            jstd::custom_shiftable_ptr<int> n = m;
+            m.reset(jstd::custom_shiftable_ptr<int>(88));
+            printf("custom_shiftable_ptr<T>: m.value() = 0x%p, n.value() = 0x%p, m = %d, n = %d\n\n",
+                   m.get(), n.get(), *m, *n);
+        }
     }
 
     {
-        jstd::shiftable_ptr<int> m = new int(99);
-        jstd::shiftable_ptr<int> n = m;
-        m = new int(0);
-        printf("m.value() = 0x%p, n.value() = 0x%p, m = %d, n = %d\n\n",
-               m.value(), n.value(), *m, *n);
-    }
+        {
+            jstd::shiftable_ptr<jstd::string_view> i = new jstd::string_view("ijk");
+            jstd::shiftable_ptr<jstd::string_view> j = i;
+            printf("i.value() = 0x%p, j.value() = 0x%p, j = %s\n\n",
+                   i.get(), j.get(), j->c_str());
+        }
 
-    {
-        jstd::custom_shiftable_ptr<int> i(100);
-        jstd::custom_shiftable_ptr<int> j = i;
-        printf("custom_shiftable_ptr<T>: i.value() = 0x%p, j.value() = 0x%p, j = %d\n\n",
-               i.value(), j.value(), *j);
-    }
+        {
+            jstd::shiftable_ptr<jstd::string_view> m = new jstd::string_view("mn");
+            jstd::shiftable_ptr<jstd::string_view> n = m;
+            m = new jstd::string_view("m123");
+            printf("m.value() = 0x%p, n.value() = 0x%p, m = %s, n = %s\n\n",
+                   m.get(), n.get(), m->c_str(), n->c_str());
+        }
 
-    {
-        jstd::custom_shiftable_ptr<int> m(99);
-        jstd::custom_shiftable_ptr<int> n = m;
-        m.reset(jstd::custom_shiftable_ptr<int>(88));
-        printf("custom_shiftable_ptr<T>: m.value() = 0x%p, n.value() = 0x%p, m = %d, n = %d\n\n",
-               m.value(), n.value(), *m, *n);
+        {
+            jstd::custom_shiftable_ptr<jstd::string_view> i("ijk");
+            jstd::custom_shiftable_ptr<jstd::string_view> j = i;
+            printf("custom_shiftable_ptr<T>: i.value() = 0x%p, j.value() = 0x%p, j = %s\n\n",
+                   i.get(), j.get(), j->c_str());
+        }
+
+        {
+            jstd::custom_shiftable_ptr<jstd::string_view> m("mn");
+            jstd::custom_shiftable_ptr<jstd::string_view> n = m;
+            m.reset(jstd::custom_shiftable_ptr<jstd::string_view>("mmmmmm"));
+            printf("custom_shiftable_ptr<T>: m.value() = 0x%p, n.value() = 0x%p, m = %s, n = %s\n\n",
+                   m.get(), n.get(), m->c_str(), n->c_str());
+        }
     }
 }
 
@@ -1640,7 +1674,7 @@ int main(int argc, char * argv[])
     }
 
     //string_view_test();
-    //shiftable_ptr_test();
+    shiftable_ptr_test();
 
     hashtable_uinttest();
     //hashtable_benchmark();

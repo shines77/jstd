@@ -6,6 +6,10 @@
 #pragma once
 #endif
 
+#ifndef JSTD_TO_STRING
+#define JSTD_TO_STRING(Text)   #Text
+#endif
+
 //
 // C++ compiler macro define
 // See: http://www.cnblogs.com/zyl910/archive/2012/08/02/printmacro.html

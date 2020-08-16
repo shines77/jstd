@@ -6,8 +6,8 @@
 #pragma once
 #endif
 
-#include "jstd/basic/stdint.h"
 #include "jstd/basic/stddef.h"
+#include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 
 #include <cstdint>
@@ -16,28 +16,9 @@
 #include <memory>
 #include <type_traits>
 
+#include "jstd/memory/defines.h"
+
 namespace jstd {
-
-///////////////////////////////////////////////////
-// struct delete_helper<T, IsArray>
-///////////////////////////////////////////////////
-
-template <typename T, bool IsArray>
-struct delete_helper {};
-
-template <typename T>
-struct delete_helper<T, false> {
-    static void delete_it(T * p) {
-        delete p;
-    }
-};
-
-template <typename T>
-struct delete_helper<T, true> {
-    static void delete_it(T * p) {
-        delete[] p;
-    }
-};
 
 //
 // See: http://blog.csdn.net/lollipop_jin/article/details/8499530
@@ -82,12 +63,12 @@ public:
         pointer     ptr;
         count_type  count;
 
-        reference_counter(pointer p = nullptr) : ptr(p), count(1)  {}
+        explicit reference_counter(pointer p = nullptr) : ptr(p), count(1)  {}
 
         reference_counter(pointer p, count_type cnt) : ptr(p), count(cnt)  {}
 
         template <typename Other>
-        reference_counter(Other * p = nullptr) : ptr(static_cast<pointer>(p)), count(1)  {}
+        explicit reference_counter(Other * p = nullptr) : ptr(static_cast<pointer>(p)), count(1)  {}
 
         template <typename Other>
         reference_counter(Other * p, count_type cnt) : ptr(static_cast<pointer>(p)), count(cnt)  {}
@@ -116,6 +97,7 @@ public:
 
         template <typename Other>
         reference_counter & operator = (Other * p) {
+            MUST_BE_A_DERIVED_CLASS_OF(T, Other);
             this->ptr = static_cast<pointer>(p);
             this->count = 1;
             return *this;
@@ -126,7 +108,7 @@ public:
             assert(this->count > 0);
         }
 
-        template <bool is_array = std::is_array<T>::value>
+        template <bool is_array>
         bool release() {
             this->count--;
             if (this->count == 0) {
@@ -152,6 +134,7 @@ public:
 
         template <typename Other>
         void swap(reference_counter<Other> & rhs) {
+            MUST_BE_A_DERIVED_CLASS_OF(T, Other);
             if (&rhs != this) {
                 pointer tmp = this->ptr;
                 pointer rhs_ptr = static_cast<pointer>(rhs.ptr);
@@ -172,13 +155,17 @@ public:
     smart_ptr(pointer p = nullptr) : counter_((p != nullptr) ? new counter_type(p, 1) : nullptr) {}
 
     template <typename Other>
-    smart_ptr(Other * p = nullptr) : counter_((p != nullptr) ? new counter_type(p, 1) : nullptr) {}
+    smart_ptr(Other * p = nullptr) : counter_((p != nullptr) ? new counter_type(p, 1) : nullptr) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+    }
 
     template <size_t N>
     smart_ptr(element_type (&ptrs)[N]) : counter_((ptrs != nullptr) ? new counter_type(ptrs, 1) : nullptr) {}
 
     template <typename Other, size_t N>
-    smart_ptr(Other (&ptrs)[N]) : counter_((ptrs != nullptr) ? new counter_type(ptrs, 1) : nullptr) {}
+    smart_ptr(Other (&ptrs)[N]) : counter_((ptrs != nullptr) ? new counter_type(ptrs, 1) : nullptr) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+    }
 
     smart_ptr(const smart_ptr & src) : counter_(nullptr) {
         this->counter_ = src.counter_;
@@ -187,6 +174,7 @@ public:
 
     template <typename Other>
     smart_ptr(const smart_ptr<Other> & src) : counter_(nullptr) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
         this->counter_ = static_cast<counter_type *>(src.counter_);
         this->add_ref();
     }
@@ -220,6 +208,7 @@ public:
 
     template <typename Other>
     void reset(Other * p = nullptr) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
         pointer * ptr = static_cast<pointer>(p);
         this->assign(ptr);
     }
@@ -239,6 +228,7 @@ public:
 
 protected:
     void assign(pointer p = nullptr) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
         if (p != nullptr) {
             // Setting the new data pointer.
             if (this->counter_ != nullptr) {
@@ -308,6 +298,7 @@ public:
 
     template <typename Other>
     smart_ptr & operator = (Other * p) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
         pointer ptr = static_cast<pointer>(p);
         this->assign(ptr);
         return *this;
@@ -489,6 +480,7 @@ public:
 
     template <typename Other>
     void copy_from(const smart_ptr<Other> & rhs) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
         counter_type * rhs_counter = static_cast<counter_type *>(rhs.counter_);
         if (&src != this) {
             if (this->counter_ != rhs_counter) {
@@ -505,6 +497,7 @@ public:
 
     template <typename Other>
     void swap(smart_ptr<Other> & rhs) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
         counter_type * rhs_counter = static_cast<counter_type *>(rhs.counter_);
         std::swap(this->counter_, rhs.counter_);
     }

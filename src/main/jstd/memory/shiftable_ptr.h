@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <functional>
 
+#include "jstd/memory/defines.h"
 #include "jstd/allocator.h"
 #include "jstd/type_traits.h"
 
@@ -39,27 +40,46 @@ public:
     typedef shiftable_ptr<T>                this_type;
 
 protected:
-    value_type      value_;
-    bool            shifted_;
+    pointer value_;
+    bool    shifted_;
 
 public:
-    shiftable_ptr(value_type value = nullptr) : value_(value), shifted_(false) {
+    explicit shiftable_ptr(pointer value = nullptr) : value_(value), shifted_(false) {
     }
+
+    template <typename Other>
+    explicit shiftable_ptr(Other * value = nullptr) : value_(static_cast<pointer>(value)), shifted_(false) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+    }
+
     shiftable_ptr(this_type & src) {
         this->shift_from(src);
     }
+
     shiftable_ptr(this_type && src) {
-        this->shift_from(std::forward<this_type>(src));
+        this->swap(src);
     }
+
+    template <typename Other>
+    shiftable_ptr(shiftable_ptr<Other> & src) {
+        this->shift_from(src);
+    }
+
+    template <typename Other>
+    shiftable_ptr(shiftable_ptr<Other> && src) {
+        this->swap(std::forward<this_type>(src));
+    }
+
     template <typename ...Args>
     shiftable_ptr(Args && ... args) : value_(nullptr), shifted_(false) {
         this->create_impl(std::forward<Args>(args)...);
     }
+
     virtual ~shiftable_ptr() {
         this->destroy();
     }
 
-    value_type value() const { return this->value_; }
+    pointer value() const { return this->value_; }
 
     bool is_shifted() const { return this->shifted_; }
     void set_shifted(bool shifted = true) { this->shifted_ = shifted; }
@@ -75,7 +95,7 @@ protected:
     void destroy() {
         if (!this->shifted_) {
             if (this->value_) {
-                delete[] this->value_;
+                delete_helper<T, std::is_array<T>::value>::delete_it(this->value_);
                 this->value_ = nullptr;
             }
             this->shifted_ = true;
@@ -86,12 +106,12 @@ protected:
     void destroy_value() {
         if (!this->shifted_) {
             if (this->value_) {
-                delete[] this->value_;
+                delete_helper<T, std::is_array<T>::value>::delete_it(this->value_);
             }
         }
     }
 
-    void assign(value_type value) {
+    void assign(pointer value) {
         this->value_   = value;
         this->shifted_ = false;
     }
@@ -108,30 +128,37 @@ public:
     }
 
     this_type & operator = (this_type && rhs) {
-        this->shift_from(std::forward<this_type>(rhs));
+        this->swap(std::forward<this_type>(rhs));
         return *this;
     }
 
-    this_type & operator = (value_type value) {
+    this_type & operator = (pointer value) {
         this->set(value);
         return *this;
     }
 
+    template <typename Other>
+    this_type & operator = (Other * value) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+        this->set(static_cast<pointer>(value));
+        return *this;
+    }
+
     const_reference operator * () const {
-        return (*this->value());
+        return (*(this->value_));
     }
 
     pointer operator -> () {
-        return std::pointer_traits<pointer>::pointer_to(this->value_);
+        return std::pointer_traits<pointer>::pointer_to(*(this->value_));
     }
 
     const_pointer operator -> () const {
-        return std::pointer_traits<const_pointer>::pointer_to(this->value_);
+        return std::pointer_traits<const_pointer>::pointer_to(*(this->value_));
     }
 
-    value_type get() const { return this->value(); }
+    pointer get() const { return this->value(); }
 
-    void set(value_type value) {
+    void set(pointer value) {
         if (value != this->value_) {
             this->destroy_value();
             this->assign(value);
@@ -150,7 +177,7 @@ public:
         this->purge();
     }
 
-    void reset(value_type value = nullptr) {
+    void reset(pointer value = nullptr) {
         this->set(value);
     }
 
@@ -175,14 +202,55 @@ public:
         }
     }
 
-    value_type shift() {
+    template <typename Other>
+    void shift_from(shiftable_ptr<Other> & src) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+        if (!src.is_shifted()) {
+            if (&src != this) {
+                this->destroy_value();
+                this->value_   = static_cast<pointer>(src.value_);
+                this->shifted_ = src.shifted_;
+                src.purge();
+            }
+        }
+    }
+
+    pointer shift() {
         this->shifted_ = true;
         return this->value_;
     }
+
+    void swap(this_type & rhs) {
+        if (&rhs != this) {
+            std::swap(this->value_, rhs->value_);
+            std::swap(this->shifted_, rhs->shifted_);
+        }
+    }
+
+    template <typename Other>
+    void swap(shiftable_ptr<Other> & rhs) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+        if (&rhs != this) {
+            pointer tmp = this->value_;
+            pointer rhs_value = static_cast<pointer>(rhs.value_);
+            this->value_ = rhs_value;
+            rhs.value_ = tmp;
+            std::swap(this->shifted_, rhs->shifted_);
+        }
+    }
+};
+
+template <typename Allocator>
+struct allocator_traits {
+    allocator_traits() {}
+    ~allocator_traits() {}
+
+    template <typename Other>
+    using rebind = typename Allocator::template rebind<Other::type>;
 };
 
 template < typename T, std::size_t Alignment = align_of<T>::value,
-                       typename Allocator = std_new_allocator<T, Alignment> >
+                       typename Allocator = allocator<T, Alignment> >
 class custom_shiftable_ptr {
 public:
     typedef T                               element_type;
@@ -196,8 +264,10 @@ public:
     typedef custom_shiftable_ptr<T, Alignment, Allocator>
                                             this_type;
 
+    // typename allocator_traits<Allocator>::template rebind<Other>::type;
+
 protected:
-    value_type      value_;
+    pointer         value_;
     bool            shifted_;
     allocator_type  allocator_;
 
@@ -205,18 +275,33 @@ public:
     custom_shiftable_ptr(this_type & src) {
         this->shift_from(src);
     }
+
     custom_shiftable_ptr(this_type && src) {
-        this->shift_from(std::forward<this_type>(src));
+        this->swap(std::forward<this_type>(src));
     }
+
+    template <typename Other>
+    custom_shiftable_ptr(custom_shiftable_ptr<Other, Alignment,
+                         typename Allocator::template rebind<Other>::type> & src) {
+        this->shift_from(src);
+    }
+
+    template <typename Other>
+    custom_shiftable_ptr(custom_shiftable_ptr<Other, Alignment,
+                         typename Allocator::template rebind<Other>::type> && src) {
+        this->swap(std::forward<this_type>(src));
+    }
+
     template <typename ...Args>
     custom_shiftable_ptr(Args && ... args) : value_(nullptr), shifted_(false) {
         this->create_impl(std::forward<Args>(args)...);
     }
+
     virtual ~custom_shiftable_ptr() {
         this->destroy();
     }
 
-    value_type value() const { return this->value_; }
+    pointer value() const { return this->value_; }
 
     bool is_shifted() const { return this->shifted_; }
     void set_shifted(bool shifted = true) { this->shifted_ = shifted; }
@@ -260,23 +345,23 @@ public:
     }
 
     this_type & operator = (this_type && rhs) {
-        this->shift_from(std::forward<this_type>(rhs));
+        this->swap(std::forward<this_type>(rhs));
         return *this;
     }
 
     const_reference operator * () const {
-        return (*this->value());
+        return (*(this->value_));
     }
 
     pointer operator -> () {
-        return std::pointer_traits<pointer>::pointer_to(this->value_);
+        return std::pointer_traits<pointer>::pointer_to(*(this->value_));
     }
 
     const_pointer operator -> () const {
-        return std::pointer_traits<const_pointer>::pointer_to(this->value_);
+        return std::pointer_traits<const_pointer>::pointer_to(*(this->value_));
     }
 
-    value_type get() const { return this->value(); }
+    pointer get() const { return this->value(); }
 
     void set(this_type & src) {
         this->shift_from(src);
@@ -319,9 +404,43 @@ public:
         }
     }
 
-    value_type shift() {
+    template <typename Other>
+    void shift_from(custom_shiftable_ptr<Other, Alignment,
+                    typename Allocator::template rebind<Other>::type> & src) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+        if (!src.is_shifted()) {
+            if (&src != this) {
+                this->destroy_value();
+                this->value_   = static_cast<pointer>(src.value_);
+                this->shifted_ = src.shifted_;
+                src.purge();
+            }
+        }
+    }
+
+    pointer shift() {
         this->shifted_ = true;
         return this->value_;
+    }
+
+    void swap(this_type & rhs) {
+        if (&rhs != this) {
+            std::swap(this->value_, rhs->value_);
+            std::swap(this->shifted_, rhs->shifted_);
+        }
+    }
+
+    template <typename Other>
+    void swap(custom_shiftable_ptr<Other, Alignment,
+              typename Allocator::template rebind<Other>::type> & rhs) {
+        MUST_BE_A_DERIVED_CLASS_OF(T, Other);
+        if (&rhs != this) {
+            pointer tmp = this->value_;
+            pointer rhs_value = static_cast<pointer>(rhs.value_);
+            this->value_ = rhs_value;
+            rhs.value_ = tmp;
+            std::swap(this->shifted_, rhs->shifted_);
+        }
     }
 };
 

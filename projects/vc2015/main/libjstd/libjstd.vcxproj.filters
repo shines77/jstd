@@ -262,6 +262,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\smart_ptr.h">
       <Filter>src\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\defines.h">
+      <Filter>src\memory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c">
