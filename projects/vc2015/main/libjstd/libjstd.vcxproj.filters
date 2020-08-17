@@ -181,9 +181,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\key_extractor.h">
       <Filter>src\hash</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator.inc">
-      <Filter>src\hash</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch.h">
       <Filter>src\test</Filter>
     </ClInclude>
@@ -264,6 +261,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\defines.h">
       <Filter>src\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator_inc.h">
+      <Filter>src\hash</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

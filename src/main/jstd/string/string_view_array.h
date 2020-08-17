@@ -97,7 +97,7 @@ public:
         destroy();
     }
 
-    size_type size() const       { return array_.size();   }
+    size_type size() const       { return array_.size();     }
     size_type capacity() const   { return array_.capacity(); }
 
     iterator begin()             { return array_.begin();  }
@@ -115,6 +115,10 @@ public:
 
     const_reference front() const { return array_.front(); }
     const_reference back() const  { return array_.back();  }
+
+    void clear() {
+        array_.clear();
+    }
 
     void reserve(size_type count) {
         array_.reserve(count);
