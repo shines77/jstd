@@ -71,15 +71,16 @@ public:
 
     void set_chunk(size_type chunk_id, entry_type * entries, size_type capacity) {
         this->entries_ = entries;
-        this->chunk_id_ = chunk_id;
+        this->size_ = 0;
         this->capacity_ = capacity;
+        this->chunk_id_ = chunk_id;
     }
 
     void set_chunk(size_type chunk_id, entry_type * entries, size_type size, size_type capacity) {
         this->entries_ = entries;
-        this->chunk_id_ = chunk_id;
         this->size_ = size;
         this->capacity_ = capacity;
+        this->chunk_id_ = chunk_id;
     }
 
     void set_entries(entry_type * entries) {
@@ -146,15 +147,15 @@ public:
     typedef Allocator                               allocator_type;
     typedef EntryAllocator                          entry_allocator_type;
 
-    
+    entry_chunk_t           last_chunk_;
+
 private:
-    entry_chunk_t *         last_chunk_;
     vector_type             chunk_list_;
     allocator_type          allocator_;
     entry_allocator_type    entry_allocator_;
 
 public:
-    hash_entry_chunk_list() : last_chunk_(nullptr) {}
+    hash_entry_chunk_list() {}
     ~hash_entry_chunk_list() {
         this->destory();
     }
@@ -181,15 +182,23 @@ public:
     bool is_empty() const { return (this->size() == 0); }
 
     bool hasLastChunk() const {
-        return (this->last_chunk_ != nullptr);
+        return (this->last_chunk_.entries() != nullptr);
     }
 
-    entry_chunk_t & lastChunk() const {
-        return *(this->last_chunk_);
+    entry_chunk_t & lastChunk() {
+        return this->last_chunk_;
+    }
+
+    const entry_chunk_t & lastChunk() const {
+        return this->last_chunk_;
     }
 
     uint32_t lastChunkId() const {
-        return static_cast<uint32_t>(this->last_chunk_->chunk_id());
+        return static_cast<uint32_t>(this->last_chunk_.chunk_id());
+    }
+
+    uint32_t lastChunkSize() const {
+        return static_cast<uint32_t>(this->last_chunk_.size());
     }
 
 public:
@@ -198,7 +207,7 @@ public:
             size_type last_index = this->chunk_list_.size() - 1;
             for (size_type i = 0; i < last_index; i++) {
                 entry_type * entries = this->chunk_list_[i].entries();
-                size_type capacity   = this->chunk_list_[i].capacity();
+                size_type   capacity = this->chunk_list_[i].capacity();
                 entry_type * entry = entries;
                 assert(entry != nullptr);
                 for (size_type j = 0; j < capacity; j++) {
@@ -214,9 +223,9 @@ public:
 
             // Destroy last entry
             {
-                entry_type * entries    = this->chunk_list_[last_index].entries();
-                size_type last_size     = this->chunk_list_[last_index].size();
-                size_type last_capacity = this->chunk_list_[last_index].capacity();
+                entry_type *    entries = this->last_chunk_.entries();
+                size_type     last_size = this->last_chunk_.size();
+                size_type last_capacity = this->last_chunk_.capacity();
                 assert(last_size <= last_capacity);
                 entry_type * entry = entries;
                 assert(entry != nullptr);
@@ -237,7 +246,7 @@ public:
 
     void clear() {
         this->chunk_list_.clear();
-        this->last_chunk_ = nullptr;
+        this->last_chunk_.clear();
     }
 
     void reserve(size_type count) {
@@ -252,27 +261,27 @@ public:
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->chunk_list_.emplace_back(chunk);
+        this->last_chunk_.set_chunk(chunk_id, chunk.entries(), chunk.size(), chunk.capacity());
 
-        this->last_chunk_ = &(this->chunk_list_[chunk_id]);
+        this->chunk_list_.emplace_back(chunk);
     }
 
     void addChunk(entry_chunk_t && chunk) {
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->chunk_list_.emplace_back(std::forward<entry_chunk_t>(chunk));
+        this->last_chunk_.set_chunk(chunk_id, chunk.entries(), chunk.size(), chunk.capacity());
 
-        this->last_chunk_ = &(this->chunk_list_[chunk_id]);
+        this->chunk_list_.emplace_back(std::forward<entry_chunk_t>(chunk));
     }
 
     void addChunk(entry_type * entries, size_type entry_capacity) {
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->chunk_list_.emplace_back(chunk_id, entries, entry_capacity);
+        this->last_chunk_.set_chunk(chunk_id, entries, entry_capacity);
 
-        this->last_chunk_ = &(this->chunk_list_[chunk_id]);
+        this->chunk_list_.emplace_back(chunk_id, entries, entry_capacity);
     }
 
     value_type & operator [] (size_type pos) {
@@ -302,7 +311,7 @@ public:
         this->chunk_list_[chunk_id].increase();
     }
 
-    void appendEntry(entry_type * entry) {
+    void appendFreeEntry(entry_type * entry) {
         uint32_t chunk_id = entry->attrib.chunk_id();
         this->appendEntry(chunk_id);
     }
@@ -317,8 +326,19 @@ public:
         this->removeEntry(chunk_id);
     }
 
-    void reorder() {
-        //
+    void reorder(size_type entry_size, size_type total_entry_capacity,
+                                       size_type maxEntryChunkSize) {
+        if (this->chunk_list_.size() > 0) {
+            size_type chunk_id = this->chunk_list_.size() - 1;
+            entry_chunk_t & last_chunk = this->chunk_list_[chunk_id];
+            size_type ahead_chunk_size = total_entry_capacity - last_chunk.size();
+            if (ahead_chunk_size > last_chunk.size()) {
+                //
+            }
+            else {
+                //
+            }
+        }
     }
 };
 
@@ -347,12 +367,12 @@ public:
                                             this_type;
 
     enum entry_type_t {
-        kEntryAttrShfit  = 30,
-        kIsFreeEntry     = 0UL << kEntryAttrShfit,
-        kIsInUseEntry    = 1UL << kEntryAttrShfit,
-        kIsReusableEntry = 2UL << kEntryAttrShfit,
+        kEntryTypeShfit  = 30,
+        kIsFreeEntry     = 0UL << kEntryTypeShfit,
+        kIsInUseEntry    = 1UL << kEntryTypeShfit,
+        kIsReusableEntry = 2UL << kEntryTypeShfit,
 
-        kEntryAttrMask   = 0xC0000000UL,
+        kEntryTypeMask   = 0xC0000000UL,
         kEntryIndexMask  = 0x3FFFFFFFUL
     };
 
@@ -360,46 +380,46 @@ public:
         uint32_t value;
 
         entry_attr_t(uint32_t value = 0) : value(value) {}
-        entry_attr_t(uint32_t entry_type, uint32_t chunk_id)
-            : value(makeAttr(entry_type, chunk_id)) {}
+        entry_attr_t(uint32_t _entry_type, uint32_t chunk_id)
+            : value(makeAttr(_entry_type, chunk_id)) {}
         ~entry_attr_t() {}
 
-        uint32_t makeAttr(uint32_t entry_type, uint32_t chunk_id) {
-            return ((entry_type & kEntryAttrMask) | (chunk_id & kEntryIndexMask));
+        uint32_t makeAttr(uint32_t _entry_type, uint32_t chunk_id) {
+            return ((_entry_type & kEntryTypeMask) | (chunk_id & kEntryIndexMask));
         }
 
-        uint32_t entry_type() const {
-            return (this->value & kEntryAttrMask);
+        uint32_t getEntryType() const {
+            return (this->value & kEntryTypeMask);
         }
 
         uint32_t chunk_id() const {
             return (this->value & kEntryIndexMask);
         }
 
-        void setValue(uint32_t entry_type, uint32_t chunk_id) {
-            this->value = this->makeAttr(entry_type, chunk_id); 
+        void setValue(uint32_t _entry_type, uint32_t chunk_id) {
+            this->value = this->makeAttr(_entry_type, chunk_id); 
         }
 
-        void setEntryType(uint32_t entry_type) {
+        void setEntryType(uint32_t _entry_type) {
             // Here is a small optimization.
-            // this->value = (entry_type & kEntryAttrMask) | this->chunk_id();
-            this->value = entry_type | this->chunk_id();
+            // this->value = (_entry_type & kEntryAttrMask) | this->chunk_id();
+            this->value = _entry_type | this->chunk_id();
         }
 
         void setChunkId(uint32_t chunk_id) {
-            this->value = this->entry_type() | (chunk_id & kEntryIndexMask); 
+            this->value = this->type() | (chunk_id & kEntryIndexMask); 
         }
 
         bool isFreeEntry() {
-            return (this->entry_type() == kIsFreeEntry);
+            return (this->getEntryType() == kIsFreeEntry);
         }
 
         bool isInUseEntry() {
-            return (this->entry_type() == kIsInUseEntry);
+            return (this->getEntryType() == kIsInUseEntry);
         }
 
         bool isReusableEntry() {
-            return (this->entry_type() == kIsReusableEntry);
+            return (this->getEntryType() == kIsReusableEntry);
         }
 
         void setFreeEntry() {
@@ -639,11 +659,11 @@ public:
                            the initial value of version starts from 1. */
 #endif
     {
-        initialize(initialCapacity);
+        this->initialize(initialCapacity);
     }
 
     ~BasicDictionary() {
-        destroy();
+        this->destroy();
     }
 
     iterator begin() const {
@@ -675,23 +695,23 @@ public:
     }
 
     size_type _size() const {
-        assert(entry_capacity_ >= freelist_.size());
-        return (entry_capacity_ - freelist_.size());
+        assert(this->entry_capacity_ >= this->freelist_.size());
+        return (this->entry_capacity_ - this->freelist_.size());
     }
     size_type size() const {
-        return entry_size_;
+        return this->entry_size_;
     }
-    size_type capacity() const { return bucket_capacity_; }
+    size_type capacity() const { return this->bucket_capacity_; }
 
-    size_type bucket_mask() const { return bucket_mask_; }
-    size_type bucket_count() const { return bucket_capacity_; }
-    size_type bucket_capacity() const { return bucket_capacity_; }
+    size_type bucket_mask() const { return this->bucket_mask_; }
+    size_type bucket_count() const { return this->bucket_capacity_; }
+    size_type bucket_capacity() const { return this->bucket_capacity_; }
 
-    size_type entry_size() const { return size(); }
-    size_type entry_count() const { return entry_capacity_; }
+    size_type entry_size() const { return this->size(); }
+    size_type entry_count() const { return this->entry_capacity_; }
 
-    entry_type ** buckets() const { return buckets_; }
-    entry_type *  entries() const { return entries_; }
+    entry_type ** buckets() const { return this->buckets_; }
+    entry_type *  entries() const { return this->entries_; }
 
     size_type max_bucket_capacity() const {
         return ((std::numeric_limits<size_type>::max)() / 2 + 1);
@@ -700,11 +720,11 @@ public:
         return max_bucket_capacity();
     }
 
-    bool valid() const { return (buckets() != nullptr); }
-    bool empty() const { return (size() == 0); }
+    bool valid() const { return (this->buckets() != nullptr); }
+    bool empty() const { return (this->size() == 0); }
 
     size_type bucket_size(size_type index) const {
-        assert(index < bucket_count());
+        assert(index < this->bucket_count());
 
         size_type count = 0;
         entry_type * node = get_bucket_head(index);
@@ -732,7 +752,7 @@ protected:
     }
 
     inline index_type index_of(hash_code_t hash_code) const {
-        return (index_type)((size_type)hash_code & bucket_mask());
+        return (index_type)((size_type)hash_code & this->bucket_mask());
     }
 
     inline index_type index_of(hash_code_t hash_code, size_type capacity_mask) const {
@@ -742,7 +762,7 @@ protected:
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
     inline index_type index_of(size_type hash_code) const {
-        return (index_type)(hash_code & bucket_mask());
+        return (index_type)(hash_code & this->bucket_mask());
     }
 
     inline index_type index_of(size_type hash_code, size_type capacity_mask) const {
@@ -751,7 +771,7 @@ protected:
 #endif // __amd64__
 
     inline index_type index_for(hash_code_t hash_code) const {
-        return (index_type)((size_type)hash_code & bucket_mask_);
+        return (index_type)((size_type)hash_code & this->bucket_mask());
     }
 
     inline index_type next_index(index_type index, size_type capacity_mask) const {
@@ -760,18 +780,14 @@ protected:
     }
 
     void free_buckets_impl() {
-        assert(buckets_ != nullptr);
-        bucket_allocator_.deallocate(buckets_, bucket_capacity_);
+        assert(this->buckets() != nullptr);
+        bucket_allocator_.deallocate(this->buckets_, this->bucket_capacity_);
     }
 
     void free_buckets() {
-        if (likely(buckets_ != nullptr)) {
+        if (likely(this->buckets() != nullptr)) {
             free_buckets_impl();
         }
-    }
-
-    void destroy_entries() {
-        //
     }
 
     void destroy() {
@@ -780,9 +796,7 @@ protected:
             if (likely(this->entries_ != nullptr)) {
                 // Destroy all entries.
                 this->chunk_list_.destory();
-
                 this->entries_ = nullptr;
-                this->chunk_list_.clear();
             }
 
             // Free the array of bucket.
@@ -856,7 +870,7 @@ protected:
 
     const entry_type * next_const_iterator(const entry_type * node_ptr) {
         entry_type * node = const_cast<entry_type *>(node_ptr);
-        node = next_iterator(node);
+        node = this->next_iterator(node);
         return const_cast<const entry_type *>(node);
     }
 
@@ -892,7 +906,7 @@ protected:
         size_type entry_size = 0;
         for (size_type index = 0; index < bucket_capacity_; index++) {
             size_type list_size = 0;
-            entry_type * entry = buckets_[index];
+            entry_type * entry = this->buckets_[index];
             while (likely(entry != nullptr)) {
                 hash_code_t hash_code = entry->hash_code;
                 index_type now_index = this->index_of(hash_code);
@@ -1070,7 +1084,7 @@ protected:
             this->bucket_mask_ = new_bucket_capacity - 1;
             this->bucket_capacity_ = new_bucket_capacity;
 
-            updateVersion();
+            this->updateVersion();
         }
     }
 
@@ -1088,9 +1102,9 @@ protected:
 
             // Only allocate a chunk size we need.
             assert(new_entry_capacity > this->entry_capacity_);
-            size_type new_entry_size = new_entry_capacity - this->entry_capacity_;
+            size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
 
-            entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
+            entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
             if (likely(entry_allocator_.is_ok(new_entries))) {
                 if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
                     rehash_all_entries_2x(new_buckets, new_bucket_capacity);
@@ -1109,7 +1123,7 @@ protected:
                 assert(this->chunk_list_.lastChunk().is_full());
 
                 // Push the new entries pointer to entries list.
-                this->chunk_list_.addChunk(new_entries, new_entry_size);
+                this->chunk_list_.addChunk(new_entries, new_chunk_capacity);
 
                 this->updateVersion();
             }
@@ -1162,8 +1176,8 @@ protected:
             if (likely(new_entry_capacity <= this->bucket_capacity_)) {
                 assert(this->freelist_.is_empty());
 
-                size_type new_entry_size = new_entry_capacity - this->entry_capacity_;
-                entry_type * new_entries = entry_allocator_.allocate(new_entry_size);
+                size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
+                entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
                 if (likely(entry_allocator_.is_ok(new_entries))) {
                     this->entries_ = new_entries;
                     this->entry_capacity_ = new_entry_capacity;
@@ -1171,7 +1185,7 @@ protected:
                     assert(this->chunk_list_.lastChunk().is_full());
 
                     // Push the new entries pointer to entries list.
-                    this->chunk_list_.addChunk(new_entries, new_entry_size);
+                    this->chunk_list_.addChunk(new_entries, new_chunk_capacity);
                 }
             }
             else {
@@ -1195,7 +1209,7 @@ protected:
         entry_type * first = this->buckets_[index];
         if (likely(first != nullptr)) {
             if (likely(first->hash_code == hash_code &&
-                       key_is_equal_(key, first->value.first))) {
+                       this->key_is_equal_(key, first->value.first))) {
                 return first;
             }
 
@@ -1206,7 +1220,7 @@ protected:
                         // Do nothing, Continue
                     }
                     else {
-                        if (likely(key_is_equal_(key, entry->value.first))) {
+                        if (likely(this->key_is_equal_(key, entry->value.first))) {
                             return entry;
                         }
                     }
@@ -1224,7 +1238,7 @@ protected:
         entry_type * first = this->buckets_[index];
         if (likely(first != nullptr)) {
             if (likely(first->hash_code == hash_code &&
-                       key_is_equal_(key, first->value.first))) {
+                       this->key_is_equal_(key, first->value.first))) {
                 return first;
             }
 
@@ -1235,7 +1249,7 @@ protected:
                         // Do nothing, Continue
                     }
                     else {
-                        if (likely(key_is_equal_(key, entry->value.first))) {
+                        if (likely(this->key_is_equal_(key, entry->value.first))) {
                             return entry;
                         }
                     }
@@ -1260,7 +1274,7 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(key_is_equal_(key, entry->value.first))) {
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
                     return entry;
                 }
                 entry = entry->next;
@@ -1279,7 +1293,7 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(key_is_equal_(key, entry->value.first))) {
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
                     return entry;
                 }
                 entry = entry->next;
@@ -1305,7 +1319,7 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(key_is_equal_(key, entry->value.first))) {
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
                     before = prev;
                     return entry;
                 }
@@ -1324,6 +1338,16 @@ protected:
     JSTD_FORCEINLINE
     const key_type & get_key(const value_type & value) const {
         return key_extractor<value_type>::extract(value);
+    }
+
+    JSTD_FORCEINLINE
+    const key_type & get_key(n_value_type * value) const {
+        return key_extractor<n_value_type>::extract(*const_cast<const n_value_type *>(value));
+    }
+
+    JSTD_FORCEINLINE
+    const key_type & get_key(const n_value_type & value) const {
+        return key_extractor<n_value_type>::extract(value);
     }
 
     // Update the existed key's value, maybe by move assignment operator.
@@ -1351,20 +1375,20 @@ protected:
                 printf("update_mapped_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
         }
 #endif
-#if 0
-        value_allocator_.destroy(&entry->value.second);
+#if 1
+        value_allocator_.destructor(&entry->value.second);
         value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
 #elif 0
         mapped_type * second = value_allocator_.allocate(1);
         value_allocator_.construct(second, std::forward<Args>(args)...);
 
-        entry->value.second = std::move(*second);
+        std::swap(entry->value.second, *second);
 
-        value_allocator_.destroy(second);
+        value_allocator_.destructor(second);
         value_allocator_.deallocate(second, 1);
 #else
         mapped_type second(std::forward<Args>(args)...);
-        entry->value.second = std::move(second);
+        std::swap(entry->value.second, second);
 #endif
     }
 
@@ -1387,54 +1411,111 @@ protected:
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, const key_type & key,
                                                  const mapped_type & value) {
-        // Use placement new method to construct value_type.
-        allocator_.constructor(&new_entry->value, key, value);
+        if (new_entry->attrib.isFreeEntry()) {
+            // Use placement new method to construct value_type.
+            this->allocator_.constructor(&new_entry->value, key, value);
+        }
+        else {
+            assert(new_entry->attrib.isReusableEntry());
+            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
+            value_ptr->first = key;
+            value_ptr->second = value;
+        }
+
+        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, const key_type & key,
                                                  mapped_type && value) {
-        // Use placement new method to construct value_type.
-        allocator_.constructor(&new_entry->value, key,
-                               std::forward<mapped_type>(value));
+        if (new_entry->attrib.isFreeEntry()) {
+            // Use placement new method to construct value_type.
+            this->allocator_.constructor(&new_entry->value, key,
+                                         std::forward<mapped_type>(value));
+        }
+        else {
+            assert(new_entry->attrib.isReusableEntry());
+            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
+            value_ptr->first = key;
+            value_ptr->second = std::forward<mapped_type>(value);
+        }
+
+        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, key_type && key,
                                                  mapped_type && value) {
-        // Use placement new method to construct value_type.
-        allocator_.constructor(&new_entry->value,
-                               std::forward<key_type>(key),
-                               std::forward<mapped_type>(value));
+        if (new_entry->attrib.isFreeEntry()) {
+            // Use placement new method to construct value_type.
+            this->allocator_.constructor(&new_entry->value,
+                                         std::forward<key_type>(key),
+                                         std::forward<mapped_type>(value));
+        }
+        else {
+            assert(new_entry->attrib.isReusableEntry());
+            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
+            value_ptr->first = std::forward<key_type>(key);
+            value_ptr->second = std::forward<mapped_type>(value);
+        }
+
+        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
-    void construct_value(entry_type * new_entry, value_type * value) {
-        // Use placement new method to construct value_type [by move assignment].
-        allocator_.constructor(&new_entry->value, std::move(*value));
+    void construct_value(entry_type * new_entry, n_value_type * value) {
+        if (new_entry->attrib.isFreeEntry()) {
+            // Use placement new method to construct value_type [by move assignment].
+            this->allocator_.constructor(&new_entry->value, std::move(value->first),
+                                                            std::move(value->second));
+        }
+        else {
+            assert(new_entry->attrib.isReusableEntry());
+            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
+            std::swap(*value_ptr, *value);
+            //std::swap(value_ptr->first, value->first);
+            //std::swap(value_ptr->second, value->second);
+        }
+
+        new_entry->attrib.setInUseEntry();
     }
 
     template <typename ...Args>
     JSTD_FORCEINLINE
     void construct_value_args(entry_type * new_entry, Args && ... args) {
-        // Use placement new method to construct value_type.
-        allocator_.constructor(&new_entry->value, std::forward<Args>(args)...);
+        if (new_entry->attrib.isFreeEntry()) {
+            // Use placement new method to construct value_type.
+            this->allocator_.constructor(&new_entry->value, std::forward<Args>(args)...);
+        }
+        else {
+            assert(new_entry->attrib.isReusableEntry());
+            n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
+
+            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
+            std::swap(*value_ptr, *value_tmp);
+            //std::swap(value_ptr->first, value_tmp->first);
+            //std::swap(value_ptr->second, value_tmp->second);
+
+            this->n_allocator_.destroy(value_tmp);
+        }
+
+        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, const key_type & key,
                                               const mapped_type & value) {
         value_type * value_tmp = allocator_.create(key, value);
-        old_entry->value = std::move(*value_tmp);
-        allocator_.destroy(value_tmp);
+        std::swap(old_entry->value, *value_tmp);
+        this->allocator_.destroy(value_tmp);
     }
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, const key_type & key,
                                               mapped_type && value) {
         value_type * value_tmp = allocator_.create(key, std::forward<mapped_type>(value));
-        old_entry->value = std::move(*value_tmp);
-        allocator_.destroy(value_tmp);
+        std::swap(old_entry->value, *value_tmp);
+        this->allocator_.destroy(value_tmp);
     }
 
     JSTD_FORCEINLINE
@@ -1442,8 +1523,8 @@ protected:
                                               mapped_type && value) {
         value_type * value_tmp = allocator_.create(std::forward<key_type>(key),
                                                    std::forward<mapped_type>(value));
-        old_entry->value = std::move(*value_tmp);
-        allocator_.destroy(value_tmp);
+        std::swap(old_entry->value, *value_tmp);
+        this->allocator_.destroy(value_tmp);
     }
 
     JSTD_FORCEINLINE
@@ -1453,19 +1534,25 @@ protected:
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, value_type && value) {
-        n_value_type * value_ptr = (n_value_type *)(&old_entry->value);
-        *value_ptr = std::forward<value_type>(value);
+        n_value_type * value_ptr = (n_value_type *)&(old_entry->value);
+        *value_ptr = std::forward<n_value_type>(value);
+    }
+
+    JSTD_FORCEINLINE
+    void update_value(entry_type * old_entry, n_value_type * value) {
+        n_value_type * value_ptr = (n_value_type *)&(old_entry->value);
+        std::swap(*value_ptr, *value);
     }
 
     template <typename ...Args>
     JSTD_FORCEINLINE
     void update_value_args(entry_type * old_entry, Args && ... args) {
-        n_value_type * value_tmp = n_allocator_.create(std::forward<Args>(args)...);
+        n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
 
-        n_value_type * value_ptr = (n_value_type *)(&old_entry->value);
-        *value_ptr = std::move(*value_tmp);
+        n_value_type * value_ptr = (n_value_type *)&(old_entry->value);
+        std::swap(*value_ptr, *value_tmp);
 
-        n_allocator_.destroy(value_tmp);
+        this->n_allocator_.destroy(value_tmp);
     }
 
     JSTD_FORCEINLINE
@@ -1485,15 +1572,19 @@ protected:
             }
 
             // Get a unused entry.
-            entry_type * new_entry = &this->entries_[this->chunk_list_.lastChunk().size()];
+            entry_type * new_entry = &this->entries_[this->chunk_list_.lastChunkSize()];
             assert(new_entry != nullptr);
-            this->chunk_list_.appendEntry(new_entry);
+            uint32_t chunk_id = this->chunk_list_.lastChunkId();
+            new_entry->attrib.setValue(kIsFreeEntry, chunk_id);
+
+            this->chunk_list_.lastChunk().increase();
+            this->chunk_list_.appendEntry(chunk_id);
             return new_entry;
         }
         else {
             // Pop a free entry from freelist.
             entry_type * free_entry = this->freelist_.pop_front();
-            this->chunk_list_.appendEntry(free_entry);
+            this->chunk_list_.appendFreeEntry(free_entry);
             return free_entry;
         }
     }
@@ -1505,8 +1596,6 @@ protected:
 
         new_entry->next = this->buckets_[index];
         new_entry->hash_code = hash_code;
-        assert(this->chunk_list_.hasLastChunk());
-        new_entry->attrib.setValue(kIsInUseEntry, this->chunk_list_.lastChunkId());
         new_entry->owner = this;
         this->buckets_[index] = new_entry;
     }
@@ -1616,16 +1705,16 @@ protected:
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value_args(new_entry, std::forward<Args>(args)...);
-        entry_size_++;
+        this->entry_size_++;
     }
 
     JSTD_INLINE
     void emplace_new_entry_from_value(hash_code_t hash_code,
-                                      index_type index, value_type * value) {
+                                      index_type index, n_value_type * value) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, value);
-        entry_size_++;
+        this->entry_size_++;
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
@@ -1655,7 +1744,7 @@ protected:
     ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
 
-        value_type * value_tmp = this->allocator_.create(std::forward<Args>(args)...);
+        n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
         assert(value_tmp != nullptr);
         const key_type & key = this->get_key(value_tmp);
 
@@ -1668,11 +1757,11 @@ protected:
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_value(entry, std::move(*value_tmp));
+                this->update_value(entry, value_tmp);
             }
         }
 
-        this->allocator_.destroy(value_tmp);
+        this->n_allocator_.destroy(value_tmp);
         this->updateVersion();
 
         return ReturnType(iterator(entry), (entry == nullptr));
@@ -1693,18 +1782,8 @@ public:
     }
 
     void clear() {
-        if (likely(this->buckets_ != nullptr)) {
-            // Initialize the buckets's data.
-            ::memset((void *)this->buckets_, 0, this->bucket_capacity_ * sizeof(entry_type *));
-        }
-
-        // Clear settings
-        this->entry_size_ = 0;
-
-        // TODO: clear or rearrange entry chunk and freelist.
-
-        //this->freelist_.clear();
-        //this->chunk_list_.clear();
+        this->destroy();
+        this->initialize(kDefaultInitialCapacity);
     }
 
     void rehash(size_type bucket_count) {
@@ -1735,7 +1814,7 @@ public:
     };
 
     void rearrange_reorder() {
-        this->chunk_list_.reorder();
+        this->chunk_list_.reorder(this->entry_size_, this->entry_capacity_, kEntryChunkSize);
     }
 
     void rearrange_realloc() {
@@ -1790,16 +1869,16 @@ public:
                                                               std::forward<mapped_type>(value));
     }
 
-    insert_return_type insert(const value_type & pair) {
-        return this->insert(pair.first, pair.second);
+    insert_return_type insert(const value_type & value) {
+        return this->insert(value.first, value.second);
     }
 
-    insert_return_type insert(value_type && pair) {
-        bool is_rvalue = std::is_rvalue_reference<decltype(pair)>::value;
+    insert_return_type insert(value_type && value) {
+        bool is_rvalue = std::is_rvalue_reference<decltype(value)>::value;
         if (is_rvalue)
-            return this->insert(std::move(pair.first), std::move(pair.second));
+            return this->insert(std::move(value.first), std::move(value.second));
         else
-            return this->insert(pair.first, pair.second);
+            return this->insert(value.first, value.second);
     }
 
     // insert_no_return(key, value)
@@ -1817,16 +1896,16 @@ public:
                                                  std::forward<mapped_type>(value));
     }
 
-    void insert_no_return(const value_type & pair) {
-        this->insert_no_return(pair.first, pair.second);
+    void insert_no_return(const value_type & value) {
+        this->insert_no_return(value.first, value.second);
     }
 
-    void insert_no_return(value_type && pair) {
-        bool is_rvalue = std::is_rvalue_reference<decltype(pair)>::value;
+    void insert_no_return(value_type && value) {
+        bool is_rvalue = std::is_rvalue_reference<decltype(value)>::value;
         if (is_rvalue)
-            this->insert_no_return(std::move(pair.first), std::move(pair.second));
+            this->insert_no_return(std::move(value.first), std::move(value.second));
         else
-            this->insert_no_return(pair.first, pair.second);
+            this->insert_no_return(value.first, value.second);
     }
 
     /***************************************************************************/
@@ -1872,11 +1951,11 @@ public:
                     entry = entry->next;
                 }
                 else {
-                    if (likely(key_is_equal_(key, entry->value.first))) {
+                    if (likely(this->key_is_equal_(key, entry->value.first))) {
                         if (likely(prev != nullptr))
                             prev->next = entry->next;
                         else
-                            buckets_[index] = entry->next;
+                            this->buckets_[index] = entry->next;
 
                         assert(entry->attrib.isInUseEntry());
                         uint32_t chunk_id = entry->attrib.chunk_id();
@@ -1892,6 +1971,7 @@ public:
                         //
 
                         this->entry_size_--;
+
                         if (this->bucket_capacity_ > kDefaultInitialCapacity &&
                             this->entry_size_ < this->bucket_capacity_ * 3 / 16) {
                             this->rearrange(RangeType::Reorder);

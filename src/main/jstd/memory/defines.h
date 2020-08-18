@@ -8,6 +8,8 @@
 
 #include "jstd/basic/stddef.h"
 
+#include <memory>
+
 #ifndef MUST_BE_A_DERIVED_CLASS_OF
 #if 0
 #define MUST_BE_A_DERIVED_CLASS_OF(Base, Derived)
@@ -41,11 +43,12 @@ struct delete_helper<T, true> {
     }
 };
 
+
 template <typename T>
 void swap(T & a, T & b, typename std::enable_if<!std::is_pointer<T>::value>::type * p = nullptr) {
-    T tmp = a;
-    a = b;
-    b = tmp;
+    T tmp = std::move(a);
+    a = std::move(b);
+    b = std::move(tmp);
 }
 
 template <typename T>

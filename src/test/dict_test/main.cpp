@@ -88,7 +88,7 @@ static const std::size_t kInitCapacity = 16;
 #ifdef NDEBUG
 static const std::size_t kIterations = 3000000;
 #else
-static const std::size_t kIterations = 10000;
+static const std::size_t kIterations = 1000;
 #endif
 
 //
@@ -181,7 +181,7 @@ template <>
 struct hash<jstd::StringRef> {
     typedef std::uint32_t   result_type;
 
-    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
 
     result_type operator()(const jstd::StringRef & key) const {
         return hash_helper_.getHashCode(key);
@@ -193,10 +193,32 @@ struct hash<jstd::StringRef> {
 namespace jstd {
 
 template <>
-struct hash<jstd::StringRef> {
+struct hash<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> {
     typedef std::uint32_t   result_type;
 
-    jstd::hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+
+    result_type operator()(const jstd::StringRef & key) const {
+        return hash_helper_.getHashCode(key);
+    }
+};
+
+template <>
+struct hash<jstd::StringRef, std::uint32_t, HashFunc_Time31> {
+    typedef std::uint32_t   result_type;
+
+    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_Time31> hash_helper_;
+
+    result_type operator()(const jstd::StringRef & key) const {
+        return hash_helper_.getHashCode(key);
+    }
+};
+
+template <>
+struct hash<jstd::StringRef, std::uint32_t, HashFunc_Time31Std> {
+    typedef std::uint32_t   result_type;
+
+    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_Time31Std> hash_helper_;
 
     result_type operator()(const jstd::StringRef & key) const {
         return hash_helper_.getHashCode(key);
@@ -225,9 +247,10 @@ public:
     }
     ~std_map() {}
 
-    const char * name() {
+    static const char * name() {
         return "std::map<K, V>";
     }
+
     bool is_hashtable() {
         return false;
     }
@@ -235,6 +258,7 @@ public:
     iterator begin() {
         return this->map_.begin();
     }
+
     iterator end() {
         return this->map_.end();
     }
@@ -242,6 +266,7 @@ public:
     const_iterator begin() const {
         return this->map_.begin();
     }
+
     const_iterator end() const {
         return this->map_.end();
     }
@@ -249,6 +274,7 @@ public:
     size_type size() const {
         return this->map_.size();
     }
+
     bool empty() const {
         return this->map_.empty();
     }
@@ -313,9 +339,10 @@ public:
     std_unordered_map(size_type capacity = kInitCapacity) : map_(capacity) {}
     ~std_unordered_map() {}
 
-    const char * name() {
+    static const char * name() {
         return "std::unordered_map<K, V>";
     }
+
     bool is_hashtable() {
         return true;
     }
@@ -323,6 +350,7 @@ public:
     iterator begin() {
         return this->map_.begin();
     }
+
     iterator end() {
         return this->map_.end();
     }
@@ -330,6 +358,7 @@ public:
     const_iterator begin() const {
         return this->map_.begin();
     }
+
     const_iterator end() const {
         return this->map_.end();
     }
@@ -337,6 +366,7 @@ public:
     size_type size() const {
         return this->map_.size();
     }
+
     bool empty() const {
         return this->map_.empty();
     }
@@ -406,9 +436,10 @@ public:
     hash_table_impl(size_type capacity = kInitCapacity) : map_(capacity) {}
     ~hash_table_impl() {}
 
-    const char * name() {
+    static const char * name() {
         return map_type::name();
     }
+
     bool is_hashtable() {
         return true;
     }
@@ -416,6 +447,7 @@ public:
     iterator begin() {
         return this->map_.begin();
     }
+
     iterator end() {
         return this->map_.end();
     }
@@ -423,6 +455,7 @@ public:
     const_iterator begin() const {
         return this->map_.begin();
     }
+
     const_iterator end() const {
         return this->map_.end();
     }
@@ -430,6 +463,7 @@ public:
     size_type size() const {
         return this->map_.size();
     }
+
     bool empty() const {
         return this->map_.empty();
     }
@@ -437,6 +471,7 @@ public:
     size_type bucket_mask() const {
         return this->map_.bucket_mask();
     }
+
     size_type bucket_count() const {
         return this->map_.bucket_count();
     }
@@ -520,7 +555,7 @@ void hashtable_find_benchmark()
         sw.stop();
 
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
@@ -554,11 +589,7 @@ void hashtable_find_benchmark()
 template <typename AlgorithmTy>
 void hashtable_insert_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -584,9 +615,8 @@ void hashtable_insert_benchmark_impl()
             totalTime += sw.getElapsedMillisec();
         }
 
-        AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
     }
 }
@@ -620,11 +650,7 @@ void hashtable_insert_benchmark()
 template <typename AlgorithmTy>
 void hashtable_emplace_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -650,9 +676,8 @@ void hashtable_emplace_benchmark_impl()
             totalTime += sw.getElapsedMillisec();
         }
 
-        AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
     }
 }
@@ -686,11 +711,7 @@ void hashtable_emplace_benchmark()
 template <typename AlgorithmTy>
 void hashtable_erase_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -724,9 +745,8 @@ void hashtable_erase_benchmark_impl()
             totalTime += sw.getElapsedMillisec();
         }
 
-        AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
     }
 }
@@ -760,11 +780,7 @@ void hashtable_erase_benchmark()
 template <typename AlgorithmTy>
 void hashtable_insert_erase_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -801,7 +817,7 @@ void hashtable_insert_erase_benchmark_impl()
         sw.stop();
 
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
@@ -868,7 +884,7 @@ void hashtable_ref_find_benchmark()
         sw.stop();
 
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
@@ -902,11 +918,7 @@ void hashtable_ref_find_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_insert_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string index_buf[kHeaderFieldSize];
     StringRef field_str[kHeaderFieldSize];
@@ -934,9 +946,8 @@ void hashtable_ref_insert_benchmark_impl()
             totalTime += sw.getElapsedMillisec();
         }
 
-        AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
     }
 }
@@ -970,11 +981,7 @@ void hashtable_ref_insert_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_emplace_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string index_buf[kHeaderFieldSize];
     StringRef field_str[kHeaderFieldSize];
@@ -1002,9 +1009,8 @@ void hashtable_ref_emplace_benchmark_impl()
             totalTime += sw.getElapsedMillisec();
         }
 
-        AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
     }
 }
@@ -1038,11 +1044,7 @@ void hashtable_ref_emplace_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_erase_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -1076,9 +1078,8 @@ void hashtable_ref_erase_benchmark_impl()
             totalTime += sw.getElapsedMillisec();
         }
 
-        AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
     }
 }
@@ -1112,11 +1113,7 @@ void hashtable_ref_erase_benchmark()
 template <typename AlgorithmTy>
 void hashtable_ref_insert_erase_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 100;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string index_buf[kHeaderFieldSize];
     StringRef field_str[kHeaderFieldSize];
@@ -1155,7 +1152,7 @@ void hashtable_ref_insert_erase_benchmark_impl()
         sw.stop();
 
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
@@ -1189,11 +1186,7 @@ void hashtable_ref_insert_erase_benchmark()
 template <typename AlgorithmTy>
 void hashtable_rehash_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 2;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
-#endif
 
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -1245,7 +1238,7 @@ void hashtable_rehash_benchmark_impl()
         sw.stop();
 
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
@@ -1278,11 +1271,7 @@ void hashtable_rehash_benchmark()
 template <typename AlgorithmTy>
 void hashtable_rehash2_benchmark_impl()
 {
-#ifndef NDEBUG
-    static const size_t kRepeatTimes = 2;
-#else
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize / 2);
-#endif
 
     std::string field_str[kHeaderFieldSize];
     std::string index_str[kHeaderFieldSize];
@@ -1333,9 +1322,8 @@ void hashtable_rehash2_benchmark_impl()
         }
         sw.stop();
 
-        AlgorithmTy algorithm;
         printf("---------------------------------------------------------------------------\n");
-        printf(" %-36s  ", algorithm.name());
+        printf(" %-36s  ", AlgorithmTy::name());
         printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, sw.getElapsedMillisec());
     }
 }
@@ -1534,15 +1522,23 @@ void hashtable_uinttest()
 {
     if (dict_words_is_ready && dict_words.size() > 0) {
         hashtable_dict_words_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
-        hashtable_dict_words_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
+        hashtable_dict_words_show_status<jstd::Dictionary<jstd::string_view, jstd::string_view>>("Dictionary<jstd::string_view, jstd::string_view>");
 
-        hashtable_dict_words_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
+        hashtable_dict_words_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
+        hashtable_dict_words_show_status<jstd::Dictionary_Time31<jstd::string_view, jstd::string_view>>("Dictionary_Time31<jstd::string_view, jstd::string_view>");
+
+        //hashtable_dict_words_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
+        //hashtable_dict_words_show_status<std::unordered_map<jstd::string_view, jstd::string_view>>("std::unordered_map<jstd::string_view, jstd::string_view>");
     }
     else {
         hashtable_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
-        hashtable_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
+        hashtable_show_status<jstd::Dictionary<jstd::string_view, jstd::string_view>>("Dictionary<jstd::string_view, jstd::string_view>");
 
-        hashtable_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
+        hashtable_show_status<jstd::Dictionary_Time31<std::string, std::string>>("Dictionary_Time31<std::string, std::string>");
+        hashtable_show_status<jstd::Dictionary_Time31<jstd::string_view, jstd::string_view>>("Dictionary_Time31<jstd::string_view, jstd::string_view>");
+
+        //hashtable_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");        
+        //hashtable_show_status<std::unordered_map<jstd::string_view, jstd::string_view>>("std::unordered_map<jstd::string_view, jstd::string_view>");
     }
     
     //hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
@@ -1674,10 +1670,10 @@ int main(int argc, char * argv[])
     }
 
     //string_view_test();
-    shiftable_ptr_test();
+    //shiftable_ptr_test();
 
     hashtable_uinttest();
-    //hashtable_benchmark();
+    hashtable_benchmark();
 
     jstd::Console::ReadKey();
     return 0;

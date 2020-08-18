@@ -54,23 +54,27 @@ protected:
     size_type         length_;
 
 public:
-    basic_string_view() : data_(nullptr), length_(0) {}
-    basic_string_view(const char_type * data)
+    basic_string_view() noexcept : data_(nullptr), length_(0) {}
+    basic_string_view(const char_type * data) noexcept
         : data_(data), length_(libc::StrLen(data)) {}
-    basic_string_view(const char_type * data, size_type length)
+    basic_string_view(const char_type * data, size_type length) noexcept
         : data_(data), length_(length) {}
-    basic_string_view(const char_type * first, const char_type * last)
+    basic_string_view(const char_type * first, const char_type * last) noexcept
         : data_(first), length_(size_type(last - first)) {}
     template <size_type N>
-    basic_string_view(const char_type(&data)[N])
+    basic_string_view(const char_type(&data)[N]) noexcept
         : data_(data), length_(N - 1) {}
-    basic_string_view(const string_type & src)
+    basic_string_view(const this_type & src) noexcept
         : data_(src.c_str()), length_(src.size()) {
     }
-    basic_string_view(const this_type & src)
+    basic_string_view(this_type && src) noexcept
+        : data_(src.c_str()), length_(src.size()) {
+        src.clear();
+    }
+    basic_string_view(const string_type & src) noexcept
         : data_(src.c_str()), length_(src.size()) {
     }
-    ~basic_string_view() {
+    ~basic_string_view() noexcept {
         /* Do nothing! */
     }
 
@@ -93,21 +97,28 @@ public:
     const_reference front() const { return this->data_[0]; }
     const_reference back() const { return this->data_[this->size() - 1]; }
 
-    basic_string_view & operator = (const char_type * data) {
+    basic_string_view & operator = (const char_type * data) noexcept {
         this->data_ = data;
         this->length_ = libc::StrLen(data);
         return *this;
     }
 
-    basic_string_view & operator = (const string_type & rhs) {
-        this->data_ = rhs.c_str();
-        this->length_ = rhs.size();
+    basic_string_view & operator = (const this_type & rhs) noexcept {
+        this->data_ = rhs.data();
+        this->length_ = rhs.length();
         return *this;
     }
 
-    basic_string_view & operator = (const this_type & rhs) {
+    basic_string_view & operator = (this_type && rhs) noexcept {
         this->data_ = rhs.data();
         this->length_ = rhs.length();
+        rhs.clear();
+        return *this;
+    }
+
+    basic_string_view & operator = (const string_type & rhs) noexcept {
+        this->data_ = rhs.c_str();
+        this->length_ = rhs.size();
         return *this;
     }
 
@@ -148,7 +159,7 @@ public:
         this->length_ = 0;
     }
 
-    void swap(this_type & right) {
+    void swap(this_type & right) noexcept {
         if (&right != this) {
             std::swap(this->data_, right.data_);
             std::swap(this->length_, right.length_);
@@ -280,18 +291,18 @@ public:
 
     // compare(rhs)
 
-    int compare(const char_type * str) const {
+    int compare(const char_type * str) const noexcept {
         return Traits::compare(this->data(), str);
     }
 
     int compare(const char_type * s1,
-                          const char_type * s2,
-                          size_type count) const noexcept {
+                const char_type * s2,
+                size_type count) const noexcept {
         return Traits::compare(s1, s2, count);
     }
 
     int compare(const char_type * s1, size_type len1,
-                          const char_type * s2, size_type len2) const noexcept {
+                const char_type * s2, size_type len2) const noexcept {
         return Traits::compare(s1, len1, s2, len2);
     }
 
@@ -355,32 +366,32 @@ public:
         return this->compare(s1, rcount1, s2, rcount2);
     }
 
-    string_type to_string() const {
+    string_type to_string() const noexcept {
         return std::move(string_type(this->data_, this->length_));
     }
 }; // class basic_string_view<CharTy>
 
 template <typename CharTy>
 inline
-bool operator == (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
+bool operator == (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) noexcept {
     return lhs.is_equal(rhs);
 }
 
 template <typename CharTy>
 inline
-bool operator < (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
+bool operator < (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) noexcept {
     return (lhs.compare(rhs) == jstd::CompareResult::IsSmaller);
 }
 
 template <typename CharTy>
 inline
-bool operator > (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) {
+bool operator > (const basic_string_view<CharTy> & lhs, const basic_string_view<CharTy> & rhs) noexcept {
     return (lhs.compare(rhs) == jstd::CompareResult::IsBigger);
 }
 
 template <typename CharTy>
 inline
-void swap(basic_string_view<CharTy> & lhs, basic_string_view<CharTy> & rhs) {
+void swap(basic_string_view<CharTy> & lhs, basic_string_view<CharTy> & rhs) noexcept {
     lhs.swap(rhs);
 }
 
@@ -396,7 +407,7 @@ namespace std {
 
 template <typename CharTy>
 inline
-void swap(jstd::basic_string_view<CharTy> & lhs, jstd::basic_string_view<CharTy> & rhs) {
+void swap(jstd::basic_string_view<CharTy> & lhs, jstd::basic_string_view<CharTy> & rhs) noexcept {
     lhs.swap(rhs);
 }
 

@@ -91,7 +91,7 @@ static const std::size_t kInitCapacity = 16;
 #ifdef NDEBUG
 static const std::size_t kIterations = 3000000;
 #else
-static const std::size_t kIterations = 10000;
+static const std::size_t kIterations = 1000;
 #endif
 
 //
