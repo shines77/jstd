@@ -80,8 +80,10 @@
 
 using namespace jstd;
 
-std::vector<std::string> dict_words;
-bool dict_words_is_ready = false;
+static std::vector<std::string> dict_words;
+
+static std::string dict_filename;
+static bool dict_words_is_ready = false;
 
 static const std::size_t kInitCapacity = 16;
 
@@ -797,12 +799,6 @@ void hashtable_insert_erase_benchmark_impl()
 
         sw.start();
         for (size_t i = 0; i < kRepeatTimes; ++i) {
-#if 0
-            assert(algorithm.size() == 0);
-            algorithm.clear();
-            assert(algorithm.size() == 0);
-            checksum += algorithm.size();
-#endif
             for (size_t j = 0; j < kHeaderFieldSize; ++j) {
                 algorithm.emplace(field_str[j], index_str[j]);
             }
@@ -1663,6 +1659,7 @@ int main(int argc, char * argv[])
         std::string filename = argv[1];
         bool read_ok = read_dict_file(filename);
         dict_words_is_ready = read_ok;
+        dict_filename = filename;
     }
 
     if (!dict_words_is_ready) {

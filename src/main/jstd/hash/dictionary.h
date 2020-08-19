@@ -1350,7 +1350,27 @@ protected:
         return key_extractor<n_value_type>::extract(value);
     }
 
-    // Update the existed key's value, maybe by move assignment operator.
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, const value_type & value) {
+        entry->value.second = value.second;
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, value_type && value) {
+        entry->value.second = std::move(value.second);
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, const n_value_type & value) {
+        entry->value.second = value.second;
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, n_value_type && value) {
+        key_type key_tmp = std::move(value.first);
+        entry->value.second = std::move(value.second);
+    }
+
     JSTD_FORCEINLINE
     void update_mapped_value(entry_type * entry, const mapped_type & value) {
         entry->value.second = value;
@@ -1375,17 +1395,9 @@ protected:
                 printf("update_mapped_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
         }
 #endif
-#if 1
+#if 0
         value_allocator_.destructor(&entry->value.second);
         value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
-#elif 0
-        mapped_type * second = value_allocator_.allocate(1);
-        value_allocator_.construct(second, std::forward<Args>(args)...);
-
-        std::swap(entry->value.second, *second);
-
-        value_allocator_.destructor(second);
-        value_allocator_.deallocate(second, 1);
 #else
         mapped_type second(std::forward<Args>(args)...);
         std::swap(entry->value.second, second);
@@ -1417,9 +1429,9 @@ protected:
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
-            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
-            value_ptr->first = key;
-            value_ptr->second = value;
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
+            n_value->first = key;
+            n_value->second = value;
         }
 
         new_entry->attrib.setInUseEntry();
@@ -1435,9 +1447,9 @@ protected:
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
-            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
-            value_ptr->first = key;
-            value_ptr->second = std::forward<mapped_type>(value);
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
+            n_value->first = key;
+            n_value->second = std::forward<mapped_type>(value);
         }
 
         new_entry->attrib.setInUseEntry();
@@ -1448,15 +1460,15 @@ protected:
                                                  mapped_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
             // Use placement new method to construct value_type.
-            this->allocator_.constructor(&new_entry->value,
-                                         std::forward<key_type>(key),
-                                         std::forward<mapped_type>(value));
+            this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
+                                           std::forward<key_type>(key),
+                                           std::forward<mapped_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
-            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
-            value_ptr->first = std::forward<key_type>(key);
-            value_ptr->second = std::forward<mapped_type>(value);
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
+            n_value->first = std::forward<key_type>(key);
+            n_value->second = std::forward<mapped_type>(value);
         }
 
         new_entry->attrib.setInUseEntry();
@@ -1466,15 +1478,16 @@ protected:
     void construct_value(entry_type * new_entry, n_value_type * value) {
         if (new_entry->attrib.isFreeEntry()) {
             // Use placement new method to construct value_type [by move assignment].
-            this->allocator_.constructor(&new_entry->value, std::move(value->first),
-                                                            std::move(value->second));
+            this->n_allocator_.constructor((n_value_type *)&(new_entry->value),
+                                           std::move(value->first),
+                                           std::move(value->second));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
-            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
-            std::swap(*value_ptr, *value);
-            //std::swap(value_ptr->first, value->first);
-            //std::swap(value_ptr->second, value->second);
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
+            //std::swap(*n_value, *value);
+            std::swap(n_value->first, value->first);
+            std::swap(n_value->second, value->second);
         }
 
         new_entry->attrib.setInUseEntry();
@@ -1485,16 +1498,17 @@ protected:
     void construct_value_args(entry_type * new_entry, Args && ... args) {
         if (new_entry->attrib.isFreeEntry()) {
             // Use placement new method to construct value_type.
-            this->allocator_.constructor(&new_entry->value, std::forward<Args>(args)...);
+            this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
+                                           std::forward<Args>(args)...);
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
             n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
 
-            n_value_type * value_ptr = (n_value_type *)&(new_entry->value);
-            std::swap(*value_ptr, *value_tmp);
-            //std::swap(value_ptr->first, value_tmp->first);
-            //std::swap(value_ptr->second, value_tmp->second);
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
+            //std::swap(*n_value, *value_tmp);
+            std::swap(n_value->first, value_tmp->first);
+            std::swap(n_value->second, value_tmp->second);
 
             this->n_allocator_.destroy(value_tmp);
         }
@@ -1505,26 +1519,24 @@ protected:
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, const key_type & key,
                                               const mapped_type & value) {
-        value_type * value_tmp = allocator_.create(key, value);
-        std::swap(old_entry->value, *value_tmp);
-        this->allocator_.destroy(value_tmp);
+        value_type value_tmp(key, value);
+        std::swap(old_entry->value, value_tmp);
     }
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, const key_type & key,
                                               mapped_type && value) {
-        value_type * value_tmp = allocator_.create(key, std::forward<mapped_type>(value));
-        std::swap(old_entry->value, *value_tmp);
-        this->allocator_.destroy(value_tmp);
+        value_type value_tmp(key, std::forward<mapped_type>(value));
+        std::swap(old_entry->value, value_tmp);
     }
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, key_type && key,
                                               mapped_type && value) {
-        value_type * value_tmp = allocator_.create(std::forward<key_type>(key),
-                                                   std::forward<mapped_type>(value));
-        std::swap(old_entry->value, *value_tmp);
-        this->allocator_.destroy(value_tmp);
+        n_value_type value_tmp(std::forward<key_type>(key),
+                               std::forward<mapped_type>(value));
+        n_value_type * n_value = reinterpret_cast<n_value_type *>(&old_entry->value);
+        std::swap(*n_value, value_tmp);
     }
 
     JSTD_FORCEINLINE
@@ -1534,26 +1546,48 @@ protected:
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, value_type && value) {
-        n_value_type * value_ptr = (n_value_type *)&(old_entry->value);
-        *value_ptr = std::forward<n_value_type>(value);
+        old_entry->value = std::forward<value_type>(key);
     }
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, n_value_type * value) {
-        n_value_type * value_ptr = (n_value_type *)&(old_entry->value);
-        std::swap(*value_ptr, *value);
+        n_value_type * n_value = reinterpret_cast<n_value_type *>(&old_entry->value);
+        std::swap(*n_value, *value);
     }
 
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void update_value_args_impl(entry_type * old_entry, const key_type & key, Args && ... args) {
+        mapped_type mapped_value(std::forward<Args>(args)...);
+        std::swap(old_entry->value.second, mapped_value);
+    }
+
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void update_value_args_impl(entry_type * old_entry, key_type && key, Args && ... args) {
+        key_type key_tmp = std::move(key);
+        mapped_type mapped_value(std::forward<Args>(args)...);
+        std::swap(old_entry->value.second, mapped_value);
+    }
+
+#if 1
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void update_value_args(entry_type * old_entry, Args && ... args) {
+        this->update_value_args_impl(old_entry, std::forward<Args>(args)...);
+    }
+#else
     template <typename ...Args>
     JSTD_FORCEINLINE
     void update_value_args(entry_type * old_entry, Args && ... args) {
         n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
 
-        n_value_type * value_ptr = (n_value_type *)&(old_entry->value);
-        std::swap(*value_ptr, *value_tmp);
+        n_value_type * n_value = reinterpret_cast<n_value_type *>(&old_entry->value);
+        std::swap(*n_value, *value_tmp);
 
         this->n_allocator_.destroy(value_tmp);
     }
+#endif
 
     JSTD_FORCEINLINE
     entry_type * got_a_free_entry(hash_code_t hash_code, index_type & index) {
@@ -1601,36 +1635,40 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void insert_new_entry(const key_type & key, const mapped_type & value,
-                          hash_code_t hash_code, index_type index) {
+    entry_type * insert_new_entry(const key_type & key, const mapped_type & value,
+                                  hash_code_t hash_code, index_type index) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, key, value);
         this->entry_size_++;
+        return new_entry;
     }
 
     JSTD_FORCEINLINE
-    void insert_new_entry(const key_type & key, mapped_type && value,
-                          hash_code_t hash_code, index_type index) {
+    entry_type * insert_new_entry(const key_type & key, mapped_type && value,
+                                  hash_code_t hash_code, index_type index) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, key, std::forward<mapped_type>(value));
         this->entry_size_++;
+        return new_entry;
     }
 
     JSTD_FORCEINLINE
-    void insert_new_entry(key_type && key, mapped_type && value,
-                          hash_code_t hash_code, index_type index) {
+    entry_type * insert_new_entry(key_type && key, mapped_type && value,
+                                  hash_code_t hash_code, index_type index) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, std::forward<key_type>(key),
                                          std::forward<mapped_type>(value));
         this->entry_size_++;
+        return new_entry;
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
     ReturnType insert_unique(const key_type & key, const mapped_type & value) {
         assert(this->buckets() != nullptr);
+        bool inserted;
 
         hash_code_t hash_code = this->get_hash(key);
         index_type index = this->index_of(hash_code);
@@ -1638,53 +1676,60 @@ protected:
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
             this->insert_new_entry(key, value, hash_code, index);
+            inserted = true;
         }
         else {
             if (!OnlyIfAbsent) {
                 this->update_mapped_value(entry, value);
             }
+            inserted = false;
         }
 
         this->updateVersion();
 
-        return ReturnType(iterator(entry), (entry == nullptr));
+        return ReturnType(iterator(entry), inserted);
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
     ReturnType insert_unique(const key_type & key, mapped_type && value) {
         assert(this->buckets() != nullptr);
+        bool inserted;
 
         hash_code_t hash_code = this->get_hash(key);
         index_type index = this->index_of(hash_code);
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->insert_new_entry(key, std::forward<mapped_type>(value),
-                                   hash_code, index);
+            entry = this->insert_new_entry(key, std::forward<mapped_type>(value),
+                                           hash_code, index);
+            inserted = true;
         }
         else {
             if (!OnlyIfAbsent) {
                 this->update_mapped_value(entry, std::forward<mapped_type>(value));
             }
+            inserted = false;
         }
 
         this->updateVersion();
 
-        return ReturnType(iterator(entry), (entry == nullptr));
+        return ReturnType(iterator(entry), inserted);
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
     ReturnType insert_unique(key_type && key, mapped_type && value) {
         assert(this->buckets() != nullptr);
+        bool inserted;
 
         hash_code_t hash_code = this->get_hash(key);
         index_type index = this->index_of(hash_code);
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->insert_new_entry(std::forward<key_type>(key),
-                                   std::forward<mapped_type>(value),
-                                   hash_code, index);
+            entry = this->insert_new_entry(std::forward<key_type>(key),
+                                           std::forward<mapped_type>(value),
+                                           hash_code, index);
+            inserted = true;
         }
         else {
             if (!OnlyIfAbsent) {
@@ -1692,60 +1737,66 @@ protected:
                 key_type key_tmp = std::forward<key_type>(key);
                 this->update_mapped_value(entry, std::forward<mapped_type>(value));
             }
+            inserted = false;
         }
 
         this->updateVersion();
 
-        return ReturnType(iterator(entry), (entry == nullptr));
+        return ReturnType(iterator(entry), inserted);
     }
 
     template <typename ...Args>
     JSTD_INLINE
-    void emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
+    entry_type * emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value_args(new_entry, std::forward<Args>(args)...);
         this->entry_size_++;
+        return new_entry;
     }
 
     JSTD_INLINE
-    void emplace_new_entry_from_value(hash_code_t hash_code,
-                                      index_type index, n_value_type * value) {
+    entry_type * emplace_new_entry_from_value(hash_code_t hash_code,
+                                              index_type index, n_value_type * value) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, value);
         this->entry_size_++;
+        return new_entry;
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
     ReturnType emplace_unique(const key_type & key, Args && ... args) {
         assert(this->buckets() != nullptr);
+        bool inserted;
 
         hash_code_t hash_code = this->get_hash(key);
         index_type index = this->index_of(hash_code);
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->emplace_new_entry(hash_code, index,
-                                    std::forward<Args>(args)...);
+            entry = this->emplace_new_entry(hash_code, index,
+                                            std::forward<Args>(args)...);
+            inserted = true;
         }
         else {
             if (!OnlyIfAbsent) {
                 this->update_value_args(entry, std::forward<Args>(args)...);
             }
+            inserted = false;
         }
 
         this->updateVersion();
 
-        return ReturnType(iterator(entry), (entry == nullptr));
+        return ReturnType(iterator(entry), inserted);
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
     ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
+        bool inserted;
 
         n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
-        assert(value_tmp != nullptr);
         const key_type & key = this->get_key(value_tmp);
 
         hash_code_t hash_code = this->get_hash(key);
@@ -1753,18 +1804,20 @@ protected:
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->emplace_new_entry_from_value(hash_code, index, value_tmp);
+            entry = this->emplace_new_entry_from_value(hash_code, index, value_tmp);
+            inserted = true;
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_value(entry, value_tmp);
+                this->update_mapped_value(entry, *value_tmp);
             }
+            inserted = false;
         }
 
         this->n_allocator_.destroy(value_tmp);
         this->updateVersion();
 
-        return ReturnType(iterator(entry), (entry == nullptr));
+        return ReturnType(iterator(entry), inserted);
     }
 
     void updateVersion() {
@@ -1874,11 +1927,18 @@ public:
     }
 
     insert_return_type insert(value_type && value) {
-        bool is_rvalue = std::is_rvalue_reference<decltype(value)>::value;
-        if (is_rvalue)
+        bool is_rvalue = std::is_rvalue_reference<decltype(std::forward<value_type>(value))>::value;
+        if (is_rvalue) {
+#if 1
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&value);
+            return this->insert(std::move(n_value->first), std::move(n_value->second));
+#else
             return this->insert(std::move(value.first), std::move(value.second));
-        else
+#endif
+        }
+        else {
             return this->insert(value.first, value.second);
+        }
     }
 
     // insert_no_return(key, value)
@@ -1901,18 +1961,21 @@ public:
     }
 
     void insert_no_return(value_type && value) {
-        bool is_rvalue = std::is_rvalue_reference<decltype(value)>::value;
-        if (is_rvalue)
-            this->insert_no_return(std::move(value.first), std::move(value.second));
-        else
+        bool is_rvalue = std::is_rvalue_reference<decltype(std::forward<value_type>(value))>::value;
+        if (is_rvalue) {
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&value);
+            this->insert_no_return(std::move(n_value->first), std::move(n_value->second));
+        }
+        else {
             this->insert_no_return(value.first, value.second);
+        }
     }
 
     /***************************************************************************/
     /*                                                                         */
     /* See: https://en.cppreference.com/w/cpp/container/unordered_map/emplace  */
     /*                                                                         */
-    /*   Don't support that emplace() interface:                               */
+    /*   emplace() don't support this interface:                               */
     /*                                                                         */
     /*   // uses pair's piecewise constructor                                  */
     /*   m.emplace(std::piecewise_construct,                                   */
@@ -1966,7 +2029,6 @@ public:
 
                         // destruct the entry->value
                         //
-                        // TODO: XXXXX
                         // this->allocator_.destructor(&entry->value);
                         //
 
