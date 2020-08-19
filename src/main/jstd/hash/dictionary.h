@@ -1546,7 +1546,7 @@ protected:
 
     JSTD_FORCEINLINE
     void update_value(entry_type * old_entry, value_type && value) {
-        old_entry->value = std::forward<value_type>(key);
+        old_entry->value = std::forward<value_type>(value);
     }
 
     JSTD_FORCEINLINE
