@@ -43,100 +43,93 @@ namespace jstd {
 // hash_entry_chunk<T>
 //
 template <typename T>
-class hash_entry_chunk {
-public:
+struct hash_entry_chunk {
     typedef T               entry_type;
     typedef std::size_t     size_type;
 
-private:
-    entry_type * entries_;
-    size_type    size_;
-    size_type    capacity_;
-    size_type    chunk_id_;
+    entry_type * entries;
+    size_type    size;
+    size_type    capacity;
+    size_type    chunk_id;
 
-public:
-    hash_entry_chunk() : entries_(nullptr), size_(0), capacity_(0), chunk_id_(0) {}
+    hash_entry_chunk() : entries(nullptr), size(0), capacity(0), chunk_id(0) {}
     hash_entry_chunk(size_type chunk_id, entry_type * entries, size_type capacity)
-        : entries_(entries), size_(0), capacity_(capacity), chunk_id_(chunk_id) {}
+        : entries(entries), size(0), capacity(capacity), chunk_id(chunk_id) {}
     hash_entry_chunk(const hash_entry_chunk & src)
-        : entries_(src.entries()), size_(src.size()),
-          capacity_(src.capacity()), chunk_id_(src.chunk_id()) {}
+        : entries(src.entries), size(src.size),
+          capacity(src.capacity), chunk_id(src.chunk_id) {}
     ~hash_entry_chunk() {}
 
     hash_entry_chunk & operator = (const hash_entry_chunk & rhs) {
-        this->entries_ = rhs.entries();
-        this->size_ = rhs.size();
-        this->capacity_ = rhs.capacity();
-        this->chunk_id_ = rhs.chunk_id();
+        this->entries = rhs.entries;
+        this->size = rhs.size;
+        this->capacity = rhs.capacity;
+        this->chunk_id = rhs.chunk_id;
         return *this;
     }
 
-    entry_type * entries() const { return this->entries_; }
-    size_type size() const { return this->size_; }
-    size_type capacity() const { return this->capacity_; }
-    size_type frees() const { return size_type(this->capacity() - this->size()); }
-    size_type chunk_id() const { return this->chunk_id_; }
+    size_type free_cnt() const { return size_type(this->capacity() - this->size()); }
 
-    size_type is_empty() const { return (this->size_ == 0); }
-    size_type is_full() const { return (this->size_ >= this->capacity_); }
+    size_type is_empty() const { return (this->size == 0); }
+    size_type is_full() const { return (this->size >= this->capacity); }
 
     void set_chunk(size_type chunk_id, entry_type * entries, size_type capacity) {
-        this->entries_ = entries;
-        this->size_ = 0;
-        this->capacity_ = capacity;
-        this->chunk_id_ = chunk_id;
+        this->entries = entries;
+        this->size = 0;
+        this->capacity = capacity;
+        this->chunk_id = chunk_id;
     }
 
     void set_chunk(size_type chunk_id, entry_type * entries, size_type size, size_type capacity) {
-        this->entries_ = entries;
-        this->size_ = size;
-        this->capacity_ = capacity;
-        this->chunk_id_ = chunk_id;
+        this->entries = entries;
+        this->size = size;
+        this->capacity = capacity;
+        this->chunk_id = chunk_id;
     }
 
     void set_entries(entry_type * entries) {
-        this->entries_ = entries;
+        this->entries = entries;
     }
 
     void set_size(size_type size) {
-        this->size_ = size;
+        this->size = size;
     }
 
     void set_capacity(size_type capacity) {
-        this->capacity_ = capacity;
+        this->capacity = capacity;
     }
 
     void set_chunk_id(size_type chunk_id) {
-        this->chunk_id_ = chunk_id;
+        this->chunk_id = chunk_id;
     }
 
     void clear() {
-        this->entries_ = nullptr;
-        this->size_ = 0;
-        this->capacity_ = 0;
-        this->chunk_id_ = 0;
+        this->entries = nullptr;
+        this->size = 0;
+        this->capacity = 0;
+        this->chunk_id = 0;
     }
 
     void reset() {
-        this->size_ = 0;
+        this->size = 0;
     }
 
     void increase() {
-        ++(this->size_);
+        ++(this->size);
     }
 
     void decrease() {
-        assert(this->size_ > 0);
-        --(this->size_);
+        assert(this->size > 0);
+        --(this->size);
     }
 
     void inflate(size_type size) {
-        this->size_ += size;
+        this->size += size;
     }
 
     void deflate(size_type size) {
-        assert(this->size_ >= size);
-        this->size_ -= size;
+        assert(this->size >= size);
+        this->size -= size;
     }
 };
 
@@ -206,11 +199,11 @@ public:
     }
 
     uint32_t lastChunkId() const {
-        return static_cast<uint32_t>(this->last_chunk_.chunk_id());
+        return static_cast<uint32_t>(this->last_chunk_.chunk_id);
     }
 
     uint32_t lastChunkSize() const {
-        return static_cast<uint32_t>(this->last_chunk_.size());
+        return static_cast<uint32_t>(this->last_chunk_.size);
     }
 
 public:
@@ -218,9 +211,9 @@ public:
         if (likely(this->chunk_list_.size() > 0)) {
             size_type last_index = this->chunk_list_.size() - 1;
             for (size_type i = 0; i < last_index; i++) {
-                entry_type * entries = this->chunk_list_[i].entries();
+                entry_type * entries = this->chunk_list_[i].entries;
                 if (likely(entries != nullptr)) {
-                    size_type capacity = this->chunk_list_[i].capacity();
+                    size_type capacity = this->chunk_list_[i].capacity;
                     entry_type * entry = entries;
                     assert(entry != nullptr);
                     for (size_type j = 0; j < capacity; j++) {
@@ -237,12 +230,12 @@ public:
 
             // Destroy last entry
             {
-                entry_type * entries = this->last_chunk_.entries();
-                if (likely(entries != nullptr)) {
-                    size_type last_size     = this->last_chunk_.size();
-                    size_type last_capacity = this->last_chunk_.capacity();
+                entry_type * last_entries = this->last_chunk_.entries;
+                if (likely(last_entries != nullptr)) {
+                    size_type last_size     = this->last_chunk_.size;
+                    size_type last_capacity = this->last_chunk_.capacity;
                     assert(last_size <= last_capacity);
-                    entry_type * entry = entries;
+                    entry_type * entry = last_entries;
                     assert(entry != nullptr);
                     for (size_type j = 0; j < last_size; j++) {
                         if (likely(!entry->attrib.isFreeEntry())) {
@@ -252,7 +245,7 @@ public:
                     }
 
                     // Free the entries buffer.
-                    this->entry_allocator_.deallocate(entries, last_capacity);
+                    this->entry_allocator_.deallocate(last_entries, last_capacity);
                 }
             }
         }
@@ -277,7 +270,7 @@ public:
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->last_chunk_.set_chunk(chunk_id, chunk.entries(), chunk.size(), chunk.capacity());
+        this->last_chunk_.set_chunk(chunk_id, chunk.entries, chunk.size, chunk.capacity);
 
         this->chunk_list_.emplace_back(chunk);
     }
@@ -286,7 +279,7 @@ public:
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->last_chunk_.set_chunk(chunk_id, chunk.entries(), chunk.size(), chunk.capacity());
+        this->last_chunk_.set_chunk(chunk_id, chunk.entries, chunk.size, chunk.capacity);
 
         this->chunk_list_.emplace_back(std::forward<entry_chunk_t>(chunk));
     }
@@ -309,7 +302,7 @@ public:
         if (this->size() > 1) {
             size_type last_chunk_id = this->chunk_list_.size() - 1;
             this->last_chunk_ = this->chunk_list_[last_chunk_id];
-            this->last_chunk_.set_size(this->last_chunk_.capacity());
+            this->last_chunk_.size = this->last_chunk_.capacity;
         }
         else if (this->size() == 0) {
             last_chunk_.clear();
@@ -356,6 +349,29 @@ public:
     void removeEntry(entry_type * entry) {
         uint32_t chunk_id = entry->attrib.getChunkId();
         this->removeEntry(chunk_id);
+    }
+
+    size_type findClosedChunk(size_type target_capacity) {
+        size_type target_chunk_id = size_type(-1);
+        size_type max_target_size = 0;
+        size_type total_chunk_size = this->chunk_list_.size() - 1;
+        for (size_type i = 0; i < total_chunk_size; i++) {
+            if (likely(this->chunk_list_[i].entries != nullptr)) {
+                size_type chunk_capacity = this->chunk_list_[i].capacity;
+                if (likely(chunk_capacity == target_capacity)) {
+                    size_type chunk_size = this->chunk_list_[i].size;
+                    if (chunk_size > max_target_size) {
+                        max_target_size = chunk_size;
+                        target_chunk_id = i;
+                    }
+                }
+                else if (likely(chunk_capacity > target_capacity)) {
+                    break;
+                }
+            }
+        }
+
+        return target_chunk_id;
     }
 };
 
@@ -662,8 +678,8 @@ protected:
 
     allocator<std::pair<Key, Value>, Alignment, allocator_type::kThrowEx> n_allocator_;
 
-    std::allocator<mapped_type>                     value_allocator_;
-    typename std::allocator<value_type>::allocator  pair_allocator_;
+    std::allocator<mapped_type>                     mapped_allocator_;
+    typename std::allocator<value_type>::allocator  value_allocator_;
 
     // Default initial capacity is 16.
     static const size_type kDefaultInitialCapacity = 16;
@@ -1894,11 +1910,11 @@ public:
         this->rehash_impl<true>(new_bucket_capacity);
     }
 
-    void release_entry_values_in_chunk(size_type last_chunk_id) {
+    void release_entry_values_and_erase_in_chunk(size_type target_chunk_id) {
         entry_type * prev = nullptr;
         entry_type * entry = this->freelist_.head();
         while (entry != nullptr) {
-            if (entry->attrib.getChunkId() == last_chunk_id) {
+            if (entry->attrib.getChunkId() == target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
                 this->allocator_.destructor(&entry->value);
                 this->freelist_.erase(prev, entry);
@@ -1909,17 +1925,17 @@ public:
     }
 
     void reorder_last_chunk_is_empty(size_type last_chunk_id, const entry_chunk_t & last_chunk) {
-        size_type ahead_chunk_capacity = this->entry_capacity_ - last_chunk.capacity();
+        size_type ahead_chunk_capacity = this->entry_capacity_ - last_chunk.capacity;
         ssize_type last_chunk_free_cnt = this->freelist_.size() - ahead_chunk_capacity;
         assert(last_chunk_free_cnt >= 0);
 
         // Release all entry->value resource in freelist that it is in last chunk.
-        release_entry_values_in_chunk(last_chunk_id);
+        release_entry_values_and_erase_in_chunk(last_chunk_id);
 
         // Clear last chunk.
         {
-            entry_type * entries = this->chunk_list_[last_chunk_id].entries();
-            size_type   capacity = this->chunk_list_[last_chunk_id].capacity();
+            entry_type * entries = this->chunk_list_[last_chunk_id].entries;
+            size_type   capacity = this->chunk_list_[last_chunk_id].capacity;
             if (entries != nullptr) {
                 this->entry_allocator_.deallocate(entries, capacity);
                 this->chunk_list_[last_chunk_id].set_entries(nullptr);
@@ -1935,10 +1951,10 @@ public:
         this->entry_capacity_ = ahead_chunk_capacity;
     }
 
-    void release_entry_values_not_in_chunk(size_type last_chunk_id) {
+    void release_entry_values_not_in_chunk(size_type target_chunk_id) {
         entry_type * entry = this->freelist_.head();
         while (entry != nullptr) {
-            if (entry->attrib.getChunkId() != last_chunk_id) {
+            if (entry->attrib.getChunkId() != target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
                 this->allocator_.destructor(&entry->value);
             }
@@ -1956,8 +1972,8 @@ public:
 
         // Clear another the chunks except last chunk.
         for (size_type i = 0; i < last_chunk_id; i++) {
-            entry_type * entries = this->chunk_list_[i].entries();
-            size_type   capacity = this->chunk_list_[i].capacity();
+            entry_type * entries = this->chunk_list_[i].entries;
+            size_type   capacity = this->chunk_list_[i].capacity;
             if (entries != nullptr) {
                 this->entry_allocator_.deallocate(entries, capacity);
                 this->chunk_list_[i].set_entries(nullptr);
@@ -1965,9 +1981,9 @@ public:
             }
         }
 
-        // Deal with freelist
+        // Deal with last chunk
         {
-            size_type ahead_chunk_capacity = this->entry_capacity_ - last_chunk.capacity();
+            size_type ahead_chunk_capacity = this->entry_capacity_ - last_chunk.capacity;
             ssize_type last_chunk_free_cnt = this->freelist_.size() - ahead_chunk_capacity;
             assert(last_chunk_free_cnt >= 0);
 
@@ -1978,9 +1994,9 @@ public:
             last_chunk_info.set_chunk_id(0);
 
             if (last_chunk_free_cnt > 0) {
-                // Rebuild the freelist from last chunk.
-                size_type max_limit = last_chunk_info.size();
-                entry_type * entry = last_chunk.entries();
+                // Refresh the freelist and last chunk.
+                size_type max_limit = last_chunk_info.size;
+                entry_type * entry = last_chunk.entries;
                 for (size_type i = 0; i < max_limit; i++) {
                     assert(!entry->attrib.isFreeEntry());
                     if (entry->attrib.isInUseEntry()) {
@@ -1999,35 +2015,195 @@ public:
         this->chunk_list_.resize(1);
 
         // Here, we don't change the bucket count.
-        this->entry_capacity_ = last_chunk.capacity();
+        this->entry_capacity_ = last_chunk.capacity;
+    }
+
+    void release_entry_values_and_erase_not_in_chunk(size_type target_chunk_id) {
+        entry_type * prev = nullptr;
+        entry_type * entry = this->freelist_.head();
+        while (entry != nullptr) {
+            if (entry->attrib.getChunkId() != target_chunk_id) {
+                assert(entry->attrib.isReusableEntry());
+                this->allocator_.destructor(&entry->value);
+                this->freelist_.erase(prev, entry);
+            }
+            else {
+                assert(entry->attrib.isReusableEntry());
+                entry->attrib.setChunkId(0);
+            }
+            prev = entry;
+            entry = entry->next;
+        }
+    }
+
+    JSTD_FORCEINLINE
+    void move_entry_to_target_chunk(entry_type * src_entry, entry_type * dest_entry) {
+        if (dest_entry->attrib.isReusableEntry()) {
+            dest_entry->next         = src_entry->next;
+            dest_entry->hash_code    = src_entry->hash_code;
+            dest_entry->attrib.value = src_entry->attrib.value;
+
+            src_entry->next = dest_entry;
+            src_entry->attrib.setReusableEntry();
+
+            n_value_type * n_src_value  = reinterpret_cast<n_value_type *>(&src_entry->value);
+            n_value_type * n_dest_value = reinterpret_cast<n_value_type *>(&dest_entry->value);
+            std::swap(n_src_value->first,  n_dest_value->first);
+            std::swap(n_src_value->second, n_dest_value->second);
+
+            this->allocator_.destructor(&src_entry->value);
+        }
+        else if (dest_entry->attrib.isFreeEntry()) {
+            dest_entry->next         = src_entry->next;
+            dest_entry->hash_code    = src_entry->hash_code;
+            dest_entry->attrib.value = src_entry->attrib.value;
+
+            src_entry->next = dest_entry;
+            src_entry->attrib.setReusableEntry();
+
+            n_value_type * n_src_value  = reinterpret_cast<n_value_type *>(&src_entry->value);
+            n_value_type * n_dest_value = reinterpret_cast<n_value_type *>(&dest_entry->value);
+            n_src_value->first  = std::move(n_dest_value->first);
+            n_src_value->second = std::move(n_dest_value->second);
+
+            this->allocator_.destructor(&src_entry->value);
+        }
+    }
+
+    JSTD_FORCEINLINE
+    entry_type * find_first_free_entry(entry_type * now_entry, entry_type * last_entry) {
+        while (now_entry < last_entry) {
+            if (likely(now_entry->attrib.isInUseEntry())) {
+                now_entry++;
+            }
+            else {
+                assert(now_entry->attrib.isReusableEntry() || now_entry->attrib.isFreeEntry());
+                return now_entry;
+            }
+        }
+
+        return nullptr;
+    }
+
+    void reorder_shrink_to_fit() {
+        size_type target_capacity = run_time::round_up_to_pow2(this->entry_capacity_ / 4);
+        assert(target_capacity <= this->entry_size_);
+
+        size_type target_chunk_id = this->chunk_list_.findClosedChunk(target_capacity);
+        if (target_chunk_id != size_type(-1)) {
+            size_type target_chunk_size = this->chunk_list_[target_chunk_id].size;
+            size_type target_chunk_capacity = this->chunk_list_[target_chunk_id].capacity;
+            entry_type * dest_entry = this->chunk_list_[target_chunk_id].entries;
+            entry_type * dest_last_entry = dest_entry + target_chunk_capacity;
+            size_type total_move_count = 0;
+
+            // Move all of the inused entries to target chunk
+            for (size_type i = 0; i < this->chunk_list_.size(); i++) {
+                if (i != target_chunk_id) {
+                    entry_type * src_entry = this->chunk_list_[i].entries;
+                    if (src_entry != nullptr) {
+                        size_type move_count = 0;
+                        size_type src_size = this->chunk_list_[i].size;
+                        size_type src_capacity = this->chunk_list_[i].capacity;
+                        entry_type * src_last_entry = src_entry + src_capacity;
+                        while (src_entry < src_last_entry) {
+                            if (src_entry->attrib.isInUseEntry()) {
+                                dest_entry = find_first_free_entry(dest_entry, dest_last_entry);
+                                if (dest_entry != nullptr) {
+                                    src_entry->attrib.setChunkId(static_cast<uint32_t>(target_chunk_id));
+                                    move_entry_to_target_chunk(src_entry, dest_entry);
+                                    move_count++;
+                                    if (move_count > src_size)
+                                        break;
+                                }
+                            }
+                            src_entry++;
+                        }
+                        total_move_count += move_count;
+                    }
+                }
+            }
+
+            assert(total_move_count > size_type(target_chunk_capacity - target_chunk_size));
+
+            // Release all entry->value resource in freelist that it's not in target chunk.
+            release_entry_values_and_erase_not_in_chunk(target_chunk_id);
+
+            // Clear another the chunks except target chunk.
+            for (size_type i = 0; i < this->chunk_list_.size(); i++) {
+                if (i != target_chunk_id) {
+                    entry_type * entries = this->chunk_list_[i].entries;
+                    if (entries != nullptr) {
+                        size_type capacity = this->chunk_list_[i].capacity;
+                        this->entry_allocator_.deallocate(entries, capacity);
+                        this->chunk_list_[i].set_entries(nullptr);
+                        this->chunk_list_[i].set_capacity(0);
+                    }
+                }
+            }
+
+            // Deal with target chunk
+            {
+                entry_chunk_t & last_chunk_info = this->chunk_list_.lastChunk();
+                last_chunk_info.set_chunk_id(0);
+
+                // Refresh the target chunk.
+                entry_chunk_t & target_chunk = this->chunk_list_[target_chunk_id];
+                entry_type * entry = target_chunk.entries;
+                size_type capacity = target_chunk.capacity;
+                for (size_type i = 0; i < capacity; i++) {
+                    assert(!entry->attrib.isFreeEntry());
+                    if (entry->attrib.isInUseEntry()) {
+                        entry->attrib.setChunkId(0);
+                    }
+                    entry++;
+                }
+            }
+
+            if (target_chunk_id != 0) {
+                this->chunk_list_[0] = this->chunk_list_[target_chunk_id];
+            }
+            this->chunk_list_.resize(1);
+
+            // Here, we don't change the bucket count.
+            this->entry_capacity_ = target_capacity;
+        }
+        else {
+            // No matching chunk found
+            assert(false);
+        }
     }
 
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
-            size_type first_chunk_capacity = this->chunk_list_[0].capacity();
+            size_type first_chunk_capacity = this->chunk_list_[0].capacity;
             if (first_chunk_capacity < kMaxEntryChunkSize) {
                 assert(run_time::is_pow2(first_chunk_capacity));
                 if (likely(this->chunk_list_.size() > 1)) {
                     size_type last_chunk_id = this->chunk_list_.size() - 1;
                     const entry_chunk_t & last_chunk = this->chunk_list_[last_chunk_id];
-                    size_type last_chunk_capacity = this->chunk_list_[last_chunk_id].capacity();
-                    size_type ahead_chunk_size = this->entry_size_ - last_chunk.size();
+                    size_type last_chunk_capacity = this->chunk_list_[last_chunk_id].capacity;
+                    assert(run_time::is_pow2(last_chunk_capacity));
+                    size_type ahead_chunk_size = this->entry_size_ - last_chunk.size;
                     if (ahead_chunk_size != 0) {
-                        if (last_chunk.size() != 0) {
-                            //
+                        if (last_chunk.size != 0) {
+                            reorder_shrink_to_fit();
                         }
                         else {
-                            assert(last_chunk.size() == 0);
-                            reorder_last_chunk_is_empty(last_chunk_id, last_chunk);
+                            assert(last_chunk.size == 0);
+                            //reorder_last_chunk_is_empty(last_chunk_id, last_chunk);
+                            reorder_shrink_to_fit();
                         }
                     }
                     else {
                         assert(ahead_chunk_size == 0);
-                        reorder_ahead_chunk_is_empty(last_chunk_id, last_chunk);
+                        //reorder_ahead_chunk_is_empty(last_chunk_id, last_chunk);
+                        reorder_shrink_to_fit();
                     }
                 }
                 else if (this->chunk_list_.size() == 1) {
                     //
+                    rearrange_realloc();
                 }
             }
             else {
