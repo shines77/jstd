@@ -40,8 +40,8 @@ inline bool is_pow2(SizeType n) {
     static_assert(std::is_integral<SizeType>::value,
                   "Error: is_pow2(SizeType n) -- SizeType must be a integral type.");
     typedef typename std::make_unsigned<SizeType>::type unsigned_type;
-    unsigned_type x = static_cast<unsigned_type>(n);
-    return ((x & (x - 1)) == 0);
+    unsigned_type u = static_cast<unsigned_type>(n);
+    return ((u & (u - 1)) == 0);
 }
 
 template <typename SizeType>
@@ -49,8 +49,8 @@ inline SizeType verify_pow2(SizeType n) {
     static_assert(std::is_integral<SizeType>::value,
                   "Error: verify_pow2(SizeType n) -- SizeType must be a integral type.");
     typedef typename std::make_unsigned<SizeType>::type unsigned_type;
-    unsigned_type x = static_cast<unsigned_type>(n);
-    return static_cast<SizeType>(x & (x - 1));
+    unsigned_type u = static_cast<unsigned_type>(n);
+    return static_cast<SizeType>(u & (u - 1));
 }
 
 #if JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION

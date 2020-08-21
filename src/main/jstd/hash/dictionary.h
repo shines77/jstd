@@ -675,7 +675,7 @@ protected:
     // The maximum entry's chunk bytes, default is 8 MB bytes.
     static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
     // The entry's block size per chunk (entry_type).
-    static const size_type kEntryChunkSize =
+    static const size_type kMaxEntryChunkSize =
             compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
 
     // The threshold of treeify to red-black tree.
@@ -1894,21 +1894,6 @@ public:
         this->rehash_impl<true>(new_bucket_capacity);
     }
 
-    void release_entry_values_not_in_chunk(size_type last_chunk_id) {
-        entry_type * entry = this->freelist_.head();
-        while (entry != nullptr) {
-            if (entry->attrib.getChunkId() != last_chunk_id) {
-                assert(entry->attrib.isReusableEntry());
-                this->allocator_.destructor(&entry->value);
-            }
-            else {
-                assert(entry->attrib.isReusableEntry());
-                entry->attrib.setChunkId(0);
-            }
-            entry = entry->next;
-        }
-    }
-
     void release_entry_values_in_chunk(size_type last_chunk_id) {
         entry_type * prev = nullptr;
         entry_type * entry = this->freelist_.head();
@@ -1923,7 +1908,7 @@ public:
         }
     }
 
-    void handle_last_chunk_is_empty(size_type last_chunk_id, const entry_chunk_t & last_chunk) {
+    void reorder_last_chunk_is_empty(size_type last_chunk_id, const entry_chunk_t & last_chunk) {
         size_type ahead_chunk_capacity = this->entry_capacity_ - last_chunk.capacity();
         ssize_type last_chunk_free_cnt = this->freelist_.size() - ahead_chunk_capacity;
         assert(last_chunk_free_cnt >= 0);
@@ -1950,7 +1935,22 @@ public:
         this->entry_capacity_ = ahead_chunk_capacity;
     }
 
-    void handle_ahead_chunk_is_empty(size_type last_chunk_id, const entry_chunk_t & last_chunk) {
+    void release_entry_values_not_in_chunk(size_type last_chunk_id) {
+        entry_type * entry = this->freelist_.head();
+        while (entry != nullptr) {
+            if (entry->attrib.getChunkId() != last_chunk_id) {
+                assert(entry->attrib.isReusableEntry());
+                this->allocator_.destructor(&entry->value);
+            }
+            else {
+                assert(entry->attrib.isReusableEntry());
+                entry->attrib.setChunkId(0);
+            }
+            entry = entry->next;
+        }
+    }
+
+    void reorder_ahead_chunk_is_empty(size_type last_chunk_id, const entry_chunk_t & last_chunk) {
         // Release all entry->value resource in freelist that it's not in last chunk.
         release_entry_values_not_in_chunk(last_chunk_id);
 
@@ -2003,31 +2003,36 @@ public:
     }
 
     void rearrange_reorder() {
-        if (this->chunk_list_.size() > 1) {
-            size_type last_chunk_id = this->chunk_list_.size() - 1;
-            const entry_chunk_t & last_chunk = this->chunk_list_[last_chunk_id];
-            size_type ahead_chunk_size = this->entry_size_ - last_chunk.size();
-            if (ahead_chunk_size != 0) {
-                if (last_chunk.size() != 0) {
-                    if (ahead_chunk_size < last_chunk.size()) {
-                        //
+        if (this->chunk_list_.size() > 0) {
+            size_type first_chunk_capacity = this->chunk_list_[0].capacity();
+            if (first_chunk_capacity < kMaxEntryChunkSize) {
+                assert(run_time::is_pow2(first_chunk_capacity));
+                if (likely(this->chunk_list_.size() > 1)) {
+                    size_type last_chunk_id = this->chunk_list_.size() - 1;
+                    const entry_chunk_t & last_chunk = this->chunk_list_[last_chunk_id];
+                    size_type last_chunk_capacity = this->chunk_list_[last_chunk_id].capacity();
+                    size_type ahead_chunk_size = this->entry_size_ - last_chunk.size();
+                    if (ahead_chunk_size != 0) {
+                        if (last_chunk.size() != 0) {
+                            //
+                        }
+                        else {
+                            assert(last_chunk.size() == 0);
+                            reorder_last_chunk_is_empty(last_chunk_id, last_chunk);
+                        }
                     }
                     else {
-                        //
+                        assert(ahead_chunk_size == 0);
+                        reorder_ahead_chunk_is_empty(last_chunk_id, last_chunk);
                     }
                 }
-                else {
-                    assert(last_chunk.size() == 0);
-                    handle_last_chunk_is_empty(last_chunk_id, last_chunk);
+                else if (this->chunk_list_.size() == 1) {
+                    //
                 }
             }
             else {
-                assert(ahead_chunk_size == 0);
-                handle_ahead_chunk_is_empty(last_chunk_id, last_chunk);
+                assert(first_chunk_capacity >= kMaxEntryChunkSize);
             }
-        }
-        else if (this->chunk_list_.size() == 1) {
-            //
         }
     }
 
@@ -2197,7 +2202,7 @@ public:
 
                         if (this->entry_capacity_ > kDefaultInitialCapacity &&
                             this->entry_size_ < this->entry_capacity_ * 3 / 16) {
-                            //this->rearrange(RangeType::Reorder);
+                            this->rearrange(RangeType::Reorder);
                         }
 
                         this->updateVersion();

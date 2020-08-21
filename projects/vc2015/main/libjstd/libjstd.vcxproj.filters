@@ -124,9 +124,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\support\popcnt.h">
       <Filter>src\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\support\Power2.h">
-      <Filter>src\support</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\support\PowerOf2.h">
       <Filter>src\support</Filter>
     </ClInclude>
