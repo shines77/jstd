@@ -2191,6 +2191,55 @@ public:
         } while (index < bucket_capacity);
     }
 
+    void traverse_and_fix_buckets(entry_type ** new_buckets,
+                                  size_type new_bucket_capacity,
+                                  size_type bucket_capacity) {
+        assert(this->buckets() != nullptr);
+        assert(new_bucket_capacity < bucket_capacity);
+
+        size_type index = new_bucket_capacity;
+        index_type new_index;
+        do {
+            entry_type * first = this->buckets_[index];
+            if (likely(first == nullptr)) {
+                index++;
+            }
+            else {
+                entry_type * entry;
+                if (first->attrib.isRedirectEntry()) {
+                    assert(first->next != nullptr);
+                    new_index = this->index_for(first->next->hash_code, new_bucket_capacity - 1);
+                    entry = first->next->next;
+                    bucket_push_front(new_buckets, new_index, first->next);
+                }
+                else {
+                    assert(first->attrib.isInUseEntry());
+                    new_index = this->index_for(first->hash_code, new_bucket_capacity - 1);
+                    entry = first->next;
+                    bucket_push_front(new_buckets, new_index, first);
+                }
+
+                while (entry != nullptr) {
+                    if (entry->attrib.isRedirectEntry()) {
+                        assert(entry->next != nullptr);
+                        new_index = this->index_for(entry->next->hash_code, new_bucket_capacity - 1);
+                        entry_type * next_entry = entry->next->next;
+                        bucket_push_front(new_buckets, new_index, entry->next);
+                        entry = next_entry;
+                    }
+                    else {
+                        assert(entry->attrib.isInUseEntry());
+                        new_index = this->index_for(entry->hash_code, new_bucket_capacity - 1);
+                        entry_type * next_entry = entry->next;
+                        bucket_push_front(new_buckets, new_index, entry);
+                        entry = next_entry;
+                    }
+                }
+                index++;
+            }
+        } while (index < bucket_capacity);
+    }
+
     void copy_and_fix_buckets(entry_type ** new_buckets, size_type new_bucket_capacity) {
         assert(this->buckets() != nullptr);
         assert(new_buckets != nullptr);
@@ -2204,53 +2253,7 @@ public:
             ::memcpy(new_buckets, this->buckets(), new_bucket_capacity * sizeof(entry_type *));
 
             if (new_bucket_capacity < bucket_capacity) {
-                size_type index = new_bucket_capacity;
-                index_type new_index;
-                do {
-                    entry_type * first = this->buckets_[index];
-                    if (likely(first == nullptr)) {
-                        index++;
-                    }
-                    else {
-                        entry_type * entry;
-                        if (first->attrib.isRedirectEntry()) {
-                            assert(first->next != nullptr);
-
-                            new_index = this->index_for(first->hash_code, new_bucket_capacity - 1);
-                            bucket_push_front(new_buckets, new_index, first->next);
-
-                            entry = first->next->next;
-                        }
-                        else {
-                            assert(first->attrib.isInUseEntry());
-
-                            new_index = this->index_for(first->hash_code, new_bucket_capacity - 1);
-                            bucket_push_front(new_buckets, new_index, first);
-
-                            entry = first->next;
-                        }
-
-                        while (entry != nullptr) {
-                            if (entry->attrib.isRedirectEntry()) {
-                                assert(entry->next != nullptr);
-
-                                new_index = this->index_for(entry->hash_code, new_bucket_capacity - 1);
-                                bucket_push_front(new_buckets, new_index, entry->next);
-
-                                entry = entry->next->next;
-                            }
-                            else {
-                                assert(entry->attrib.isInUseEntry());
-
-                                new_index = this->index_for(entry->hash_code, new_bucket_capacity - 1);
-                                bucket_push_front(new_buckets, new_index, entry);
-
-                                entry = entry->next;
-                            }
-                        }
-                        index++;
-                    }
-                } while (index < bucket_capacity);
+                traverse_and_fix_buckets(new_buckets, new_bucket_capacity, bucket_capacity);
             }
         }
         else {
@@ -2435,6 +2438,7 @@ public:
             }
             else {
                 assert(first_chunk_capacity >= kMaxEntryChunkSize);
+                assert(false);
             }
         }
     }
