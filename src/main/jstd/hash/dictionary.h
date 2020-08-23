@@ -1046,8 +1046,8 @@ protected:
         // The the array of bucket's first entry.
         entry_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
         if (likely(bucket_allocator_.is_ok(new_buckets))) {
-            // Initialize the buckets's data.
-            ::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
+            // Initialize the buckets list.
+            std::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
             // Save the buckets info.
             this->buckets_ = new_buckets;
@@ -2443,7 +2443,7 @@ public:
         }
     }
 
-#if 0
+#if 1
 
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
