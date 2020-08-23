@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <memory>
 #include <limits>
+#include <cstring>      // For std::memset()
 #include <vector>
 #include <tuple>
 #include <utility>
@@ -402,7 +403,7 @@ public:
     typedef BasicDictionary<Key, Value, HashFunc, Alignment, Hasher, KeyEqual, Allocator>
                                             this_type;
 
-    struct RangeType {
+    struct ArrangeType {
         enum {
             Reorder = 0,
             Realloc = 1
@@ -1078,46 +1079,88 @@ protected:
         size_type new_bucket_mask = new_bucket_capacity - 1;
         size_type old_bucket_capacity = this->bucket_capacity_;
 
-        for (size_type index = 0; index < old_bucket_capacity; index++) {
-            entry_type * entry = this->buckets_[index];
-            if (likely(entry != nullptr)) {
-                entry_type * prev = nullptr;
-                entry_type * old_list = nullptr;
-                do {
-                    hash_code_t hash_code = entry->hash_code;
-                    index_type new_index = this->index_for(hash_code, new_bucket_mask);
-                    if (likely(new_index != index)) {
-                        if (prev != nullptr) {
-                            prev->next = entry->next;
+        if (likely(new_bucket_capacity >= old_bucket_capacity)) {
+            for (size_type index = 0; index < old_bucket_capacity; index++) {
+                entry_type * entry = this->buckets_[index];
+                if (likely(entry != nullptr)) {
+                    entry_type * prev = nullptr;
+                    entry_type * old_list = nullptr;
+                    do {
+                        hash_code_t hash_code = entry->hash_code;
+                        index_type new_index = this->index_for(hash_code, new_bucket_mask);
+                        if (likely(new_index != index)) {
+                            if (prev != nullptr) {
+                                prev->next = entry->next;
+                            }
+                            entry_type * next_entry = entry->next;
+
+                            bucket_push_front(new_buckets, new_index, entry);
+
+                            entry = next_entry;
                         }
-                        entry_type * next_entry = entry->next;
-
-                        bucket_push_front(new_buckets, new_index, entry);
-
-                        entry = next_entry;
-                    }
-                    else {
-                        if (unlikely(old_list == nullptr)) {
-                            old_list = entry;
+                        else {
+                            if (unlikely(old_list == nullptr)) {
+                                old_list = entry;
+                            }
+                            prev = entry;
+                            entry = entry->next;
                         }
-                        prev = entry;
-                        entry = entry->next;
-                    }
-                } while (likely(entry != nullptr));
+                    } while (likely(entry != nullptr));
 
-                if (likely(new_bucket_capacity >= this->bucket_capacity_)) {
                     new_buckets[index] = old_list;
                 }
                 else {
-                    if (likely(old_list != nullptr)) {
-                        index_type new_index = this->index_for(index, new_bucket_mask);
-                        bucket_push_back(new_buckets, new_index, old_list);
-                    }
+                    new_buckets[index] = nullptr;
                 }
             }
-            else {
-                if (likely(new_bucket_capacity >= this->bucket_capacity_)) {
-                    new_buckets[index] = nullptr;
+
+            std::memset((void *)&new_buckets[old_bucket_capacity], 0,
+                        (new_bucket_capacity - old_bucket_capacity) * sizeof(entry_type *));
+        }
+        else {
+            assert(new_bucket_capacity < old_bucket_capacity);
+
+            for (size_type index = 0; index < old_bucket_capacity; index++) {
+                entry_type * entry = this->buckets_[index];
+                if (likely(entry != nullptr)) {
+                    entry_type * prev = nullptr;
+                    entry_type * old_list = nullptr;
+                    do {
+                        hash_code_t hash_code = entry->hash_code;
+                        index_type new_index = this->index_for(hash_code, new_bucket_mask);
+                        if (likely(new_index != index)) {
+                            if (prev != nullptr) {
+                                prev->next = entry->next;
+                            }
+                            entry_type * next_entry = entry->next;
+
+                            bucket_push_front(new_buckets, new_index, entry);
+
+                            entry = next_entry;
+                        }
+                        else {
+                            if (unlikely(old_list == nullptr)) {
+                                old_list = entry;
+                            }
+                            prev = entry;
+                            entry = entry->next;
+                        }
+                    } while (likely(entry != nullptr));
+
+                    if (likely(index < new_bucket_capacity)) {
+                        new_buckets[index] = old_list;
+                    }
+                    else {
+                        if (likely(old_list != nullptr)) {
+                            index_type new_index = this->index_for(index, new_bucket_mask);
+                            bucket_push_back(new_buckets, new_index, old_list);
+                        }
+                    }
+                }
+                else {
+                    if (likely(index < new_bucket_capacity)) {
+                        new_buckets[index] = nullptr;
+                    }
                 }
             }
         }
@@ -2335,9 +2378,6 @@ public:
 
             assert((dest_size + total_move_count) <= dest_capacity);
 
-            // Traverse all buckets and fix all redirect entries.
-            //traverse_and_fix_buckets(this->bucket_count());
-
             // Resize the buckets and fix all redirect entries.
             rehash_and_fix_buckets(target_capacity);
 
@@ -2360,7 +2400,6 @@ public:
                 entry_chunk_t & last_chunk_info = this->chunk_list_.lastChunk();
                 target_chunk.size = dest_size + total_move_count;
                 last_chunk_info.set_entries(target_chunk.entries);
-                //last_chunk_info.set_size(target_chunk.capacity);
                 last_chunk_info.set_capacity(target_chunk.capacity);
                 last_chunk_info.set_chunk_id(0);
 
@@ -2404,6 +2443,28 @@ public:
         }
     }
 
+#if 0
+
+    void rearrange_reorder() {
+        if (this->chunk_list_.size() > 0) {
+            size_type first_chunk_capacity = this->chunk_list_[0].capacity;
+            if (first_chunk_capacity < kMaxEntryChunkSize) {
+                assert(run_time::is_pow2(first_chunk_capacity));
+                if (likely(this->chunk_list_.size() > 1)) {
+                    reorder_shrink_to_fit();
+                }
+                else if (this->chunk_list_.size() == 1) {
+                    rearrange_realloc();
+                }
+            }
+            else {
+                assert(first_chunk_capacity >= kMaxEntryChunkSize);
+            }
+        }
+    }
+
+#else
+
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
             size_type first_chunk_capacity = this->chunk_list_[0].capacity;
@@ -2421,14 +2482,12 @@ public:
                         }
                         else {
                             assert(last_chunk.size == 0);
-                            //reorder_last_chunk_is_empty(last_chunk_id, last_chunk);
-                            reorder_shrink_to_fit();
+                            reorder_last_chunk_is_empty(last_chunk_id, last_chunk);
                         }
                     }
                     else {
                         assert(ahead_chunk_size == 0);
-                        //reorder_ahead_chunk_is_empty(last_chunk_id, last_chunk);
-                        reorder_shrink_to_fit();
+                        reorder_ahead_chunk_is_empty(last_chunk_id, last_chunk);
                     }
                 }
                 else if (this->chunk_list_.size() == 1) {
@@ -2438,22 +2497,25 @@ public:
             }
             else {
                 assert(first_chunk_capacity >= kMaxEntryChunkSize);
-                assert(false);
             }
         }
     }
+
+#endif
 
     void rearrange_realloc() {
         //
     }
 
-    void rearrange(size_type rangeType) {
-        if (rangeType == RangeType::Reorder) {
+    void rearrange(size_type arrangeType) {
+        if (arrangeType == ArrangeType::Reorder) {
             rearrange_reorder();
         }
-        else {
-            // RangeType::Realloc
+        else if (arrangeType == ArrangeType::Realloc) {
             rearrange_realloc();
+        }
+        else {
+            //
         }
     }
 
@@ -2600,6 +2662,7 @@ public:
                         this->chunk_list_.removeEntry(chunk_id);
                         this->freelist_.push_front(entry);
 
+                        //
                         // destruct the entry->value
                         //
                         // this->allocator_.destructor(&entry->value);
@@ -2609,7 +2672,7 @@ public:
 
                         if (this->entry_capacity_ > kDefaultInitialCapacity &&
                             this->entry_size_ < this->entry_capacity_ / 8) {
-                            this->rearrange(RangeType::Reorder);
+                            this->rearrange(ArrangeType::Reorder);
                         }
 
                         this->updateVersion();
