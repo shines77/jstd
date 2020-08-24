@@ -109,27 +109,27 @@ public:
     ~HashMapAnalyzer() {}
 
     size_type entry_size() const {
-        return container_.size();
+        return this->container_.size();
     }
 
     size_type entry_count() const {
         bool supported = has_entry_count<container_type>::value;
         if (supported)
-            return call_entry_count<container_type>::entry_count(container_);
+            return call_entry_count<container_type>::entry_count(this->container_);
         else
-            return container_.bucket_count();
+            return this->container_.bucket_count();
     }
 
     size_type bucket_mask() const {
-        return (container_.bucket_count() - 1);
+        return (this->container_.bucket_count() - 1);
     }
 
     size_type bucket_count() const {
-        return container_.bucket_count();
+        return this->container_.bucket_count();
     }
 
     size_type bucket_size(size_type n) {
-        return container_.bucket_size(n);
+        return this->container_.bucket_size(n);
     }
 
     std::string & name() {
@@ -152,29 +152,29 @@ public:
 
 private:
     size_type read_bucket_sizes() {
-        size_type bucket_capacity = bucket_count();
+        size_type bucket_capacity = this->bucket_count();
 
-        bucket_counts_.clear();
-        bucket_counts_.resize(bucket_capacity);
+        this->bucket_counts_.clear();
+        this->bucket_counts_.resize(bucket_capacity);
         
         size_type total_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
-            size_type count = bucket_size(i);
-            bucket_counts_[i] = count;
+            size_type count = this->bucket_size(i);
+            this->bucket_counts_[i] = count;
             total_count += count;
         }
 
         result_.base.entry_size = total_count;
-        assert(total_count == entry_size());
+        assert(total_count == this->entry_size());
         return total_count;
     }
 
     size_type get_max_bucket_count() const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
 
         size_type max_bucket_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
-            size_type count = bucket_counts_[i];
+            size_type count = this->bucket_counts_[i];
             if (count > max_bucket_count)
                 max_bucket_count = count;
         }
@@ -183,12 +183,12 @@ private:
     }
 
     double calc_std_deviation() const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
         if (bucket_capacity == 0) return 0.0;
 
         size_type total_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
-            size_type count = bucket_counts_[i];
+            size_type count = this->bucket_counts_[i];
             total_count += count;
         }
 
@@ -196,7 +196,7 @@ private:
         double std_errors = 0.0;
 
         for (size_type i = 0; i < bucket_capacity; i++) {
-            double error = (double)bucket_counts_[i] - average_count;
+            double error = (double)this->bucket_counts_[i] - average_count;
             std_errors += error * error;
         }
 
@@ -205,12 +205,12 @@ private:
     }
 
     double calc_std_errors() const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
         if (bucket_capacity == 0) return 0.0;
 
         size_type total_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
-            size_type count = bucket_counts_[i];
+            size_type count = this->bucket_counts_[i];
             total_count += count;
         }
 
@@ -219,8 +219,8 @@ private:
         double std_errors = 0.0;
 
         for (size_type i = 0; i < bucket_capacity; i++) {
-            if (bucket_counts_[i] > 0) {
-                double error = (double)bucket_counts_[i] - average_count;
+            if (this->bucket_counts_[i] > 0) {
+                double error = (double)this->bucket_counts_[i] - average_count;
                 std_errors += error * error;
             }
         }
@@ -230,18 +230,18 @@ private:
     }
 
     double calc_coverage_rate() const {
-        if (entry_count() != 0)
-            return (((double)entry_size() / entry_count()) * 100.0);
+        if (this->entry_count() != 0)
+            return (((double)this->entry_size() / this->entry_count()) * 100.0);
         else
             return 0.0;
     }
 
     size_type calc_usage_count() const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
 
         size_type usage_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
-            size_type count = bucket_counts_[i];
+            size_type count = this->bucket_counts_[i];
             if (count > 0)
                 usage_count++;
         } 
@@ -259,7 +259,7 @@ private:
     }
 
     double calc_usage_rate_total(size_type usage_count) const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
         double usage_rate_total;
         if (bucket_capacity != 0)
             usage_rate_total = usage_count / (double)bucket_capacity;
@@ -283,12 +283,12 @@ private:
     }
 
     size_type calc_conflict_count() const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
         if (bucket_capacity == 0) return 0;
 
         size_type conflict_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
-            size_type count = bucket_counts_[i];
+            size_type count = this->bucket_counts_[i];
             if (count > 1)
                 conflict_count++;
         }
@@ -307,7 +307,7 @@ private:
     }
 
     double calc_conflict_rate_total(size_type conflict_count) const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
         double conflict_rate;
         if (bucket_capacity != 0)
             conflict_rate = conflict_count / (double)bucket_capacity;
@@ -317,12 +317,12 @@ private:
     }
 
     size_type calc_perfect_count() const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
         if (bucket_capacity == 0) return 0;
 
         size_type perfect_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
-            size_type count = bucket_counts_[i];
+            size_type count = this->bucket_counts_[i];
             if (count == 1)
                 perfect_count++;
         }
@@ -341,7 +341,7 @@ private:
     }
 
     double calc_perfect_rate_total(size_type perfect_count) const {
-        size_type bucket_capacity = bucket_counts_.size();
+        size_type bucket_capacity = this->bucket_counts_.size();
         double perfect_rate;
         if (bucket_capacity != 0)
             perfect_rate = perfect_count / (double)bucket_capacity;
@@ -354,16 +354,16 @@ public:
     bool start_analyse() {
         result_.reset();
 
-        size_type total_count = read_bucket_sizes();
+        size_type total_count = this->read_bucket_sizes();
         if (total_count > 0) {
-            result_.base.entry_size      = entry_size();
-            result_.base.entry_capacity  = entry_count();
-            result_.base.bucket_mask     = bucket_mask();
-            result_.base.bucket_capacity = bucket_count();
+            result_.base.entry_size      = this->entry_size();
+            result_.base.entry_capacity  = this->entry_count();
+            result_.base.bucket_mask     = this->bucket_mask();
+            result_.base.bucket_capacity = this->bucket_count();
 
-            size_type usage_count = calc_usage_count();
-            size_type conflict_count = calc_conflict_count();
-            size_type perfect_count = calc_perfect_count();
+            size_type usage_count       = calc_usage_count();
+            size_type conflict_count    = calc_conflict_count();
+            size_type perfect_count     = calc_perfect_count();
 
             result_.max_bucket_count    = get_max_bucket_count();
 
@@ -392,24 +392,25 @@ public:
         printf("--------------------------------------------------------------\n");
         printf("\n");
 
-        printf("  entry_size       = %" PRIuPTR "\n", result_.base.entry_size);
-        printf("  entry_capacity   = %" PRIuPTR "\n", result_.base.entry_capacity);
-        printf("  bucket_mask      = %" PRIuPTR "\n", result_.base.bucket_mask);
-        printf("  bucket_capacity  = %" PRIuPTR "\n", result_.base.bucket_capacity);
+        printf("  entry_size       = %" PRIuPTR "\n", this->result_.base.entry_size);
+        printf("  entry_capacity   = %" PRIuPTR "\n", this->result_.base.entry_capacity);
+        printf("  bucket_mask      = %" PRIuPTR "\n", this->result_.base.bucket_mask);
+        printf("  bucket_capacity  = %" PRIuPTR "\n", this->result_.base.bucket_capacity);
         printf("\n");
-        printf("  std_deviation    = %0.6f\n", result_.std_deviation);
-        printf("  std_errors       = %0.6f\n", result_.std_errors);        
-        printf("  max_bucket_count = %" PRIuPTR "\n", result_.max_bucket_count);
-        printf("  coverage_rate    = %0.2f %%  size() / bucket_count()\n", result_.coverage_rate);
+        printf("  std_deviation    = %0.6f\n", this->result_.std_deviation);
+        printf("  std_errors       = %0.6f\n", this->result_.std_errors);        
+        printf("  max_bucket_count = %" PRIuPTR "\n", this->result_.max_bucket_count);
+        printf("  coverage_rate    = %0.2f %%  size() / bucket_count()\n",
+                                     this->result_.coverage_rate);
         printf("\n");
         printf("  usage_rate       = %0.2f %%  /  %0.2f %% (Total)\n",
-                                     result_.usage_rate, result_.usage_rate_total);
+                                     this->result_.usage_rate, this->result_.usage_rate_total);
         printf("  unused_rate      = %0.2f %%  /  %0.2f %% (Total)\n",
-                                     result_.unused_rate, result_.unused_rate_total);
+                                     this->result_.unused_rate, this->result_.unused_rate_total);
         printf("  conflict_rate    = %0.2f %%  /  %0.2f %% (Total)\n",
-                                     result_.conflict_rate, result_.conflict_rate_total);
+                                     this->result_.conflict_rate, this->result_.conflict_rate_total);
         printf("  perfect_rate     = %0.2f %%  /  %0.2f %% (Total)\n",
-                                     result_.perfect_rate, result_.perfect_rate_total);
+                                     this->result_.perfect_rate, this->result_.perfect_rate_total);
         printf("\n");
     }
 
@@ -419,12 +420,12 @@ public:
         printf("------------------------------------------------------------------------\n");
 
         uint32_t index = 0;
-        hasher hasher_;
+        hasher _hasher;
         for (const_iterator iter = container_.cbegin(); iter != container_.cend(); ++iter) {
-            std::uint32_t hash_code = static_cast<std::uint32_t>(hasher_(iter->first));
+            std::uint32_t hash_code = static_cast<std::uint32_t>(_hasher(iter->first));
             printf(" [%3d]: 0x%08X  %-8u  %-30s %s\n", index + 1,
                    hash_code,
-                   uint32_t(hash_code & bucket_mask()),
+                   uint32_t(hash_code & this->bucket_mask()),
                    iter->first.c_str(),
                    iter->second.c_str());
             index++;

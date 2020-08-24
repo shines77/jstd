@@ -16,15 +16,14 @@
 #include <assert.h>
 
 #include <cstdint>
-#include <cstddef>
-#include <memory>
-#include <limits>
+#include <cstddef>      // For std::ptrdiff_t, std::size_t
+#include <memory>       // For std::swap(), std::pointer_traits<T>
+#include <limits>       // For std::numeric_limits<T>
 #include <cstring>      // For std::memset()
 #include <vector>
 #include <type_traits>
 #include <utility>
 #include <algorithm>    // For std::max()
-#include <stdexcept>
 
 #include "jstd/allocator.h"
 #include "jstd/iterator.h"
@@ -468,7 +467,7 @@ public:
 
     size_type version() const {
 #if DICTIONARY_SUPPORT_VERSION
-        return version_;
+        return this->version_;
 #else
         return 0;   /* Return 0 means that the version attribute is not supported. */
 #endif
@@ -797,10 +796,9 @@ protected:
                             if (prev != nullptr) {
                                 prev->next = entry->next;
                             }
+
                             entry_type * next_entry = entry->next;
-
                             bucket_push_front(new_buckets, new_index, entry);
-
                             entry = next_entry;
                         }
                         else {
@@ -889,7 +887,7 @@ protected:
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
         if (likely( this->bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
-            if (likely(new_bucket_capacity ==  this->bucket_capacity_ * 2))
+            if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
                 rehash_all_entries_2x(new_buckets, new_bucket_capacity);
             else
                 rehash_all_entries(new_buckets, new_bucket_capacity);
@@ -1637,14 +1635,13 @@ protected:
 
     void updateVersion() {
 #if DICTIONARY_SUPPORT_VERSION
-        ++(version_);
+        ++(this->version_);
 #endif
     }
 
 public:
     inline hash_code_t get_hash(const key_type & key) const {
-        hash_code_t hash_code = hasher_(key);
-        //return hash_traits<hash_code_t>::filter(hash_code);
+        hash_code_t hash_code = this->hasher_(key);
         //hash_code = hash_code ^ (hash_code >> 16);
         return hash_code;
     }
