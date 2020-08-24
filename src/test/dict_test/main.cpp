@@ -1,6 +1,6 @@
 
 // Enable Visual Leak Detector (For Visual Studio)
-#define JSTD_ENABLE_VLD     1
+#define JSTD_ENABLE_VLD         0
 
 #ifdef _MSC_VER
 #include <jstd/basic/vld.h>
@@ -1378,9 +1378,12 @@ void hashtable_iterator_uinttest()
     }
 
     Container container(kInitCapacity);
+    Container container2(kInitCapacity);
     for (size_t j = 0; j < kHeaderFieldSize; ++j) {
-        container.emplace(field_str[j], index_str[j]);
+        container2.emplace(field_str[j], index_str[j]);
     }
+
+    container.swap(container2);
 
     container.display_status();
 

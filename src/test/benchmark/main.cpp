@@ -1,6 +1,6 @@
 
 // Enable Visual Leak Detector (For Visual Studio)
-#define JSTD_ENABLE_VLD     1
+#define JSTD_ENABLE_VLD         1
 
 #ifdef _MSC_VER
 #include <jstd/basic/vld.h>

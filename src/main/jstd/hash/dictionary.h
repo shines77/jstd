@@ -23,7 +23,7 @@
 #include <vector>
 #include <type_traits>
 #include <utility>
-#include <algorithm>    // For std::max()
+#include <algorithm>    // For std::max(), std::min()
 
 #include "jstd/allocator.h"
 #include "jstd/iterator.h"
@@ -355,7 +355,8 @@ protected:
     bucket_allocator_type   bucket_allocator_;
     entry_allocator_type    entry_allocator_;
 
-    allocator<std::pair<Key, Value>, Alignment, allocator_type::kThrowEx> n_allocator_;
+    allocator<std::pair<Key, Value>, Alignment, allocator_type::kThrowEx>
+                                                    n_allocator_;
 
     std::allocator<mapped_type>                     mapped_allocator_;
     typename std::allocator<value_type>::allocator  value_allocator_;
@@ -364,21 +365,19 @@ protected:
     static const size_type kDefaultInitialCapacity = 16;
     // Minimum capacity is 8.
     static const size_type kMinimumCapacity = 8;
-    // Maximum capacity is 1 << 31.
+    // Maximum capacity is 1 << (sizeof(std::size_t) - 1).
     static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2 + 1;
 
-    // The maximum entry's chunk bytes, default is 8 MB bytes.
-    static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
+    // The maximum entry's chunk bytes, default is 4 MB bytes.
+    static const size_type kMaxEntryChunkBytes = 4 * 1024 * 1024;
     // The entry's block size per chunk (entry_type).
     static const size_type kMaxEntryChunkSize =
             compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
 
     // The threshold of treeify to red-black tree.
     static const size_type kTreeifyThreshold = 8;
-    // The invalid hash value.
-    static const hash_code_t kInvalidHash = hash_traits<hash_code_t>::kInvalidHash;
-    // The replacement value for invalid hash value.
-    static const hash_code_t kReplacedHash = hash_traits<hash_code_t>::kReplacedHash;
+    // The default load factor.
+    static const size_type kDefaultLoadFactor = 1;
 
 public:
     explicit BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
@@ -392,7 +391,34 @@ public:
         this->initialize(initialCapacity);
     }
 
-    ~BasicDictionary() {
+    BasicDictionary(const this_type & other)
+        : buckets_(nullptr), entries_(nullptr),
+          bucket_mask_(0), bucket_capacity_(0), entry_size_(0), entry_capacity_(0)
+#if DICTIONARY_SUPPORT_VERSION
+          , version_(1) /* Since 0 means that the version attribute is not supported,
+                           the initial value of version starts from 1. */
+#endif
+    {
+        size_type initialSize = other.size();
+        this->initialize(initialSize);
+
+        for (const_iterator iter = other.cbegin(); iter != other.cend(); ++iter) {
+            this->insert_no_return(iter->first, iter->second);
+        }
+    }
+
+    BasicDictionary(this_type && other)
+        : buckets_(nullptr), entries_(nullptr),
+          bucket_mask_(0), bucket_capacity_(0), entry_size_(0), entry_capacity_(0)
+#if DICTIONARY_SUPPORT_VERSION
+          , version_(1) /* Since 0 means that the version attribute is not supported,
+                           the initial value of version starts from 1. */
+#endif
+    {
+        this->swap(other);
+    }
+
+    virtual ~BasicDictionary() {
         this->destroy();
     }
 
@@ -424,14 +450,23 @@ public:
         return const_local_iterator(nullptr);
     }
 
+    bool valid() const { return (this->buckets() != nullptr); }
+    bool empty() const { return (this->size() == 0); }
+    bool full() const  { return (this->size() == this->entry_count()); }
+
+    entry_type ** buckets() const { return this->buckets_; }
+    entry_type *  entries() const { return this->entries_; }
+
+    size_type size() const {
+        return this->entry_size_;
+    }
+
     size_type _size() const {
         assert(this->entry_capacity_ >= this->freelist_.size());
         return (this->entry_capacity_ - this->freelist_.size());
     }
-    size_type size() const {
-        return this->entry_size_;
-    }
-    size_type capacity() const { return this->bucket_capacity_; }
+
+    size_type capacity() const { return this->entry_capacity_; }
 
     size_type bucket_mask() const { return this->bucket_mask_; }
     size_type bucket_count() const { return this->bucket_capacity_; }
@@ -439,25 +474,45 @@ public:
 
     size_type entry_size() const { return this->size(); }
     size_type entry_count() const { return this->entry_capacity_; }
+    size_type entry_capacity() const { return this->entry_capacity_; }
 
-    entry_type ** buckets() const { return this->buckets_; }
-    entry_type *  entries() const { return this->entries_; }
+    float load_factor() const {
+        return (static_cast<float>(this->size()) / this->bucket_count());
+    }
+
+    float max_load_factor() const {
+        return static_cast<float>(kDefaultLoadFactor);
+    }
+
+    void max_load_factor(float ml) {
+        // Do nothing !!
+    }
 
     size_type max_bucket_capacity() const {
         return ((std::numeric_limits<size_type>::max)() / 2 + 1);
     }
+
     size_type max_size() const {
-        return max_bucket_capacity();
+        return this->max_bucket_capacity();
     }
 
-    bool valid() const { return (this->buckets() != nullptr); }
-    bool empty() const { return (this->size() == 0); }
+    size_type max_chunk_size() const {
+        return kMaxEntryChunkSize;
+    }
+
+    size_type max_chunk_bytes() const {
+        return kMaxEntryChunkBytes;
+    }
+
+    size_type actual_chunk_bytes() const {
+        return (kMaxEntryChunkSize * sizeof(entry_type));
+    }
 
     size_type bucket_size(size_type index) const {
         assert(index < this->bucket_count());
 
         size_type count = 0;
-        entry_type * node = get_bucket_head(index);
+        entry_type * node = this->get_bucket_head(index);
         while (likely(node != nullptr)) {
             count++;
             node = node->next;
@@ -916,6 +971,7 @@ protected:
             // Only allocate a chunk size we need.
             assert(new_entry_capacity > this->entry_capacity_);
             size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
+            new_chunk_capacity = (std::min)(new_chunk_capacity, kMaxEntryChunkSize);
 
             entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
             if (likely(entry_allocator_.is_ok(new_entries))) {
@@ -931,7 +987,7 @@ protected:
                 this->bucket_mask_ = new_bucket_capacity - 1;
                 this->bucket_capacity_ = new_bucket_capacity;
                 // Here, the entry_size_ doesn't change.
-                this->entry_capacity_ = new_entry_capacity;
+                this->entry_capacity_ += new_chunk_capacity;
 
                 assert(this->chunk_list_.lastChunk().is_full());
 
@@ -981,6 +1037,7 @@ protected:
     }
 
     void inflate_entries(size_type delta_size = 1) {
+        assert(this->entry_size_ == this->entry_capacity_);
         size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + delta_size);
 
         // If new entry capacity is too small, exit directly.
@@ -989,11 +1046,17 @@ protected:
             if (likely(new_entry_capacity <= this->bucket_capacity_)) {
                 assert(this->freelist_.is_empty());
 
+                // Only allocate a chunk size we need.
                 size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
+                new_chunk_capacity = (std::min)(new_chunk_capacity, kMaxEntryChunkSize);
+                if (new_chunk_capacity == kMaxEntryChunkSize) {
+                    new_chunk_capacity = kMaxEntryChunkSize;
+                }
+
                 entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
                 if (likely(entry_allocator_.is_ok(new_entries))) {
                     this->entries_ = new_entries;
-                    this->entry_capacity_ = new_entry_capacity;
+                    this->entry_capacity_ += new_chunk_capacity;
 
                     assert(this->chunk_list_.lastChunk().is_full());
 
@@ -1007,8 +1070,9 @@ protected:
             }
         }
         else {
-            // entry_capacity_ = bucket_capacity_ ?
+            // Error ??
             assert(new_entry_capacity <= this->bucket_capacity_);
+            assert(false);
         }
     }
 
@@ -2120,7 +2184,7 @@ public:
                 }
             }
             else {
-                assert(first_chunk_capacity >= kMaxEntryChunkSize);
+                assert(last_chunk_capacity >= kMaxEntryChunkSize);
             }
         }
     }
@@ -2351,6 +2415,23 @@ public:
 
         // Not found
         return size_type(0);
+    }
+
+    void swap(this_type & other) {
+        if (&other != this) {
+            std::swap(this->buckets_,           other.buckets_);
+            std::swap(this->entries_,           other.entries_);
+            std::swap(this->bucket_mask_,       other.bucket_mask_);
+            std::swap(this->bucket_capacity_,   other.bucket_capacity_);
+
+            std::swap(this->entry_size_,        other.entry_size_);
+            std::swap(this->entry_capacity_,    other.entry_capacity_);
+#if DICTIONARY_SUPPORT_VERSION
+            std::swap(this->version_,           other.version_);
+#endif
+            this->freelist_.swap(other.freelist_);
+            this->chunk_list_.swap(other.chunk_list_);
+        }
     }
 
     static const char * name() {

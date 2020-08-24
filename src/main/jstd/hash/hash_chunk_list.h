@@ -15,8 +15,9 @@
 #include <cstdint>
 #include <cstddef>      // For std::ptrdiff_t, std::size_t
 #include <vector>
-#include <type_traits>
-#include <stdexcept>
+#include <memory>       // For std::swap()
+#include <type_traits>  // For std::forward<T>
+#include <stdexcept>    // For std::out_of_range()
 
 namespace jstd {
 
@@ -113,6 +114,15 @@ struct hash_entry_chunk {
         assert(this->size >= size);
         this->size -= size;
     }
+
+    void swap(hash_entry_chunk<T> & other) {
+        if (&other != this) {
+            std::swap(this->entries,  other.entries);
+            std::swap(this->size,     other.size);
+            std::swap(this->capacity, other.capacity);
+            std::swap(this->chunk_id, other.chunk_id);
+        }
+    }
 };
 
 template <typename T, typename Allocator, typename EntryAllocator>
@@ -133,6 +143,9 @@ public:
 
     typedef Allocator                               allocator_type;
     typedef EntryAllocator                          entry_allocator_type;
+
+    typedef hash_entry_chunk_list<T, Allocator, EntryAllocator>
+                                                    this_type;
 
 private:
     entry_chunk_t           last_chunk_;
@@ -353,6 +366,25 @@ public:
         }
 
         return target_chunk_id;
+    }
+
+    void swap(this_type & other) {
+        if (&other != this) {
+            this->last_chunk_.swap(other.last_chunk_);
+            std::swap(this->chunk_list_,      other.chunk_list_);
+            std::swap(this->allocator_,       other.allocator_);
+            std::swap(this->entry_allocator_, other.entry_allocator_);
+        }
+    }
+
+    template <typename OtherAllocator, typename OtherEntryAllocator>
+    void swap(hash_entry_chunk_list<T, OtherAllocator, OtherEntryAllocator> & other) {
+        if (&other != this) {
+            this->last_chunk_.swap(other.last_chunk_);
+            std::swap(this->chunk_list_,      other.chunk_list_);
+            std::swap(this->allocator_,       other.allocator_);
+            std::swap(this->entry_allocator_, other.entry_allocator_);
+        }
     }
 };
 
