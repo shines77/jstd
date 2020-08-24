@@ -262,6 +262,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator_inc.h">
       <Filter>src\hash</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_chunk_list.h">
+      <Filter>src\hash</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c">
