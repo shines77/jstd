@@ -12,6 +12,7 @@
 #include <memory.h>
 #include <assert.h>
 
+#include <cstdint>
 #include <cstddef>
 #include <memory>
 #include <type_traits>

@@ -13,6 +13,7 @@
 #include <memory.h>
 #include <assert.h>
 
+#include <cstdint>
 #include <cstddef>
 #include <memory>
 #include <limits>
@@ -34,7 +35,7 @@
 #include "jstd/hash/hash_helper.h"
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/nothrow_new.h"
-#include "jstd/support/Power2.h"
+#include "jstd/support/PowerOf2.h"
 
 namespace jstd {
 namespace v1 {
