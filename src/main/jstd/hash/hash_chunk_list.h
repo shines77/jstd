@@ -35,8 +35,11 @@ struct hash_entry_chunk {
     size_type    chunk_id;
 
     hash_entry_chunk() : entries(nullptr), size(0), capacity(0), chunk_id(0) {}
-    hash_entry_chunk(size_type chunk_id, entry_type * entries, size_type capacity)
+    hash_entry_chunk(entry_type * entries, size_type capacity, size_type chunk_id)
         : entries(entries), size(0), capacity(capacity), chunk_id(chunk_id) {}
+    hash_entry_chunk(entry_type * entries, size_type size,
+                     size_type capacity, size_type chunk_id)
+        : entries(entries), size(size), capacity(capacity), chunk_id(chunk_id) {}
     hash_entry_chunk(const hash_entry_chunk & src)
         : entries(src.entries), size(src.size),
           capacity(src.capacity), chunk_id(src.chunk_id) {}
@@ -55,15 +58,15 @@ struct hash_entry_chunk {
     size_type is_empty() const { return (this->size == 0); }
     size_type is_full() const { return (this->size >= this->capacity); }
 
-    void set_chunk(size_type chunk_id, entry_type * entries, size_type capacity) {
+    void set_chunk(entry_type * entries, size_type capacity, size_type chunk_id) {
         this->entries = entries;
         this->size = 0;
         this->capacity = capacity;
         this->chunk_id = chunk_id;
     }
 
-    void set_chunk(size_type chunk_id, entry_type * entries,
-                   size_type size, size_type capacity) {
+    void set_chunk(entry_type * entries, size_type size,
+                   size_type capacity, size_type chunk_id) {
         this->entries = entries;
         this->size = size;
         this->capacity = capacity;
@@ -282,9 +285,18 @@ public:
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->last_chunk_.set_chunk(chunk_id, entries, entry_capacity);
+        this->last_chunk_.set_chunk(entries, entry_capacity, chunk_id);
 
-        this->chunk_list_.emplace_back(chunk_id, entries, entry_capacity);
+        this->chunk_list_.emplace_back(entries, entry_capacity, chunk_id);
+    }
+
+    void addChunk(entry_type * entries, size_type entry_size, size_type entry_capacity) {
+        assert(this->lastChunk().is_full());
+
+        size_type chunk_id = this->chunk_list_.size();
+        this->last_chunk_.set_chunk(entries, entry_size, entry_capacity, chunk_id);
+
+        this->chunk_list_.emplace_back(entries, entry_size, entry_capacity, chunk_id);
     }
 
     void removeLastChunk() {
