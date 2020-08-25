@@ -857,7 +857,10 @@ protected:
 
             for (size_type index = 0; index < old_bucket_capacity; index++) {
                 entry_type * entry = this->buckets_[index];
-                if (likely(entry != nullptr)) {
+                if (likely(entry == nullptr)) {
+                    new_buckets[index] = nullptr;
+                }
+                else {
                     entry_type * prev = nullptr;
                     entry_type * old_list = nullptr;
                     do {
@@ -883,9 +886,6 @@ protected:
                     } while (likely(entry != nullptr));
 
                     new_buckets[index] = old_list;
-                }
-                else {
-                    new_buckets[index] = nullptr;
                 }
             }
         }
@@ -952,7 +952,12 @@ protected:
 
         for (size_type index = 0; index < old_bucket_capacity; index++) {
             entry_type * entry = this->buckets_[index];
-            if (likely(entry != nullptr)) {
+            if (likely(entry == nullptr)) {
+                index_type new_index = index + old_bucket_capacity;
+                new_buckets[index] = nullptr;
+                new_buckets[new_index] = nullptr;
+            }
+            else {
                 entry_type * prev = nullptr;
                 entry_type * old_list = nullptr;
                 entry_type * new_list = nullptr;
@@ -984,11 +989,6 @@ protected:
                 index_type new_index = index + old_bucket_capacity;
                 new_buckets[index] = old_list;
                 new_buckets[new_index] = new_list;
-            }
-            else {
-                index_type new_index = index + old_bucket_capacity;
-                new_buckets[index] = nullptr;
-                new_buckets[new_index] = nullptr;
             }
         }
     }
@@ -2301,7 +2301,10 @@ protected:
 
             for (size_type index = 0; index < old_bucket_capacity; index++) {
                 entry_type * old_entry = this->buckets_[index];
-                if (likely(old_entry != nullptr)) {
+                if (likely(old_entry == nullptr)) {
+                    new_buckets[index] = nullptr;
+                }
+                else {
                     entry_type * new_prev = nullptr;
                     entry_type * old_list = nullptr;
                     entry_type * new_entry = nullptr;
@@ -2343,9 +2346,6 @@ protected:
                     }
 
                     new_buckets[index] = old_list;
-                }
-                else {
-                    new_buckets[index] = nullptr;
                 }
             }
         }

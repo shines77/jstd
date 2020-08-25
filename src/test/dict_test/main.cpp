@@ -1209,7 +1209,7 @@ void hashtable_rehash_benchmark_impl()
             checksum += algorithm.size();
 
             buckets = 128;
-            algorithm.shrink_to_fit(buckets - 1);
+            algorithm.rehash(buckets);
             checksum += algorithm.bucket_count();
 #ifndef NDEBUG
             if (algorithm.bucket_count() != buckets) {
@@ -1220,7 +1220,7 @@ void hashtable_rehash_benchmark_impl()
 #endif
             for (size_t j = 0; j < 7; ++j) {
                 buckets *= 2;
-                algorithm.rehash(buckets - 1);
+                algorithm.rehash(buckets);
                 checksum += algorithm.bucket_count();
 #ifndef NDEBUG
                 if (algorithm.bucket_count() != buckets) {
@@ -1293,7 +1293,7 @@ void hashtable_rehash2_benchmark_impl()
             checksum += algorithm.bucket_count();
 
             buckets = 128;
-            algorithm.shrink_to_fit(buckets - 1);
+            algorithm.rehash(buckets);
 #ifndef NDEBUG
             if (algorithm.bucket_count() != buckets) {
                 size_t bucket_count = algorithm.bucket_count();
@@ -1305,7 +1305,7 @@ void hashtable_rehash2_benchmark_impl()
 
             for (size_t j = 0; j < 7; ++j) {
                 buckets *= 2;
-                algorithm.rehash(buckets - 1);
+                algorithm.rehash(buckets);
 #ifndef NDEBUG
                 if (algorithm.bucket_count() != buckets) {
                     size_t bucket_count = algorithm.bucket_count();
