@@ -1216,7 +1216,7 @@ void hashtable_rehash_benchmark_impl()
             if (rehash_cnt1 < 20) {
                 if (algorithm.bucket_count() != buckets) {
                     size_t bucket_count = algorithm.bucket_count();
-                    printf("rehash1(): size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
+                    printf("rehash1():   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
                            algorithm.size(), buckets, bucket_count);
                 }
                 rehash_cnt1++;
@@ -1302,11 +1302,15 @@ void hashtable_rehash2_benchmark_impl()
 
             buckets = 128;
             algorithm.rehash(buckets);
-#ifndef NDEBUG
-            if (algorithm.bucket_count() != buckets) {
-                size_t bucket_count = algorithm.bucket_count();
-                printf("shrink_to(): size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
-                       algorithm.size(), buckets, bucket_count);
+#ifndef NDEBUG_
+            static size_t rehash_cnt1 = 0;
+            if (rehash_cnt1 < 20) {
+                if (algorithm.bucket_count() != buckets) {
+                    size_t bucket_count = algorithm.bucket_count();
+                    printf("rehash1():   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
+                           algorithm.size(), buckets, bucket_count);
+                }
+                rehash_cnt1++;
             }
 #endif
             checksum += algorithm.bucket_count();
@@ -1314,11 +1318,15 @@ void hashtable_rehash2_benchmark_impl()
             for (size_t j = 0; j < 7; ++j) {
                 buckets *= 2;
                 algorithm.rehash(buckets);
-#ifndef NDEBUG
-                if (algorithm.bucket_count() != buckets) {
-                    size_t bucket_count = algorithm.bucket_count();
-                    printf("rehash(%u):   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
-                           (uint32_t)j, algorithm.size(), buckets, bucket_count);
+#ifndef NDEBUG_
+                static size_t rehash_cnt2 = 0;
+                if (rehash_cnt2 < 20) {
+                    if (algorithm.bucket_count() != buckets) {
+                        size_t bucket_count = algorithm.bucket_count();
+                        printf("rehash2(%u):   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
+                               (uint32_t)j, algorithm.size(), buckets, bucket_count);
+                    }
+                    rehash_cnt2++;
                 }
 #endif
                 checksum += algorithm.bucket_count();
