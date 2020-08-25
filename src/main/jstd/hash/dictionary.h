@@ -376,8 +376,23 @@ protected:
 
     // The threshold of treeify to red-black tree.
     static const size_type kTreeifyThreshold = 8;
-    // The default load factor.
-    static const size_type kDefaultLoadFactor = 1;
+
+    //
+    // The maximum load factor: maxLoadFactor = A / B,
+    // default value is: 3 / 4 = 0.75
+    // Only use in rehash() function.
+    //
+
+    // The default maximum load factor coefficient of A.
+    static const size_type kMaxLoadFactorA = 3;
+    // The default maximum load factor coefficient of B.
+    static const size_type kMaxLoadFactorB = 4;
+
+    //
+    // The default maximum load factor (For efficiency, use integer).
+    // Use in all functions, except the rehash() function.
+    //
+    static const size_type kMaxLoadFactor = 1;
 
 public:
     explicit BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
@@ -481,7 +496,7 @@ public:
     }
 
     float max_load_factor() const {
-        return static_cast<float>(kDefaultLoadFactor);
+        return static_cast<float>(kMaxLoadFactor);
     }
 
     void max_load_factor(float ml) {
@@ -494,6 +509,14 @@ public:
 
     size_type max_size() const {
         return this->max_bucket_capacity();
+    }
+
+    size_type min_bucket_count() const {
+        return (this->entry_size_ * kMaxLoadFactorB / kMaxLoadFactorA);
+    }
+
+    size_type min_bucket_count(size_type entry_size) const {
+        return (entry_size * kMaxLoadFactorB / kMaxLoadFactorA);
     }
 
     size_type max_chunk_size() const {
@@ -768,7 +791,6 @@ protected:
             // Initialize the buckets list.
             std::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
-            // Save the buckets info.
             this->buckets_ = new_buckets;
             this->bucket_mask_ = bucket_capacity - 1;
             this->bucket_capacity_ = bucket_capacity;
@@ -776,7 +798,6 @@ protected:
             // The array of entries.
             entry_type * new_entries = entry_allocator_.allocate(entry_capacity);
             if (likely(entry_allocator_.is_ok(new_entries))) {
-                // Save the entries info.
                 this->entries_ = new_entries;
                 this->entry_size_ = 0;
                 this->entry_capacity_ = entry_capacity;
@@ -935,12 +956,13 @@ protected:
     }
 
     void rehash_buckets(size_type new_bucket_capacity) {
-        assert(new_bucket_capacity > 0);
         assert(run_time::is_pow2(new_bucket_capacity));
-        assert(this->entry_size_ <= this->bucket_capacity_);
+        assert(new_bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
+        assert(new_bucket_capacity >= (this->min_bucket_count()));
+        assert(new_bucket_capacity != this->bucket_capacity_);
 
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
-        if (likely( this->bucket_allocator_.is_ok(new_buckets))) {
+        if (likely(this->bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
             if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
                 rehash_all_entries_2x(new_buckets, new_bucket_capacity);
@@ -958,103 +980,39 @@ protected:
     }
 
     void rehash_buckets_and_entries(size_type new_entry_capacity, size_type new_bucket_capacity) {
-        assert(new_entry_capacity > 0);
-        assert(new_bucket_capacity > 0);
         assert(run_time::is_pow2(new_entry_capacity));
         assert(run_time::is_pow2(new_bucket_capacity));
+        assert(new_entry_capacity >= kMinimumCapacity);
+        assert(new_entry_capacity >= this->entry_size_);
+        assert(new_entry_capacity > this->entry_capacity_);
+        assert(new_bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
+        assert(new_bucket_capacity >= (this->min_bucket_count()));
         assert(new_bucket_capacity > this->bucket_capacity_);
 
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
         if (likely(bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
+            if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
+                rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+            else
+                rehash_all_entries(new_buckets, new_bucket_capacity);
+
+            this->free_buckets_impl();
+
+            this->buckets_ = new_buckets;
+            this->bucket_mask_ = new_bucket_capacity - 1;
+            this->bucket_capacity_ = new_bucket_capacity;
 
             // Only allocate a chunk size we need.
             assert(new_entry_capacity > this->entry_capacity_);
             size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
             new_chunk_capacity = (std::min)(new_chunk_capacity, kMaxEntryChunkSize);
 
-            entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
-            if (likely(entry_allocator_.is_ok(new_entries))) {
-                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                    rehash_all_entries_2x(new_buckets, new_bucket_capacity);
-                else
-                    rehash_all_entries(new_buckets, new_bucket_capacity);
-
-                this->free_buckets_impl();
-
-                this->buckets_ = new_buckets;
-                this->entries_ = new_entries;
-                this->bucket_mask_ = new_bucket_capacity - 1;
-                this->bucket_capacity_ = new_bucket_capacity;
-                // Here, the entry_size_ doesn't change.
-                this->entry_capacity_ += new_chunk_capacity;
-
-                assert(this->chunk_list_.lastChunk().is_full());
-
-                // Push the new entries pointer to entries list.
-                this->chunk_list_.addChunk(new_entries, new_chunk_capacity);
-
-                this->updateVersion();
-            }
-            else {
-                // Failed to allocate new_entries, processing the abnormal exit.
-                bucket_allocator_.deallocate(new_buckets, new_bucket_capacity);
-            }
-        }
-    }
-
-    template <bool need_shrink = false>
-    void rehash_impl(size_type new_bucket_capacity) {
-        assert(new_bucket_capacity > 0);
-        assert((new_bucket_capacity & (new_bucket_capacity - 1)) == 0);
-
-        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + 1);
-        if (likely(new_bucket_capacity > this->bucket_capacity_)) {
-            // Is infalte, do nothing.
-        }
-        else if (likely(new_bucket_capacity < this->bucket_capacity_)) {
-            if (likely(new_entry_capacity > new_bucket_capacity)) {
-                new_bucket_capacity = new_entry_capacity;
-            }
-            if (likely(new_bucket_capacity > this->bucket_capacity_)) {
-                // Is infalte, do nothing.
-            }
-            else {
-                // We need to shrink the bucket list capacity.
-            }
-        }
-        else {
-            // The bucket capacity is unchanged.
-            return;
-        }
-
-        if (likely(new_entry_capacity <= this->entry_capacity_)) {
-            return rehash_buckets(new_bucket_capacity);
-        }
-        else {
-            return rehash_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
-        }
-    }
-
-    void inflate_entries(size_type delta_size = 1) {
-        assert(this->entry_size_ == this->entry_capacity_);
-        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + delta_size);
-
-        // If new entry capacity is too small, exit directly.
-        if (likely(new_entry_capacity > this->entry_capacity_)) {
-            // Most of the time, we don't need to reallocate buckets list.
-            if (likely(new_entry_capacity <= this->bucket_capacity_)) {
-                assert(this->freelist_.is_empty());
-
-                // Only allocate a chunk size we need.
-                size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
-                new_chunk_capacity = (std::min)(new_chunk_capacity, kMaxEntryChunkSize);
-                if (new_chunk_capacity == kMaxEntryChunkSize) {
-                    new_chunk_capacity = kMaxEntryChunkSize;
-                }
-
+            size_type actual_entry_capacity = this->entry_size_ + new_chunk_capacity;
+            if (likely(actual_entry_capacity > this->entry_capacity_)) {
                 entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
                 if (likely(entry_allocator_.is_ok(new_entries))) {
+                    // Needn't change the entry_size_.
                     this->entries_ = new_entries;
                     this->entry_capacity_ += new_chunk_capacity;
 
@@ -1065,14 +1023,79 @@ protected:
                 }
             }
             else {
-                // The bucket list capacity is full, need to reallocate.
-                rehash_buckets_and_entries(new_entry_capacity, new_entry_capacity);
+                assert(false);
+            }
+
+            this->updateVersion();
+        }
+    }
+
+    void inflate_entries(size_type delta_size = 1) {
+        assert(this->entry_size_ == this->entry_capacity_);
+        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + delta_size);
+        size_type new_bucket_capacity = new_entry_capacity / kMaxLoadFactor;
+
+        // We only need to allocate a chunk size,
+        // if the allocate size is bigger than kMaxEntryChunkSize.
+        size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
+        new_chunk_capacity = (std::min)(new_chunk_capacity, kMaxEntryChunkSize);
+#ifndef NDEBUG
+        if (new_chunk_capacity == kMaxEntryChunkSize) {
+            new_chunk_capacity = kMaxEntryChunkSize;
+        }
+#endif
+        // If actual entry capacity is equal or smaller than old entry capacity,
+        // don't need to inflate.
+        size_type actual_entry_capacity = this->entry_size_ + new_chunk_capacity;
+        if (likely(actual_entry_capacity > this->entry_capacity_)) {
+            // Most of the time, we don't need to reallocate the buckets list.
+            if (likely(new_bucket_capacity <= this->bucket_capacity_)) {
+                assert(this->freelist_.is_empty());
+
+                if (likely(actual_entry_capacity > this->entry_capacity_)) {
+                    entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
+                    if (likely(entry_allocator_.is_ok(new_entries))) {
+                        this->entries_ = new_entries;
+                        this->entry_capacity_ += new_chunk_capacity;
+
+                        assert(this->chunk_list_.lastChunk().is_full());
+
+                        // Push the new entries pointer to entries list.
+                        this->chunk_list_.addChunk(new_entries, new_chunk_capacity);
+                    }
+                }
+            }
+            else {
+                // The bucket list capacity and entry capacity is full.
+                rehash_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
             }
         }
         else {
-            // Error ??
-            assert(new_entry_capacity <= this->bucket_capacity_);
-            assert(false);
+            if (likely(new_bucket_capacity > this->bucket_capacity_)) {
+                // The bucket list capacity is full, but entry capacity is not full.
+                rehash_buckets(new_bucket_capacity);
+            }
+            else {
+                // Error: ??
+                assert(false);
+            }
+        }
+    }
+
+    template <bool need_shrink = false>
+    void rehash_impl(size_type new_bucket_capacity) {
+        assert(new_bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
+        assert(run_time::is_pow2(new_bucket_capacity));
+
+        // [ bucket_capacity = entry_size / kMaxLoadFactor = entry_size * FactorB / FactorA ]
+        size_type min_bucket_capacity = run_time::round_up_to_pow2(this->min_bucket_count());
+
+        new_bucket_capacity = (std::max)(new_bucket_capacity, min_bucket_capacity);
+        if (likely(new_bucket_capacity != this->bucket_capacity_)) {
+            // It may be the following two cases:
+            // Inflate: We need to expanded the capacity of bucket list.
+            // Shrink: We need to reduced the capacity of bucket list.
+            this->rehash_buckets(new_bucket_capacity);
         }
     }
 
@@ -2050,12 +2073,12 @@ public:
         }
     }
 
-    void reorder_shrink_to_fit() {
-        size_type target_capacity = run_time::round_up_to_pow2(this->entry_capacity_ / 4);
-        target_capacity = (std::max)(target_capacity, kDefaultInitialCapacity);
-        assert(this->entry_size_ <= target_capacity);
+    void reorder_shrink_to(size_type new_entry_capacity) {
+        new_entry_capacity = run_time::round_up_to_pow2(new_entry_capacity);
+        new_entry_capacity = (std::max)(new_entry_capacity, kMinimumCapacity);
+        assert(this->entry_size_ <= new_entry_capacity);
 
-        size_type target_chunk_id = this->chunk_list_.findClosedChunk(target_capacity);
+        size_type target_chunk_id = this->chunk_list_.findClosedChunk(new_entry_capacity);
         if (target_chunk_id != size_type(-1)) {
             entry_chunk_t & target_chunk = this->chunk_list_[target_chunk_id];
             size_type dest_size     = target_chunk.size;
@@ -2105,7 +2128,7 @@ public:
             assert((dest_size + total_move_count) <= dest_capacity);
 
             // Resize the buckets and fix all redirect entries.
-            rehash_and_fix_buckets(target_capacity);
+            rehash_and_fix_buckets(new_entry_capacity);
 
             // Clear another the chunks except target chunk.
             for (size_type i = 0; i < this->chunk_list_.size(); i++) {
@@ -2161,7 +2184,7 @@ public:
             this->chunk_list_.resize(1);
 
             // Here, we don't change the bucket count.
-            this->entry_capacity_ = target_capacity;
+            this->entry_capacity_ = new_entry_capacity;
         }
         else {
             // No matching chunk found
@@ -2176,11 +2199,11 @@ public:
             size_type last_chunk_capacity = this->chunk_list_.lastChunk().capacity;
             if (last_chunk_capacity < kMaxEntryChunkSize) {
                 if (likely(this->chunk_list_.size() > 1)) {
-                    reorder_shrink_to_fit();
+                    reorder_shrink_to(this->entry_capacity_ / 4);
                 }
                 else {
                     assert(this->chunk_list_.size() == 1);
-                    rearrange_realloc();
+                    //rearrange_realloc_to_fit();
                 }
             }
             else {
@@ -2229,8 +2252,59 @@ public:
 
 #endif
 
-    void rearrange_realloc() {
+    void realloc_all_entries(entry_type ** new_buckets, size_type new_bucket_capacity,
+                             entry_type * new_entries, size_type new_entry_capacity) {
         //
+    }
+
+    void realloc_buckets_and_entries(size_type new_entry_capacity, size_type new_bucket_capacity) {
+        assert(new_entry_capacity >= kMinimumCapacity);
+        assert(new_bucket_capacity >= (kMinimumCapacity / kMaxLoadFactor));
+        assert(run_time::is_pow2(new_entry_capacity));
+        assert(run_time::is_pow2(new_bucket_capacity));
+        assert(new_entry_capacity >= this->entry_size_);
+        assert(new_bucket_capacity >= (new_entry_capacity / kMaxLoadFactor));
+
+        entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
+        if (likely(bucket_allocator_.is_ok(new_buckets))) {
+            // Here, we do not need to initialize the bucket list.
+
+            entry_type * new_entries = entry_allocator_.allocate(new_entry_capacity);
+            if (likely(entry_allocator_.is_ok(new_entries))) {
+                realloc_all_entries(new_buckets, new_bucket_capacity,
+                                    new_entries, new_entry_capacity);
+
+                //this->destroy();
+                this->free_buckets_impl();
+
+                this->buckets_ = new_buckets;
+                this->entries_ = new_entries;
+                this->bucket_mask_ = new_bucket_capacity - 1;
+                this->bucket_capacity_ = new_bucket_capacity;
+                // Needn't change the entry_size_.
+                this->entry_capacity_ = new_entry_capacity;
+
+                assert(this->chunk_list_.lastChunk().is_full());
+
+                // Push the new entries pointer to entries list.
+                this->chunk_list_.addChunk(new_entries, new_entry_capacity);
+
+                this->updateVersion();
+            }
+            else {
+                // Failed to allocate new_entries, processing the abnormal exit.
+                bucket_allocator_.deallocate(new_buckets, new_bucket_capacity);
+            }
+        }
+    }
+
+    void rearrange_realloc_to_fit() {
+        size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_);
+        new_entry_capacity = (std::max)(new_entry_capacity, kMinimumCapacity);
+        assert(this->entry_size_ <= new_entry_capacity);
+
+        size_type new_bucket_capacity = new_entry_capacity / kMaxLoadFactor;
+        realloc_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
     }
 
     void rearrange(size_type arrangeType) {
@@ -2238,7 +2312,7 @@ public:
             rearrange_reorder();
         }
         else if (arrangeType == ArrangeType::Realloc) {
-            rearrange_realloc();
+            rearrange_realloc_to_fit();
         }
         else {
             //
