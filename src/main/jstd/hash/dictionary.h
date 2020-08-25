@@ -1002,10 +1002,15 @@ protected:
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
         if (likely(this->bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
-            if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                rehash_all_entries_2x(new_buckets, new_bucket_capacity);
-            else
-                rehash_all_entries(new_buckets, new_bucket_capacity);
+            if (this->entry_size_ != 0) {
+                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
+                    rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+                else
+                    rehash_all_entries(new_buckets, new_bucket_capacity);
+            }
+            else {
+                std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
+            }
 
             this->free_buckets_impl();
 
@@ -2662,6 +2667,8 @@ protected:
                 this->freelist_.clear();
 
                 this->updateVersion();
+
+                (void)bucket_realloc_success;
             }
             else {
                 assert(!!bucket_realloc_success);
