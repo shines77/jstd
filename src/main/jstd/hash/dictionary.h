@@ -1726,38 +1726,6 @@ protected:
 #endif
     }
 
-public:
-    inline hash_code_t get_hash(const key_type & key) const {
-        hash_code_t hash_code = this->hasher_(key);
-        //hash_code = hash_code ^ (hash_code >> 16);
-        return hash_code;
-    }
-
-    void clear() {
-        this->destroy();
-        this->initialize(kDefaultInitialCapacity);
-    }
-
-    void rehash(size_type bucket_count) {
-        assert(bucket_count > 0);
-        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
-        this->rehash_impl<false>(new_bucket_capacity);
-    }
-
-    void reserve(size_type bucket_count) {
-        this->rehash(bucket_count);
-    }
-
-    void shrink_to_fit(size_type bucket_count = 0) {
-        size_type entry_capacity = run_time::round_up_to_pow2(this->entry_size_);
-
-        // Choose the maximum size of new bucket capacity and now entry capacity.
-        bucket_count = (entry_capacity >= bucket_count) ? entry_capacity : bucket_count;
-
-        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
-        this->rehash_impl<true>(new_bucket_capacity);
-    }
-
     void release_and_erase_freelist_in_chunk(size_type target_chunk_id) {
         entry_type * prev = nullptr;
         entry_type * entry = this->freelist_.head();
@@ -1917,25 +1885,6 @@ public:
 
             this->allocator_.destructor(&src_entry->value);
         }
-#if 0
-        // This situation is impossible.
-        else if (dest_entry->attrib.isFreeEntry()) {
-            dest_entry->next         = src_entry->next;
-            dest_entry->hash_code    = src_entry->hash_code;
-            dest_entry->attrib.setValue(kIsInUseEntry, 0);
-            dest_entry->owner        = this;
-
-            src_entry->next = dest_entry;
-            src_entry->attrib.setRedirectEntry();
-
-            n_value_type * n_src_value  = reinterpret_cast<n_value_type *>(&src_entry->value);
-            n_value_type * n_dest_value = reinterpret_cast<n_value_type *>(&dest_entry->value);
-            n_dest_value->first  = std::move(n_src_value->first);
-            n_dest_value->second = std::move(n_src_value->second);
-
-            this->allocator_.destructor(&src_entry->value);
-        }
-#endif
         else {
             assert(false);
         }
@@ -2193,7 +2142,6 @@ public:
     }
 
 #if 1
-
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
             size_type last_chunk_capacity = this->chunk_list_.lastChunk().capacity;
@@ -2211,9 +2159,7 @@ public:
             }
         }
     }
-
 #else
-
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
             size_type first_chunk_capacity = this->chunk_list_[0].capacity;
@@ -2249,7 +2195,6 @@ public:
             }
         }
     }
-
 #endif
 
     void realloc_all_entries(entry_type ** new_buckets, size_type new_bucket_capacity,
@@ -2307,6 +2252,38 @@ public:
         realloc_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
     }
 
+public:
+    inline hash_code_t get_hash(const key_type & key) const {
+        hash_code_t hash_code = this->hasher_(key);
+        //hash_code = hash_code ^ (hash_code >> 16);
+        return hash_code;
+    }
+
+    void clear() {
+        this->destroy();
+        this->initialize(kDefaultInitialCapacity);
+    }
+
+    void rehash(size_type bucket_count) {
+        assert(bucket_count > 0);
+        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
+        this->rehash_impl<false>(new_bucket_capacity);
+    }
+
+    void reserve(size_type bucket_count) {
+        this->rehash(bucket_count);
+    }
+
+    void shrink_to_fit(size_type bucket_count = 0) {
+        size_type entry_capacity = run_time::round_up_to_pow2(this->entry_size_);
+
+        // Choose the maximum size of new bucket capacity and now entry capacity.
+        bucket_count = (entry_capacity >= bucket_count) ? entry_capacity : bucket_count;
+
+        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
+        this->rehash_impl<true>(new_bucket_capacity);
+    }
+
     void rearrange(size_type arrangeType) {
         if (arrangeType == ArrangeType::Reorder) {
             rearrange_reorder();
@@ -2315,7 +2292,7 @@ public:
             rearrange_realloc_to_fit();
         }
         else {
-            //
+            assert(false);
         }
     }
 
@@ -2463,7 +2440,10 @@ public:
                         this->freelist_.push_front(entry);
 
                         //
-                        // destruct the entry->value
+                        // We use lazy destroy the entry->value,
+                        // so the code below is commented out.
+                        //
+                        // Call the destructor for entry->value.
                         //
                         // this->allocator_.destructor(&entry->value);
                         //
