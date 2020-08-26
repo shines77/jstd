@@ -1196,7 +1196,6 @@ void hashtable_rehash_benchmark_impl()
         size_t buckets = 128;
 
         AlgorithmTy algorithm(kInitCapacity);
-        algorithm.reserve(buckets);
 
         for (size_t i = 0; i < kHeaderFieldSize; ++i) {
             algorithm.emplace(field_str[i], index_str[i]);

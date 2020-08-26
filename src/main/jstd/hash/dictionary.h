@@ -2184,61 +2184,6 @@ protected:
         }
     }
 
-#if 1
-    void rearrange_reorder() {
-        if (this->chunk_list_.size() > 0) {
-            size_type last_chunk_capacity = this->chunk_list_.lastChunk().capacity;
-            if (last_chunk_capacity < kMaxEntryChunkSize) {
-                if (likely(this->chunk_list_.size() > 1)) {
-                    reorder_shrink_to(this->entry_capacity_ / 4);
-                }
-                else {
-                    assert(this->chunk_list_.size() == 1);
-                    rearrange_realloc_to_fit();
-                }
-            }
-            else {
-                assert(last_chunk_capacity >= kMaxEntryChunkSize);
-            }
-        }
-    }
-#else
-    void rearrange_reorder() {
-        if (this->chunk_list_.size() > 0) {
-            size_type first_chunk_capacity = this->chunk_list_[0].capacity;
-            if (first_chunk_capacity < kMaxEntryChunkSize) {
-                assert(run_time::is_pow2(first_chunk_capacity));
-                if (likely(this->chunk_list_.size() > 1)) {
-                    size_type last_chunk_id = this->chunk_list_.size() - 1;
-                    const entry_chunk_t & last_chunk = this->chunk_list_[last_chunk_id];
-                    size_type last_chunk_capacity = this->chunk_list_[last_chunk_id].capacity;
-                    assert(run_time::is_pow2(last_chunk_capacity));
-                    size_type ahead_chunk_size = this->entry_size_ - last_chunk.size;
-                    if (ahead_chunk_size != 0) {
-                        if (last_chunk.size != 0) {
-                            reorder_shrink_to_fit();
-                        }
-                        else {
-                            assert(last_chunk.size == 0);
-                            reorder_last_chunk_is_empty(last_chunk_id, last_chunk);
-                        }
-                    }
-                    else {
-                        assert(ahead_chunk_size == 0);
-                        reorder_ahead_chunk_is_empty(last_chunk_id, last_chunk);
-                    }
-                }
-                else if (this->chunk_list_.size() == 1) {
-                    rearrange_realloc_to_fit();
-                }
-            }
-            else {
-                assert(first_chunk_capacity >= kMaxEntryChunkSize);
-            }
-        }
-    }
-#endif
-
     void entry_value_move_assignment(entry_type * old_entry, entry_type * new_entry) {
         n_value_type * n_old_value = reinterpret_cast<n_value_type *>(&old_entry->value);
         n_value_type * n_new_value = reinterpret_cast<n_value_type *>(&new_entry->value);
@@ -2677,6 +2622,61 @@ protected:
             }
         }
     }
+
+#if 1
+    void rearrange_reorder() {
+        if (this->chunk_list_.size() > 0) {
+            size_type last_chunk_capacity = this->chunk_list_.lastChunk().capacity;
+            if (last_chunk_capacity < kMaxEntryChunkSize) {
+                if (likely(this->chunk_list_.size() > 1)) {
+                    reorder_shrink_to(this->entry_capacity_ / 4);
+                }
+                else {
+                    assert(this->chunk_list_.size() == 1);
+                    rearrange_realloc_to_fit();
+                }
+            }
+            else {
+                assert(last_chunk_capacity >= kMaxEntryChunkSize);
+            }
+        }
+    }
+#else
+    void rearrange_reorder() {
+        if (this->chunk_list_.size() > 0) {
+            size_type first_chunk_capacity = this->chunk_list_[0].capacity;
+            if (first_chunk_capacity < kMaxEntryChunkSize) {
+                assert(run_time::is_pow2(first_chunk_capacity));
+                if (likely(this->chunk_list_.size() > 1)) {
+                    size_type last_chunk_id = this->chunk_list_.size() - 1;
+                    const entry_chunk_t & last_chunk = this->chunk_list_[last_chunk_id];
+                    size_type last_chunk_capacity = this->chunk_list_[last_chunk_id].capacity;
+                    assert(run_time::is_pow2(last_chunk_capacity));
+                    size_type ahead_chunk_size = this->entry_size_ - last_chunk.size;
+                    if (ahead_chunk_size != 0) {
+                        if (last_chunk.size != 0) {
+                            reorder_shrink_to_fit();
+                        }
+                        else {
+                            assert(last_chunk.size == 0);
+                            reorder_last_chunk_is_empty(last_chunk_id, last_chunk);
+                        }
+                    }
+                    else {
+                        assert(ahead_chunk_size == 0);
+                        reorder_ahead_chunk_is_empty(last_chunk_id, last_chunk);
+                    }
+                }
+                else if (this->chunk_list_.size() == 1) {
+                    rearrange_realloc_to_fit();
+                }
+            }
+            else {
+                assert(first_chunk_capacity >= kMaxEntryChunkSize);
+            }
+        }
+    }
+#endif
 
     void rearrange_realloc_to(size_type target_entry_size) {
         size_type new_entry_capacity = run_time::round_up_to_pow2(target_entry_size);

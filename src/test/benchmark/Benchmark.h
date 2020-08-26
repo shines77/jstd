@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <memory>
 #include <utility>
 #include <type_traits>
 
@@ -183,6 +184,28 @@ public:
         return false;
     }
 
+    std::string formatMsTime(double fMillisec) {
+        char time_buf[256];
+
+        if (fMillisec >= 1000.0 * 1000.0) {
+            snprintf(time_buf, sizeof(time_buf), "%7.2f Min", fMillisec / (60 * 1000.0));
+        }
+        else if (fMillisec >= 1000.0 * 10.0) {
+            snprintf(time_buf, sizeof(time_buf), "%7.2f Sec", fMillisec / 1000.0);
+        }
+        else if (fMillisec >= 1.0 * 0.1) {
+            snprintf(time_buf, sizeof(time_buf), "%7.2f ms ", fMillisec);
+        }
+        else if (fMillisec >= 0.001 * 0.1) {
+            snprintf(time_buf, sizeof(time_buf), "%7.2f us ", fMillisec * 1000.0);
+        }
+        else {
+            snprintf(time_buf, sizeof(time_buf), "%7.2f ns ", fMillisec * 1000000.0);
+        }
+
+        return std::move(std::string(time_buf));
+    }
+
     /*******************************************************************************************************
        Test                                          std::unordered_map         jstd::Dictionary     Ratio
       ------------------------------------------------------------------------------------------------------
@@ -195,17 +218,17 @@ public:
       ------------------------------------------------------------------------------------------------------
     *******************************************************************************************************/
     void printResult(const std::string & filename, double totalElapsedTime = 0.0) {
-        printf(" Test                                    %23s  %23s     Ratio\n",
+        printf(" Test                                    %23s   %23s      Ratio\n",
                this->name1_.c_str(), this->name2_.c_str());
-        printf("------------------------------------------------------------------------------------------------------\n");
+        printf("--------------------------------------------------------------------------------------------------------\n");
 
         for (size_type catId = 0; catId < category_size(); catId++) {
             BenchmarkCategory * category = getCategory(catId);
             if (category != nullptr) {
                 if (category->name().size() <= 40)
-                    printf(" %-40s    checksum    time         checksum    time\n", category->name().c_str());
+                    printf(" %-40s    checksum    time          checksum    time\n", category->name().c_str());
                 else
-                    printf(" %-52s"          "    time         checksum    time\n", category->name().c_str());
+                    printf(" %-52s"          "    time          checksum    time\n", category->name().c_str());
                 printf("\n");
 
                 size_type result_count = category->size();
@@ -216,10 +239,10 @@ public:
                         ratio = result.elaspedTime1 / result.elaspedTime2;
                     else
                         ratio = 0.0;
-                    printf(" %-38s | %11" PRIuPTR " %7.2f ms | %11" PRIuPTR " %7.2f ms |   %0.2f\n",
+                    printf(" %-38s | %11" PRIuPTR " %11s | %11" PRIuPTR " %11s |   %0.2f\n",
                            result.name.c_str(),
-                           result.checksum1, result.elaspedTime1,
-                           result.checksum2, result.elaspedTime2,
+                           result.checksum1, formatMsTime(result.elaspedTime1).c_str(),
+                           result.checksum2, formatMsTime(result.elaspedTime2).c_str(),
                            ratio);
                 }
 
@@ -229,7 +252,7 @@ public:
         }
 
         printf("\n");
-        printf("------------------------------------------------------------------------------------------------------\n");
+        printf("--------------------------------------------------------------------------------------------------------\n");
         printf("\n");
         if (filename.size() == 0 || filename.c_str() == nullptr || filename == "")
             printf("Dict filename: %-52s  Total elapsed time: %0.2f ms\n", "header_fields[]", totalElapsedTime);

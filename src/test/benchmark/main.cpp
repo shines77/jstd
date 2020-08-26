@@ -415,8 +415,153 @@ void test_hashmap_erase(const Vector & test_data,
     printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
 }
 
+template <typename Container, typename Vector>
+void test_hashmap_rehash(const Vector & test_data,
+                         double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
+    else
+        repeat_times = 0;
+
+    Container container(kInitCapacity);
+    for (std::size_t i = 0; i < data_length; i++) {
+        container.emplace(test_data[i].first, test_data[i].second);
+    }
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    std::size_t bucket_counts = 0;
+    jtest::StopWatch sw;
+
+    sw.start();
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        checksum += container.size();
+        checksum += container.bucket_count();
+
+        bucket_counts = 128;
+        container.rehash(bucket_counts);
+        checksum += container.bucket_count();
+#ifndef NDEBUG
+        static size_t rehash_cnt1 = 0;
+        if (rehash_cnt1 < 20) {
+            if (container.bucket_count() != bucket_counts) {
+                size_t bucket_count = container.bucket_count();
+                printf("rehash1():   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
+                        container.size(), bucket_counts, bucket_count);
+            }
+            rehash_cnt1++;
+        }
+#endif
+        for (std::size_t i = 0; i < 7; i++) {
+            bucket_counts *= 2;
+            container.rehash(bucket_counts);
+            checksum += container.bucket_count();
+#ifndef NDEBUG
+            static size_t rehash_cnt2 = 0;
+            if (rehash_cnt2 < 20) {
+                if (container.bucket_count() != bucket_counts) {
+                    size_t bucket_count = container.bucket_count();
+                    printf("rehash2(%u):   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
+                            (uint32_t)i, container.size(), bucket_counts, bucket_count);
+                }
+                rehash_cnt2++;
+            }
+#endif
+        }
+    }
+    sw.stop();
+
+    totalTime = sw.getElapsedMillisec();
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    printf("---------------------------------------------------------------------------\n");
+    if (jstd::has_name<Container>::value)
+        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    else
+        printf(" %-36s  ", "std::unordered_map<K, V>");
+    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_rehash2(const Vector & test_data,
+                          double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
+    else
+        repeat_times = 0;
+
+
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    std::size_t bucket_counts = 0;
+    jtest::StopWatch sw;
+
+    sw.start();
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.emplace(test_data[i].first, test_data[i].second);
+        }
+        checksum += container.size();
+        checksum += container.bucket_count();
+
+        bucket_counts = 128;
+        container.rehash(bucket_counts);
+        checksum += container.bucket_count();
+#ifndef NDEBUG
+        static size_t rehash_cnt1 = 0;
+        if (rehash_cnt1 < 20) {
+            if (container.bucket_count() != bucket_counts) {
+                size_t bucket_count = container.bucket_count();
+                printf("rehash1():   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
+                        container.size(), bucket_counts, bucket_count);
+            }
+            rehash_cnt1++;
+        }
+#endif
+        for (std::size_t i = 0; i < 7; i++) {
+            bucket_counts *= 2;
+            container.rehash(bucket_counts);
+            checksum += container.bucket_count();
+#ifndef NDEBUG
+            static size_t rehash_cnt2 = 0;
+            if (rehash_cnt2 < 20) {
+                if (container.bucket_count() != bucket_counts) {
+                    size_t bucket_count = container.bucket_count();
+                    printf("rehash2(%u):   size = %" PRIuPTR ", buckets = %" PRIuPTR ", bucket_count = %" PRIuPTR "\n",
+                            (uint32_t)i, container.size(), bucket_counts, bucket_count);
+                }
+                rehash_cnt2++;
+            }
+#endif
+        }
+    }
+    sw.stop();
+
+    totalTime = sw.getElapsedMillisec();
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    printf("---------------------------------------------------------------------------\n");
+    if (jstd::has_name<Container>::value)
+        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    else
+        printf(" %-36s  ", "std::unordered_map<K, V>");
+    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+}
+
 template <typename Container1, typename Container2, typename Vector>
-void hashmap_benchmark_single(const std::string & cat_name,
+void hashmap_benchmark_simple(const std::string & cat_name,
                               Container1 & container1, Container2 & container2,
                               const Vector & test_data,
                               BenchmarkResult & result)
@@ -457,6 +602,22 @@ void hashmap_benchmark_single(const std::string & cat_name,
     test_hashmap_erase<Container2, Vector>(test_data, elapsedTime2, checksum2);
 
     result.addResult(cat_id, "hash_map<K, V>/erase", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/rehash
+    //
+    test_hashmap_rehash<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_rehash<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/rehash", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/rehash2
+    //
+    test_hashmap_rehash2<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_rehash2<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/rehash2", elapsedTime1, checksum1, elapsedTime2, checksum2);
 }
 
 void hashmap_benchmark_all()
@@ -488,7 +649,7 @@ void hashmap_benchmark_all()
     std::unordered_map<std::string, std::string> std_map_ss;
     jstd::Dictionary<std::string, std::string>   jstd_dict_ss;
 
-    hashmap_benchmark_single("hash_map<std::string, std::string>",
+    hashmap_benchmark_simple("hash_map<std::string, std::string>",
                              std_map_ss, jstd_dict_ss,
                              test_data_ss, test_result);
 
@@ -515,7 +676,7 @@ void hashmap_benchmark_all()
             std::unordered_map<jstd::string_view, jstd::string_view> std_map_svsv;
             jstd::Dictionary<jstd::string_view, jstd::string_view>   jstd_dict_svsv;
 
-            hashmap_benchmark_single("hash_map<jstd::string_view, jstd::string_view>",
+            hashmap_benchmark_simple("hash_map<jstd::string_view, jstd::string_view>",
                                      std_map_svsv, jstd_dict_svsv,
                                      test_data_svsv, test_result);
 
@@ -535,7 +696,7 @@ void hashmap_benchmark_all()
             std::unordered_map<int, int> std_map_ii;
             jstd::Dictionary<int, int>   jstd_dict_ii;
 
-            hashmap_benchmark_single("hash_map<int, int>",
+            hashmap_benchmark_simple("hash_map<int, int>",
                                      std_map_ii, jstd_dict_ii,
                                      test_data_ii, test_result);
 
@@ -555,7 +716,7 @@ void hashmap_benchmark_all()
             std::unordered_map<std::size_t, std::size_t> std_map_uu;
             jstd::Dictionary<std::size_t, std::size_t>   jstd_dict_uu;
 
-            hashmap_benchmark_single("hash_map<std::size_t, std::size_t>",
+            hashmap_benchmark_simple("hash_map<std::size_t, std::size_t>",
                                      std_map_uu, jstd_dict_uu,
                                      test_data_uu, test_result);
 
