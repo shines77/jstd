@@ -11,7 +11,7 @@
 
 #include <string>
 #include <type_traits>
-#include <utility>
+#include <utility>      // For std::pair<T1, T2>
 
 namespace jstd {
 
@@ -58,6 +58,32 @@ struct integral_traits {
     static const unsigned_type max_num = static_cast<unsigned_type>(-1);
 };
 
+//
+// is_relocatable<T>
+//
+// Trait which can be added to user types to enable use of memcpy.
+//
+// Example:
+// template <>
+// struct is_relocatable<MyType> : std::true_type {};
+//
+
+template <typename T>
+struct is_relocatable
+    : std::integral_constant<bool,
+                             (std::is_trivially_copy_constructible<T>::value &&
+                              std::is_trivially_destructible<T>::value)> {};
+
+template <typename T, typename U>
+struct is_relocatable<std::pair<T, U>>
+    : std::integral_constant<bool, (is_relocatable<T>::value &&
+                                    is_relocatable<U>::value)> {};
+
+template <typename T>
+struct is_relocatable<const T> : is_relocatable<T> {};
+
+// Template struct param_tester
+
 struct void_warpper {
     void_warpper() {}
 
@@ -66,8 +92,6 @@ struct void_warpper {
         return void();
     }
 };
-
-// Template struct param_tester
 
 // test if parameters are valid
 template <class ...>
@@ -306,7 +330,7 @@ public:
         std::string sname;
         T t;
         Call_name<T>(t, sname, 0);
-        return sname;
+        return std::move(sname);
     }
 };
 
@@ -370,59 +394,6 @@ public:
         return data;
     }
 };
-
-//template <typename T, typename CharTy>
-//typename call_c_str<T, CharTy>::No call_c_str<T, CharTy>::s_No;
-//
-//template <typename T, typename CharTy>
-//class has_c_str2 {
-//private:
-//    typedef char Yes;
-//    typedef char No[2];
-//
-//    template <typename C>
-//    static auto Check(void *)
-//        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ });
-//
-//    template <typename>
-//    static No & Check(...);
-//
-//public:
-//    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
-//};
-//
-//template <typename T, typename CharTy>
-//class call_c_str2 {
-//private:
-//    typedef char Yes;
-//    struct No {
-//        char data[2];
-//    };   
-//
-//    static No s_No;
-//
-//    template <typename C>
-//    static auto Call_c_str(const C & s, const CharTy *& data, void *)
-//        -> decltype(const CharTy * { std::declval<C const>().c_str() }, Yes{ }) {
-//        data = s.c_str();
-//        return Yes{ };
-//    }
-//
-//    template <typename>
-//    static No & Call_c_str(...) {
-//        return s_No;
-//    }
-//
-//public:
-//    static const CharTy * c_str(const T & s) {
-//        const CharTy * data = (const CharTy *)&s;
-//        Call_c_str<T>(s, data, 0);
-//        return data;
-//    }
-//};
-//
-//template <typename T, typename CharTy>
-//typename call_c_str2<T, CharTy>::No call_c_str2<T, CharTy>::s_No;
 
 } // namespace jstd
 

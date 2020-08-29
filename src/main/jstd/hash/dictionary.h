@@ -412,7 +412,7 @@ public:
                            the initial value of version starts from 1. */
 #endif
     {
-        this->initialize(initialCapacity);
+        this->init(initialCapacity);
     }
 
     BasicDictionary(const this_type & other)
@@ -424,7 +424,7 @@ public:
 #endif
     {
         size_type initialSize = other.size();
-        this->initialize(initialSize);
+        this->init(initialSize);
 
         for (const_iterator iter = other.cbegin(); iter != other.cend(); ++iter) {
             this->insert_no_return(iter->first, iter->second);
@@ -521,10 +521,18 @@ public:
     }
 
     size_type min_bucket_count() const {
-        return (this->entry_size_ * kMaxLoadFactorB / kMaxLoadFactorA);
+        return (this->entry_size_ / kMaxLoadFactor);
     }
 
     size_type min_bucket_count(size_type entry_size) const {
+        return (entry_size / kMaxLoadFactor);
+    }
+
+    size_type min_bucket_countf() const {
+        return (this->entry_size_ * kMaxLoadFactorB / kMaxLoadFactorA);
+    }
+
+    size_type min_bucket_countf(size_type entry_size) const {
         return (entry_size * kMaxLoadFactorB / kMaxLoadFactorA);
     }
 
@@ -811,12 +819,12 @@ protected:
         return entry_size;
     }
 
-    void initialize(size_type init_capacity) {
+    void init(size_type init_capacity) {
         size_type entry_capacity = run_time::round_up_to_pow2(init_capacity);
         assert(entry_capacity > 0);
         assert((entry_capacity & (entry_capacity - 1)) == 0);
 
-        size_type bucket_capacity = entry_capacity;
+        size_type bucket_capacity = entry_capacity / kMaxLoadFactor;
 
         // The the array of bucket's first entry.
         entry_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
@@ -1002,7 +1010,7 @@ protected:
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
         if (likely(this->bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
-            if (this->entry_size_ != 0) {
+            if (likely(this->entry_size_ != 0)) {
                 if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
                     rehash_all_entries_2x(new_buckets, new_bucket_capacity);
                 else
@@ -1035,10 +1043,15 @@ protected:
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
         if (likely(bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
-            if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                rehash_all_entries_2x(new_buckets, new_bucket_capacity);
-            else
-                rehash_all_entries(new_buckets, new_bucket_capacity);
+            if (likely(this->entry_size_ != 0)) {
+                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
+                    rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+                else
+                    rehash_all_entries(new_buckets, new_bucket_capacity);
+            }
+            else {
+                std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
+            }
 
             this->free_buckets_impl();
 
@@ -1130,7 +1143,7 @@ protected:
         assert(new_bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
         assert(run_time::is_pow2(new_bucket_capacity));
 
-        // [ bucket_capacity = entry_size / kMaxLoadFactor = entry_size * FactorB / FactorA ]
+        // [ bucket_capacity = entry_size / kMaxLoadFactor ]
         size_type min_bucket_capacity = run_time::round_up_to_pow2(this->min_bucket_count());
 
         new_bucket_capacity = (std::max)(new_bucket_capacity, min_bucket_capacity);
@@ -2700,7 +2713,7 @@ public:
 
     void clear() {
         this->destroy();
-        this->initialize(kDefaultInitialCapacity);
+        this->init(kDefaultInitialCapacity);
     }
 
     void rehash(size_type bucket_count) {
