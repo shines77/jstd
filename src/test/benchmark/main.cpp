@@ -422,7 +422,7 @@ void test_hashmap_rehash(const Vector & test_data,
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations / data_length) + 1;
+        repeat_times = (kIterations / 2 / data_length) + 1;
     else
         repeat_times = 0;
 
@@ -494,11 +494,9 @@ void test_hashmap_rehash2(const Vector & test_data,
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations / data_length) + 1;
+        repeat_times = (kIterations / 2 / data_length) + 1;
     else
         repeat_times = 0;
-
-
 
     std::size_t checksum = 0;
     double totalTime = 0.0;

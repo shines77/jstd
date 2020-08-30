@@ -874,7 +874,14 @@ protected:
                     do {
                         hash_code_t hash_code = entry->hash_code;
                         index_type new_index = this->index_for(hash_code, new_bucket_mask);
-                        if (likely(new_index != index)) {
+                        if (likely(new_index == index)) {
+                            if (likely(old_list == nullptr)) {
+                                old_list = entry;
+                            }
+                            prev = entry;
+                            entry = entry->next;
+                        }
+                        else {
                             if (prev != nullptr) {
                                 prev->next = entry->next;
                             }
@@ -883,13 +890,6 @@ protected:
                             bucket_push_front(new_buckets, new_index, entry);
 
                             entry = next_entry;
-                        }
-                        else {
-                            if (unlikely(old_list == nullptr)) {
-                                old_list = entry;
-                            }
-                            prev = entry;
-                            entry = entry->next;
                         }
                     } while (likely(entry != nullptr));
 
@@ -913,7 +913,14 @@ protected:
                     do {
                         hash_code_t hash_code = entry->hash_code;
                         index_type new_index = this->index_for(hash_code, new_bucket_mask);
-                        if (likely(new_index != index)) {
+                        if (likely(new_index == index)) {
+                            if (unlikely(old_list == nullptr)) {
+                                old_list = entry;
+                            }
+                            prev = entry;
+                            entry = entry->next;
+                        }
+                        else {
                             if (prev != nullptr) {
                                 prev->next = entry->next;
                             }
@@ -921,13 +928,6 @@ protected:
                             entry_type * next_entry = entry->next;
                             bucket_push_front(new_buckets, new_index, entry);
                             entry = next_entry;
-                        }
-                        else {
-                            if (unlikely(old_list == nullptr)) {
-                                old_list = entry;
-                            }
-                            prev = entry;
-                            entry = entry->next;
                         }
                     } while (likely(entry != nullptr));
 
@@ -972,7 +972,14 @@ protected:
                 do {
                     hash_code_t hash_code = entry->hash_code;
                     index_type new_index = this->index_for(hash_code, new_bucket_mask);
-                    if (likely(new_index != index)) {
+                    if (likely(new_index == index)) {
+                        if (likely(old_list == nullptr)) {
+                            old_list = entry;
+                        }
+                        prev = entry;
+                        entry = entry->next;
+                    }
+                    else {
                         // Remove the entry from old list.
                         if (likely(prev != nullptr)) {
                             prev->next = entry->next;
@@ -984,13 +991,6 @@ protected:
                         new_list = entry;
 
                         entry = next_entry;
-                    }
-                    else {
-                        if (unlikely(old_list == nullptr)) {
-                            old_list = entry;
-                        }
-                        prev = entry;
-                        entry = entry->next;
                     }
                 } while (likely(entry != nullptr));
 
