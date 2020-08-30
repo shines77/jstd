@@ -856,31 +856,39 @@ protected:
 
         do {
             // Find first valid entry
-            entry_type * first = this->buckets_[index];
-            while (first == nullptr) {
-                index++;
-                if (likely(index >= old_bucket_capacity))
-                    return;
-            }
+            entry_type * first;
+            do {
+                first = this->buckets_[index];
+                if (likely(first == nullptr)) {
+                    index++;
+                    if (likely(index >= old_bucket_capacity))
+                        return;
+                }
+                else break;
+            } while (1);
 
             index_type new_index = this->index_for(first->hash_code, new_bucket_mask);
+            entry_type * entry = first->next;
             bucket_push_front(new_buckets, new_index, first);
             entry_count++;
 
-            entry_type * entry = first->next;
             while (entry != nullptr) {
                 new_index = this->index_for(entry->hash_code, new_bucket_mask);
-                entry_type * next = entry->next;
+                entry_type * next_entry = entry->next;
                 bucket_push_front(new_buckets, new_index, entry);
                 entry_count++;
-                entry = next;
+                entry = next_entry;
             }
+
             // If all entries have been transfer, end early.
             if (unlikely(entry_count >= this->entry_size_))
                 break;
+
             // Find next bucket
             index++;
         } while (index < old_bucket_capacity);
+
+        assert(entry_count == this->entry_size_);
     }
 
     void rehash_all_entries(entry_type ** new_buckets, size_type new_bucket_capacity) {
@@ -1043,7 +1051,8 @@ protected:
         if (likely(this->bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
             if (likely(this->entry_size_ != 0)) {
-                if (likely(new_bucket_capacity >= this->entry_size_ * 2)) {
+                if (likely(new_bucket_capacity >= this->entry_size_ * 2 ||
+                           this->entry_size_ >= kMaxEntryChunkSize)) {
                     rehash_all_entries_sparse(new_buckets, new_bucket_capacity);
                 }
                 else {
@@ -1081,10 +1090,16 @@ protected:
         if (likely(bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
             if (likely(this->entry_size_ != 0)) {
-                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                    rehash_all_entries_2x(new_buckets, new_bucket_capacity);
-                else
-                    rehash_all_entries(new_buckets, new_bucket_capacity);
+                if (likely(new_bucket_capacity >= this->entry_size_ * 2 ||
+                           this->entry_size_ >= kMaxEntryChunkSize)) {
+                    rehash_all_entries_sparse(new_buckets, new_bucket_capacity);
+                }
+                else {
+                    if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
+                        rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+                    else
+                        rehash_all_entries(new_buckets, new_bucket_capacity);
+                }
             }
             else {
                 std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
@@ -1132,11 +1147,7 @@ protected:
         // if the allocate size is bigger than kMaxEntryChunkSize.
         size_type new_chunk_capacity = new_entry_capacity - this->entry_capacity_;
         new_chunk_capacity = (std::min)(new_chunk_capacity, kMaxEntryChunkSize);
-#ifndef NDEBUG
-        if (new_chunk_capacity == kMaxEntryChunkSize) {
-            new_chunk_capacity = kMaxEntryChunkSize;
-        }
-#endif
+
         // If actual entry capacity is equal or smaller than old entry capacity,
         // don't need to inflate.
         size_type actual_entry_capacity = this->entry_size_ + new_chunk_capacity;

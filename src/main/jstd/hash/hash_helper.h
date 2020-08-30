@@ -188,14 +188,19 @@ struct string_hash_helper {
     typedef typename T::value_type char_type;
 
     static ResultType getHashCode(const key_type & key) {
-        if (HashFunc == HashFunc_CRC32C)
-            return static_cast<result_type>(crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(char_type)));
-        else if (HashFunc == HashFunc_Time31)
-            return static_cast<result_type>(hashes::Times31(key.c_str(), key.size()));
-        else if (HashFunc == HashFunc_Time31Std)
-            return static_cast<result_type>(hashes::Times31Std(key.c_str(), key.size()));
-        else
-            return static_cast<result_type>(crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(char_type)));
+        if (key.c_str() != nullptr) {
+            if (HashFunc == HashFunc_CRC32C)
+                return static_cast<result_type>(crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(char_type)));
+            else if (HashFunc == HashFunc_Time31)
+                return static_cast<result_type>(hashes::Times31(key.c_str(), key.size()));
+            else if (HashFunc == HashFunc_Time31Std)
+                return static_cast<result_type>(hashes::Times31Std(key.c_str(), key.size()));
+            else
+                return static_cast<result_type>(crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(char_type)));
+        }
+        else {
+            return static_cast<ResultType>(0);
+        }
     }
 };
 
