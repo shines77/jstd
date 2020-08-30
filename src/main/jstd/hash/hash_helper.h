@@ -33,7 +33,7 @@
                 >::type decay_type;                                             \
                                                                                 \
         static ResultType getHashCode(char_type * data, std::size_t length) {   \
-            if (likely(data != nullptr))                                        \
+            if (likely(data != nullptr && length != 0))                         \
                 return (ResultType)HashFunc((const char *)data,                 \
                                             length * sizeof(char_type));        \
             else                                                                \
@@ -43,7 +43,8 @@
         static ResultType getHashCode(char_type * data) {                       \
             if (likely(data != nullptr))                                        \
                 return (ResultType)HashFunc((const char *)data,                 \
-                                jstd::libc::StrLen((const decay_type *)data));  \
+                                jstd::libc::StrLen((const decay_type *)data)    \
+                                            * sizeof(char_type));               \
             else                                                                \
                 return 0;                                                       \
         }                                                                       \
@@ -61,9 +62,9 @@
     HashHelperClass(wchar_t *,              HashType, HashFuncId, HashFunc);    \
     HashHelperClass(const wchar_t *,        HashType, HashFuncId, HashFunc);
 
-#define HASH_HELPER_POD(KeyType, ResultType, HashFuncId, HashFunc)              \
+#define HASH_HELPER_INTEGRAL(KeyType, ResultType, HashFuncId)                   \
     template <>                                                                 \
-    struct HashHelper<KeyType, ResultType, HashFuncId> {                        \
+    struct hash_helper<KeyType, ResultType, HashFuncId> {                       \
         typedef ResultType  result_type;                                        \
         typedef typename std::remove_pointer<KeyType>::type pod_type;           \
                                                                                 \
@@ -72,26 +73,45 @@
                         typename std::remove_reference<KeyType>::type           \
                     >::type                                                     \
                 >::type decay_type;                                             \
-                                                                                \                                                                      \
+                                                                                \
+        static ResultType getHashCode(pod_type data) {                          \
+            return static_cast<result_type>(data);                              \
+        }                                                                       \
+    }
+
+#define HASH_HELPER_INTEGRAL_ALL(HashHelperClass, HashType, HashFuncId)         \
+    HashHelperClass(bool,                   HashType, HashFuncId);              \
+    HashHelperClass(char,                   HashType, HashFuncId);              \
+    HashHelperClass(unsigned char,          HashType, HashFuncId);              \
+    HashHelperClass(short,                  HashType, HashFuncId);              \
+    HashHelperClass(unsigned short,         HashType, HashFuncId);              \
+    HashHelperClass(int,                    HashType, HashFuncId);              \
+    HashHelperClass(unsigned int,           HashType, HashFuncId);              \
+    HashHelperClass(long,                   HashType, HashFuncId);              \
+    HashHelperClass(unsigned long,          HashType, HashFuncId);              \
+    HashHelperClass(int64_t,                HashType, HashFuncId);              \
+    HashHelperClass(uint64_t,               HashType, HashFuncId);
+
+#define HASH_HELPER_FLOAT(KeyType, ResultType, HashFuncId, HashFunc)            \
+    template <>                                                                 \
+    struct hash_helper<KeyType, ResultType, HashFuncId> {                       \
+        typedef ResultType  result_type;                                        \
+        typedef typename std::remove_pointer<KeyType>::type pod_type;           \
+                                                                                \
+        typedef typename std::remove_pointer<                                   \
+                    typename std::remove_cv<                                    \
+                        typename std::remove_reference<KeyType>::type           \
+                    >::type                                                     \
+                >::type decay_type;                                             \
+                                                                                \
         static ResultType getHashCode(pod_type data) {                          \
             return static_cast<result_type>(HashFunc((const char *)&data, sizeof(data))); \
         }                                                                       \
     }
 
-#define HASH_HELPER_POD_ALL(HashHelperClass, HashType, HashFuncId, HashFunc)    \
-    HashHelperClass(bool,                   HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(char,                   HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(unsigned char,          HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(short,                  HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(unsigned short,         HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(int,                    HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(unsigned int,           HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(long,                   HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(unsigned long,          HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(uint64_t,               HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(unsigned uint64_t,      HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(float,                  HashType, HashFuncId, HashFunc);    \
-    HashHelperClass(double,                 HashType, HashFuncId, HashFunc);
+#define HASH_HELPER_FLOAT_ALL(HashHelperClass, HashType, HashFuncId, HashFunc)  \
+    HashHelperClass(float,  HashType, HashFuncId, HashFunc);                    \
+    HashHelperClass(double, HashType, HashFuncId, HashFunc);
 
 namespace jstd {
 
@@ -100,8 +120,6 @@ enum hash_func_id_t {
     HashFunc_Default = HashFunc_CRC32C,
     HashFunc_Time31,
     HashFunc_Time31Std,
-    HashFunc_SHA1_MSG2,
-    HashFunc_SHA1,
     HashFunc_Last
 };
 
@@ -123,7 +141,7 @@ struct hash_helper {
         else if (HashFunc == HashFunc_Time31)
             return static_cast<result_type>(hashes::Times31((const char *)&key, sizeof(key)));
         else if (HashFunc == HashFunc_Time31Std)
-            return static_cast<result_type>(hashes::Times31_std((const char *)&key, sizeof(key)));
+            return static_cast<result_type>(hashes::Times31Std((const char *)&key, sizeof(key)));
         else
             return static_cast<result_type>(crc32::crc32c_x64((const char *)&key, sizeof(key)));
     }
@@ -147,7 +165,7 @@ struct hash_helper<T *, ResultType, HashFunc> {
         else if (HashFunc == HashFunc_Time31)
             return static_cast<result_type>(hashes::Times31((const char *)key, sizeof(key_type *)));
         else if (HashFunc == HashFunc_Time31Std)
-            return static_cast<result_type>(hashes::Times31_std((const char *)key, sizeof(key_type *)));
+            return static_cast<result_type>(hashes::Times31Std((const char *)key, sizeof(key_type *)));
         else
             return static_cast<result_type>(crc32::crc32c_x64((const char *)key, sizeof(key_type *)));
     }
@@ -173,7 +191,7 @@ struct string_hash_helper {
         else if (HashFunc == HashFunc_Time31)
             return static_cast<result_type>(hashes::Times31(key.c_str(), key.size()));
         else if (HashFunc == HashFunc_Time31Std)
-            return static_cast<result_type>(hashes::Times31_std(key.c_str(), key.size()));
+            return static_cast<result_type>(hashes::Times31Std(key.c_str(), key.size()));
         else
             return static_cast<result_type>(crc32::crc32c_x64((const char *)key.c_str(), key.size() * sizeof(char_type)));
     }
@@ -191,6 +209,8 @@ struct hash_helper<const char *, std::uint32_t, HashFunc_CRC32C> {
 ****************************************************************************/
 
 HASH_HELPER_CHAR_ALL(HASH_HELPER_CHAR, std::uint32_t, HashFunc_CRC32C, jstd::crc32::crc32c_x64);
+HASH_HELPER_INTEGRAL_ALL(HASH_HELPER_INTEGRAL, std::uint32_t, HashFunc_CRC32C);
+HASH_HELPER_FLOAT_ALL(HASH_HELPER_FLOAT, std::uint32_t, HashFunc_CRC32C, jstd::crc32::crc32c_x64);
 
 template <>
 struct hash_helper<std::string, std::uint32_t, HashFunc_CRC32C> {
@@ -230,6 +250,8 @@ struct hash_helper<const char *, std::uint32_t, HashFunc_Time31> {
 ****************************************************************************/
 
 HASH_HELPER_CHAR_ALL(HASH_HELPER_CHAR, std::uint32_t, HashFunc_Time31, hashes::Times31);
+HASH_HELPER_INTEGRAL_ALL(HASH_HELPER_INTEGRAL, std::uint32_t, HashFunc_Time31);
+HASH_HELPER_FLOAT_ALL(HASH_HELPER_FLOAT, std::uint32_t, HashFunc_Time31, hashes::Times31);
 
 template <>
 struct hash_helper<std::string, std::uint32_t, HashFunc_Time31> {
@@ -266,7 +288,9 @@ struct hash_helper<const char *, std::uint32_t, HashFunc_Time31Std> {
 };
 ****************************************************************************/
 
-HASH_HELPER_CHAR_ALL(HASH_HELPER_CHAR, std::uint32_t, HashFunc_Time31Std, hashes::Times31_std);
+HASH_HELPER_CHAR_ALL(HASH_HELPER_CHAR, std::uint32_t, HashFunc_Time31Std, hashes::Times31Std);
+HASH_HELPER_INTEGRAL_ALL(HASH_HELPER_INTEGRAL, std::uint32_t, HashFunc_Time31Std);
+HASH_HELPER_FLOAT_ALL(HASH_HELPER_FLOAT, std::uint32_t, HashFunc_Time31Std, hashes::Times31Std);
 
 template <>
 struct hash_helper<std::string, std::uint32_t, HashFunc_Time31Std> {
@@ -274,7 +298,7 @@ struct hash_helper<std::string, std::uint32_t, HashFunc_Time31Std> {
 
     static std::uint32_t getHashCode(const std::string & key) {
         if (likely(key.c_str() != nullptr))
-            return hashes::Times31_std(key.c_str(), key.size());
+            return hashes::Times31Std(key.c_str(), key.size());
         else
             return 0;
     }
@@ -286,7 +310,7 @@ struct hash_helper<std::wstring, std::uint32_t, HashFunc_Time31Std> {
 
     static std::uint32_t getHashCode(const std::wstring & key) {
         if (likely(key.c_str() != nullptr))
-            return hashes::Times31_std((const char *)key.c_str(), key.size() * sizeof(wchar_t));
+            return hashes::Times31Std((const char *)key.c_str(), key.size() * sizeof(wchar_t));
         else
             return 0;
     }

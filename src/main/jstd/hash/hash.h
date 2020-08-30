@@ -372,7 +372,7 @@ std::uint32_t Times31(const CharTy * key, std::size_t len)
 //
 template <typename CharTy>
 static inline
-std::uint32_t Times31_std(const CharTy * key, std::size_t len)
+std::uint32_t Times31Std(const CharTy * key, std::size_t len)
 {
     return BKDRHash_31_std(key, len);
 }
