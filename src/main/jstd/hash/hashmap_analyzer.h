@@ -400,16 +400,16 @@ public:
         printf("  std_deviation    = %0.6f\n", this->result_.std_deviation);
         printf("  std_errors       = %0.6f\n", this->result_.std_errors);        
         printf("  max_bucket_count = %" PRIuPTR "\n", this->result_.max_bucket_count);
-        printf("  coverage_rate    = %0.2f %%  size() / bucket_count()\n",
+        printf("  coverage_rate    = %6.2f %%  - size() / bucket_count()\n",
                                      this->result_.coverage_rate);
         printf("\n");
-        printf("  usage_rate       = %0.2f %%  /  %0.2f %% (Total)\n",
+        printf("  usage_rate       = %6.2f %%  /  %6.2f %% (Total)\n",
                                      this->result_.usage_rate, this->result_.usage_rate_total);
-        printf("  unused_rate      = %0.2f %%  /  %0.2f %% (Total)\n",
+        printf("  unused_rate      = %6.2f %%  /  %6.2f %% (Total)\n",
                                      this->result_.unused_rate, this->result_.unused_rate_total);
-        printf("  conflict_rate    = %0.2f %%  /  %0.2f %% (Total)\n",
+        printf("  conflict_rate    = %6.2f %%  /  %6.2f %% (Total)\n",
                                      this->result_.conflict_rate, this->result_.conflict_rate_total);
-        printf("  perfect_rate     = %0.2f %%  /  %0.2f %% (Total)\n",
+        printf("  perfect_rate     = %6.2f %%  /  %6.2f %% (Total)\n",
                                      this->result_.perfect_rate, this->result_.perfect_rate_total);
         printf("\n");
     }
@@ -421,18 +421,21 @@ public:
 
         uint32_t index = 0;
         hasher _hasher;
+
+        str_utils::string_format<key_type> formatter;
         for (const_iterator iter = container_.cbegin(); iter != container_.cend(); ++iter) {
             std::uint32_t hash_code = static_cast<std::uint32_t>(_hasher(iter->first));
             printf(" [%3d]: 0x%08X  %-8u  %-30s %s\n", index + 1,
-                   hash_code,
-                   uint32_t(hash_code & this->bucket_mask()),
-                   iter->first.c_str(),
-                   iter->second.c_str());
+                    hash_code,
+                    uint32_t(hash_code & this->bucket_mask()),
+                    formatter.to_string(iter->first).c_str(),
+                    formatter.to_string(iter->second).c_str());
             index++;
             if (max_entries != 0 && index >= max_entries) {
                 break;
             }
         }
+
         printf("\n\n");
     }
 };

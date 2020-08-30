@@ -1517,11 +1517,43 @@ void hashtable_show_status(const std::string & name)
 }
 
 template <typename Container>
+void hashtable_i_show_status(const std::string & name)
+{
+    Container container(kInitCapacity);
+    for (size_t i = 0; i < kHeaderFieldSize; ++i) {
+        container.emplace(i, i + 1);
+    }
+
+    HashMapAnalyzer<Container> analyzer(container);
+    analyzer.set_name(name);
+    analyzer.start_analyse();
+
+    analyzer.display_status();
+    analyzer.dump_entries();
+}
+
+template <typename Container>
 void hashtable_dict_words_show_status(const std::string & name)
 {
     Container container(kInitCapacity);
     for (size_t i = 0; i < dict_words.size(); i++) {
         container.emplace(dict_words[i], std::to_string(i));
+    }
+
+    HashMapAnalyzer<Container> analyzer(container);
+    analyzer.set_name(name);
+    analyzer.start_analyse();
+
+    analyzer.display_status();
+    analyzer.dump_entries(100);
+}
+
+template <typename Container>
+void hashtable_dict_words_i_show_status(const std::string & name)
+{
+    Container container(kInitCapacity);
+    for (size_t i = 0; i < dict_words.size(); i++) {
+        container.emplace(i, i + 1);
     }
 
     HashMapAnalyzer<Container> analyzer(container);
@@ -1543,6 +1575,8 @@ void hashtable_uinttest()
 
         //hashtable_dict_words_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");
         //hashtable_dict_words_show_status<std::unordered_map<jstd::string_view, jstd::string_view>>("std::unordered_map<jstd::string_view, jstd::string_view>");
+
+        hashtable_dict_words_i_show_status<jstd::Dictionary<std::size_t, std::size_t>>("Dictionary<std::size_t, std::size_t>");
     }
     else {
         hashtable_show_status<jstd::Dictionary<std::string, std::string>>("Dictionary<std::string, std::string>");
@@ -1553,6 +1587,8 @@ void hashtable_uinttest()
 
         //hashtable_show_status<std::unordered_map<std::string, std::string>>("std::unordered_map<std::string, std::string>");        
         //hashtable_show_status<std::unordered_map<jstd::string_view, jstd::string_view>>("std::unordered_map<jstd::string_view, jstd::string_view>");
+
+        hashtable_i_show_status<jstd::Dictionary<std::size_t, std::size_t>>("Dictionary<std::size_t, std::size_t>");
     }
     
     //hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();

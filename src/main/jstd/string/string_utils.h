@@ -19,15 +19,49 @@
 #include <cstddef>      // For std::size_t
 #include <string>
 #include <cwchar>       // std::wmemcpy()
+#include <memory>
 
 #include "jstd/string/string_def.h"
 #include "jstd/string/string_libc.h"
 #include "jstd/string/string_stl.h"
 #include "jstd/string/char_traits.h"
 #include "jstd/support/SSEHelper.h"
+#include "jstd/string/string_view.h"
+
+#include "jstd/type_traits.h"
 
 namespace jstd {
 namespace str_utils {
+
+template <typename T,
+          bool isIntegral = std::is_integral<T>::value,
+          bool hasCStr = has_c_str<T, char>::value>
+struct string_format {
+    std::string to_string(const T & val) {
+        return std::string("");
+    }
+};
+
+template <typename T>
+struct string_format<T, true, false> {
+    std::string to_string(const T & val) {
+        return std::move(std::to_string(val));
+    }
+};
+
+template <typename T>
+struct string_format<T, false, true> {
+    std::string to_string(const T & val) {
+        return std::string(val.c_str(), val.size());
+    }
+};
+
+template <typename T>
+struct string_format<T, false, false> {
+    std::string to_string(const T & val) {
+        return std::move(std::string("0x") + std::string(std::pointer_traits<T>::pointer_to(val)));
+    }
+};
 
 ////////////////////////////////// mem_copy() //////////////////////////////////////
 
