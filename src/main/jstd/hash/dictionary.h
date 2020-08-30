@@ -835,6 +835,46 @@ protected:
         }
     }
 
+    void rehash_all_entries_sparse(entry_type ** new_buckets, size_type new_bucket_capacity) {
+        assert_buckets_capacity(new_buckets, new_bucket_capacity);
+
+        size_type new_bucket_mask = new_bucket_capacity - 1;
+        size_type old_bucket_capacity = this->bucket_capacity_;
+
+        std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
+
+        size_type entry_count = 0;
+        index_type index = 0;
+
+        do {
+            // Find first valid entry
+            entry_type * first = this->buckets_[index];
+            while (first == nullptr) {
+                index++;
+                if (likely(index >= old_bucket_capacity))
+                    return;
+            }
+
+            index_type new_index = this->index_for(first->hash_code, new_bucket_mask);
+            bucket_push_front(new_buckets, new_index, first);
+            entry_count++;
+
+            entry_type * entry = first->next;
+            while (entry != nullptr) {
+                new_index = this->index_for(entry->hash_code, new_bucket_mask);
+                entry_type * next = entry->next;
+                bucket_push_front(new_buckets, new_index, entry);
+                entry_count++;
+                entry = next;
+            }
+            // If all entries have been transfer, end early.
+            if (unlikely(entry_count >= this->entry_size_))
+                break;
+            // Find next bucket
+            index++;
+        } while (index < old_bucket_capacity);
+    }
+
     void rehash_all_entries(entry_type ** new_buckets, size_type new_bucket_capacity) {
         assert_buckets_capacity(new_buckets, new_bucket_capacity);
 
@@ -983,46 +1023,6 @@ protected:
                 new_buckets[new_index] = new_list;
             }
         }
-    }
-
-    void rehash_all_entries_sparse(entry_type ** new_buckets, size_type new_bucket_capacity) {
-        assert_buckets_capacity(new_buckets, new_bucket_capacity);
-
-        size_type new_bucket_mask = new_bucket_capacity - 1;
-        size_type old_bucket_capacity = this->bucket_capacity_;
-
-        std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
-
-        size_type entry_count = 0;
-        index_type index = 0;
-
-        do {
-            // Find first valid entry
-            entry_type * first = this->buckets_[index];
-            while (first == nullptr) {
-                index++;
-                if (likely(index >= old_bucket_capacity))
-                    return;
-            }
-
-            index_type new_index = this->index_for(first->hash_code, new_bucket_mask);
-            bucket_push_front(new_buckets, new_index, first);
-            entry_count++;
-
-            entry_type * entry = first->next;
-            while (entry != nullptr) {
-                new_index = this->index_for(entry->hash_code, new_bucket_mask);
-                entry_type * next = entry->next;
-                bucket_push_front(new_buckets, new_index, entry);
-                entry_count++;
-                entry = next;
-            }
-            // If all entries have been transfer, end early.
-            if (unlikely(entry_count >= this->entry_size_))
-                break;
-            // Find next bucket
-            index++;
-        } while (index < old_bucket_capacity);
     }
 
     void rehash_buckets(size_type new_bucket_capacity) {
