@@ -82,15 +82,17 @@
 #define HASH_HELPER_INTEGRAL_ALL(HashHelperClass, HashType, HashFuncId)         \
     HashHelperClass(bool,                   HashType, HashFuncId);              \
     HashHelperClass(char,                   HashType, HashFuncId);              \
+    HashHelperClass(signed char,            HashType, HashFuncId);              \
     HashHelperClass(unsigned char,          HashType, HashFuncId);              \
     HashHelperClass(short,                  HashType, HashFuncId);              \
     HashHelperClass(unsigned short,         HashType, HashFuncId);              \
+    HashHelperClass(wchar_t,                HashType, HashFuncId);              \
     HashHelperClass(int,                    HashType, HashFuncId);              \
     HashHelperClass(unsigned int,           HashType, HashFuncId);              \
     HashHelperClass(long,                   HashType, HashFuncId);              \
     HashHelperClass(unsigned long,          HashType, HashFuncId);              \
-    HashHelperClass(int64_t,                HashType, HashFuncId);              \
-    HashHelperClass(uint64_t,               HashType, HashFuncId);
+    HashHelperClass(long long,              HashType, HashFuncId);              \
+    HashHelperClass(unsigned long long,     HashType, HashFuncId);
 
 #define HASH_HELPER_FLOAT(KeyType, ResultType, HashFuncId, HashFunc)            \
     template <>                                                                 \
