@@ -26,7 +26,6 @@
 #include "jstd/string/string_stl.h"
 #include "jstd/string/char_traits.h"
 #include "jstd/support/SSEHelper.h"
-#include "jstd/string/string_view.h"
 
 #include "jstd/type_traits.h"
 
