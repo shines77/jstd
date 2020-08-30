@@ -45,7 +45,7 @@ public:
     // pre-increment
     this_iter_t & operator ++ () {
         owner_type * owner = this->node_->owner;
-        this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
+        this->node_ = static_cast<node_pointer>(owner->next_link_entry(this->node_));
         return (*this);
     }
 
@@ -53,7 +53,7 @@ public:
     this_iter_t & operator ++ (int) {
         this_iter_t tmp(this->node_);
         owner_type * owner = this->node_->owner;
-        this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
+        this->node_ = static_cast<node_pointer>(owner->next_link_entry(this->node_));
         return tmp;
     }
 
@@ -126,7 +126,7 @@ public:
     // pre-increment
     this_iter_t & operator ++ () {
         owner_type * owner = this->node_->owner;
-        this->node_ = owner->next_entry(this->node_);
+        this->node_ = owner->next_link_entry(this->node_);
         return (*this);
     }
 
@@ -134,7 +134,7 @@ public:
     this_iter_t & operator ++ (int) {
         this_iter_t tmp(this->node_);
         owner_type * owner = this->node_->owner;
-        this->node_ = owner->next_entry(this->node_);
+        this->node_ = owner->next_link_entry(this->node_);
         return tmp;
     }
 
@@ -196,7 +196,7 @@ public:
     // pre-increment
     this_iter_t & operator ++ () {
         owner_type * owner = this->node_->owner;
-        this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
+        this->node_ = static_cast<node_pointer>(owner->next_link_entry(this->node_));
         return (*this);
     }
 
@@ -204,7 +204,7 @@ public:
     this_iter_t & operator ++ (int) {
         this_iter_t tmp(this->node_);
         owner_type * owner = this->node_->owner;
-        this->node_ = static_cast<node_pointer>(owner->next_iterator(this->node_));
+        this->node_ = static_cast<node_pointer>(owner->next_link_entry(this->node_));
         return tmp;
     }
 
@@ -277,7 +277,7 @@ public:
     // pre-increment
     this_iter_t & operator ++ () {
         owner_type * owner = this->node_->owner;
-        this->node_ = owner->next_iterator(this->node_);
+        this->node_ = owner->next_link_entry(this->node_);
         return (*this);
     }
 
@@ -285,7 +285,7 @@ public:
     this_iter_t & operator ++ (int) {
         this_iter_t tmp(this->node_);
         owner_type * owner = this->node_->owner;
-        this->node_ = owner->next_iterator(this->node_);
+        this->node_ = owner->next_link_entry(this->node_);
         return tmp;
     }
 

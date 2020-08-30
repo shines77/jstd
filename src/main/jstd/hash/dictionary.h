@@ -717,17 +717,21 @@ protected:
 
     entry_type * find_first_valid_entry(index_type index = 0) const {
         size_type bucket_capacity = this->bucket_count();
-        entry_type * first = get_bucket_head(index);
-        while (first == nullptr) {
-            index++;
-            if (likely(index >= bucket_capacity))
-                return nullptr;
-        }
+        entry_type * first;
+        do {
+            first = get_bucket_head(index);
+            if (likely(first == nullptr)) {
+                index++;
+                if (likely(index >= bucket_capacity))
+                    return nullptr;
+            }
+            else break;
+        } while (1);
 
         return first;
     }
 
-    entry_type * next_entry(entry_type * node) {
+    entry_type * next_link_entry(entry_type * node) {
         if (likely(node->next != nullptr)) {
             return node->next;
         }
@@ -736,12 +740,16 @@ protected:
             index_type index = this->index_for(node->hash_code);
             index++;
             if (likely(index < bucket_capacity)) {
-                entry_type * first = get_bucket_head(index);
-                while (first == nullptr) {
-                    index++;
-                    if (likely(index >= bucket_capacity))
-                        return nullptr;
-                }
+                entry_type * first;
+                do {
+                    first = get_bucket_head(index);
+                    if (likely(first == nullptr)) {
+                        index++;
+                        if (likely(index >= bucket_capacity))
+                            return nullptr;
+                    }
+                    else break;
+                } while (1);
 
                 return first;
             }
@@ -750,9 +758,9 @@ protected:
         }
     }
 
-    const entry_type * next_const_entry(const entry_type * node_ptr) {
+    const entry_type * next_const_link_entry(const entry_type * node_ptr) {
         entry_type * node = const_cast<entry_type *>(node_ptr);
-        node = this->next_entry(node);
+        node = this->next_link_entry(node);
         return const_cast<const entry_type *>(node);
     }
 

@@ -259,7 +259,7 @@ struct allocator_base {
         assert(ptr != nullptr);
         void * v_ptr = static_cast<void *>(ptr);
         // call ::operator new (size_t size, void * p, Args &&... args);
-        return ::new (v_ptr) value_type(std::forward<Args>(args)...);
+        return static_cast<pointer>(::new (v_ptr) value_type(std::forward<Args>(args)...));
     }
 
     // placement new (Args...)
