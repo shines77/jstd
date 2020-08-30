@@ -715,60 +715,44 @@ protected:
         }
     }
 
-    entry_type * find_first_valid_entry() const {
-        index_type index = 0;
-        entry_type * first = this->buckets_[index];
-        if (likely(first == nullptr)) {
-            do {
-                index++;
-                if (likely(index < this->bucket_count())) {
-                    first = this->buckets_[index];
-                    if (unlikely(first != nullptr))
-                        return first;
-                }
-                else {
-                    return nullptr;
-                }
-            } while (1);
-        }
-        else {
-            return first;
-        }
-    }
-
-    entry_type * next_iterator(entry_type * node_ptr) {
-        if (likely(node_ptr->next != nullptr)) {
-            node_ptr = node_ptr->next;
-            return node_ptr;
-        }
-        else {
-            index_type index = this->index_for(node_ptr->hash_code);
+    entry_type * find_first_valid_entry(index_type index = 0) const {
+        size_type bucket_capacity = this->bucket_count();
+        entry_type * first = get_bucket_head(index);
+        while (first == nullptr) {
             index++;
-            if (likely(index < this->bucket_count())) {
-                do {
-                    entry_type * node = get_bucket_head(index);
-                    if (likely(node != nullptr)) {
-                        node_ptr = node;
-                        break;
-                    }
+            if (likely(index >= bucket_capacity))
+                return nullptr;
+        }
+
+        return first;
+    }
+
+    entry_type * next_entry(entry_type * node) {
+        if (likely(node->next != nullptr)) {
+            return node->next;
+        }
+        else {
+            size_type bucket_capacity = this->bucket_count();
+            index_type index = this->index_for(node->hash_code);
+            index++;
+            if (likely(index < bucket_capacity)) {
+                entry_type * first = get_bucket_head(index);
+                while (first == nullptr) {
                     index++;
-                    if (unlikely(index >= this->bucket_count())) {
-                        node_ptr = nullptr;
-                        break;
-                    }
-                } while (1);
-            }
-            else {
-                node_ptr = nullptr;
+                    if (likely(index >= bucket_capacity))
+                        return nullptr;
+                }
+
+                return first;
             }
 
-            return node_ptr;
+            return nullptr;
         }
     }
 
-    const entry_type * next_const_iterator(const entry_type * node_ptr) {
+    const entry_type * next_const_entry(const entry_type * node_ptr) {
         entry_type * node = const_cast<entry_type *>(node_ptr);
-        node = this->next_iterator(node);
+        node = this->next_entry(node);
         return const_cast<const entry_type *>(node);
     }
 
@@ -1001,6 +985,46 @@ protected:
         }
     }
 
+    void rehash_all_entries_sparse(entry_type ** new_buckets, size_type new_bucket_capacity) {
+        assert_buckets_capacity(new_buckets, new_bucket_capacity);
+
+        size_type new_bucket_mask = new_bucket_capacity - 1;
+        size_type old_bucket_capacity = this->bucket_capacity_;
+
+        std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
+
+        size_type entry_count = 0;
+        index_type index = 0;
+
+        do {
+            // Find first valid entry
+            entry_type * first = this->buckets_[index];
+            while (first == nullptr) {
+                index++;
+                if (likely(index >= old_bucket_capacity))
+                    return;
+            }
+
+            index_type new_index = this->index_for(first->hash_code, new_bucket_mask);
+            bucket_push_front(new_buckets, new_index, first);
+            entry_count++;
+
+            entry_type * entry = first->next;
+            while (entry != nullptr) {
+                new_index = this->index_for(entry->hash_code, new_bucket_mask);
+                entry_type * next = entry->next;
+                bucket_push_front(new_buckets, new_index, entry);
+                entry_count++;
+                entry = next;
+            }
+            // If all entries have been transfer, end early.
+            if (unlikely(entry_count >= this->entry_size_))
+                break;
+            // Find next bucket
+            index++;
+        } while (index < old_bucket_capacity);
+    }
+
     void rehash_buckets(size_type new_bucket_capacity) {
         assert(run_time::is_pow2(new_bucket_capacity));
         assert(new_bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
@@ -1011,10 +1035,15 @@ protected:
         if (likely(this->bucket_allocator_.is_ok(new_buckets))) {
             // Here, we do not need to initialize the bucket list.
             if (likely(this->entry_size_ != 0)) {
-                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                    rehash_all_entries_2x(new_buckets, new_bucket_capacity);
-                else
-                    rehash_all_entries(new_buckets, new_bucket_capacity);
+                if (likely(new_bucket_capacity >= this->entry_size_ * 2)) {
+                    rehash_all_entries_sparse(new_buckets, new_bucket_capacity);
+                }
+                else {
+                    if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
+                        rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+                    else
+                        rehash_all_entries(new_buckets, new_bucket_capacity);
+                }
             }
             else {
                 std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
