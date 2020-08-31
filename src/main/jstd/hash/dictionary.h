@@ -1536,14 +1536,15 @@ protected:
     entry_type * got_a_free_entry(hash_code_t hash_code, index_type & index) {
         if (likely(this->freelist_.is_empty())) {
             if (unlikely(this->chunk_list_.lastChunk().is_full())) {
+#ifndef NDEBUG
                 size_type old_size = size();
-
+#endif
                 // Inflate the entry size for 1.
                 this->inflate_entries(1);
-
+#ifndef NDEBUG
                 size_type new_size = count_entries_size();
                 assert(new_size == old_size);
-
+#endif
                 // Recalculate the bucket index.
                 index = this->index_for(hash_code);
             }
@@ -2532,11 +2533,11 @@ protected:
 
                 // Transfer the old entry to new entry.
                 transfer_entry_to_new(old_entry, new_entry);
-
+#ifndef NDEBUG
                 hash_code_t hash_code = old_entry->hash_code;
                 index_type new_index = this->index_for(hash_code, new_bucket_capacity - 1);
                 assert(new_index == index);
-
+#endif
                 old_entry = old_entry->next;
             }
 
@@ -2587,11 +2588,11 @@ protected:
 
                     // Transfer the old entry to new entry.
                     transfer_entry_to_new(old_entry, new_entry);
-
+#ifndef NDEBUG
                     hash_code_t hash_code = old_entry->hash_code;
                     index_type new_index = this->index_for(hash_code, new_bucket_mask);
                     assert(new_index == index);
-
+#endif
                     new_prev = new_entry;
                     old_entry = old_entry->next;
                 }
