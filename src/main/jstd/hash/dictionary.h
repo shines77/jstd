@@ -658,7 +658,7 @@ protected:
 
     void assert_bucket_capacity(size_type bucket_capacity) {
         assert(run_time::is_pow2(bucket_capacity));
-        assert(bucket_capacity >= this->min_bucket_count(kMaximumCapacity));
+        assert(bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
         assert(bucket_capacity >= this->min_bucket_count());
     }
 
@@ -1130,12 +1130,11 @@ protected:
 
     template <bool need_shrink = false>
     void rehash_impl(size_type new_bucket_capacity) {
-        assert_bucket_capacity(new_bucket_capacity);
-
         // [ bucket_capacity = entry_size / kMaxLoadFactor ]
         size_type min_bucket_capacity = run_time::round_up_to_pow2(this->min_bucket_count());
 
         new_bucket_capacity = (std::max)(new_bucket_capacity, min_bucket_capacity);
+        assert_bucket_capacity(new_bucket_capacity);
         if (likely(new_bucket_capacity != this->bucket_capacity_)) {
             // It may be the following two cases:
             // Inflate: We need to expanded the capacity of bucket list.

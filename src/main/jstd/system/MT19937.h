@@ -1,0 +1,209 @@
+
+#ifndef JSTD_SYSTEM_MT19937_H
+#define JSTD_SYSTEM_MT19937_H
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1020)
+#pragma once
+#endif
+
+#include "jstd/basic/stddef.h"
+#include "jstd/basic/stdint.h"
+#include "jstd/basic/stdsize.h"
+
+#include <stdlib.h>     // For ::srand(), ::rand()
+#include <time.h>
+
+#include <cstdint>
+#include <cstddef>
+#include <vector>
+
+#define MT_RANDOM_SEED_DEFAULT  19650218UL
+
+namespace jstd {
+
+class MT19937
+{
+public:
+    typedef std::size_t value_type;
+
+    static const value_type kMTDefaultSeed = MT_RANDOM_SEED_DEFAULT;
+    static const value_type kMTRandMax = 0xFFFFFFFFUL;
+
+    static const value_type N = 624, M = 397;
+
+private:
+    value_type   left;
+    value_type * next;
+    value_type   state[N];
+
+public:
+    explicit MT19937(value_type initSeed = 0) : left(1), next(nullptr) {
+        this->init(initSeed);
+    }
+
+    MT19937(value_type * init_key, value_type key_len, value_type initSeed = 0)
+        : left(1), next(nullptr) {
+        this->init(initSeed);
+        this->init_keys(init_key, key_len);
+    }
+
+    MT19937(std::vector<value_type> init_key, value_type initSeed = 0)
+        : left(1), next(nullptr) {
+        this->init(initSeed);
+        this->init_keys(init_key, (value_type)init_key.size());
+    }
+
+    value_type rand_max() const {
+        return static_cast<value_type>(kMTRandMax);
+    }
+
+private:
+    void next_state() {
+        value_type * p = &this->state[0];
+
+        for (value_type i = N - M + 1; --i; ++p) {
+            *p = (p[M] ^ this->twist(p[0], p[1]));
+        }
+
+        for (value_type i = M; --i; ++p) {
+            *p = (p[M - N] ^ this->twist(p[0], p[1]));
+        }
+
+        *p = p[M - N] ^ this->twist(p[0], this->state[0]);
+        this->left = N;
+        this->next = &this->state[0];
+    }
+
+    value_type mixbits(value_type u, value_type v) const {
+        return (u & 0x80000000UL) | (v & 0x7FFFFFFFUL);
+    }
+
+    value_type twist(value_type u, value_type v) const
+    {
+        return ((this->mixbits(u, v) >>  1) ^ ((v & 1UL) ? 2567483615UL : 0UL));
+    }
+
+public:
+    void init(value_type initSeed = kMTDefaultSeed) {
+        this->state[0] = initSeed & 0xFFFFFFFFUL;
+        for (value_type j = 1; j < N; ++j) {
+            this->state[j] = (1812433253UL * (this->state[j - 1] ^ (this->state[j - 1] >> 30)) + j);
+            // See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier.
+            // In the previous versions, MSBs of the seed affect
+            // only MSBs of the array state[].
+            // 2002/01/09 modified by Makoto Matsumoto
+            this->state[j] &= 0xFFFFFFFFUL;  // For WORDSIZE > 32 bit machines
+        }
+    }
+
+    void init_keys(std::vector<value_type> init_key) {
+        this->init_keys(init_key, (value_type)init_key.size());
+    }
+
+    template <typename ValueList>
+    void init_keys(const ValueList & init_key, value_type key_len) {
+        value_type i = 1, j = 0;
+        value_type k = (N > key_len) ? N : key_len;
+        for (; k > 0; --k) {
+            // non linear
+            this->state[i] = (this->state[i] ^ ((this->state[i - 1] ^ (this->state[i - 1] >> 30))
+                                                * 1664525UL)) + init_key[j] + j;
+            this->state[i] &= 0xFFFFFFFFUL;   // For WORDSIZE > 32 bit machines
+            ++i;
+            ++j;
+            if (i >= N) {
+                this->state[0] = this->state[N - 1];
+                i = 1;
+            }
+            if (j >= key_len)
+                j = 0;
+        }
+
+        for (k = N - 1; k > 0; --k) {
+            // non linear
+            this->state[i] = (this->state[i] ^ ((this->state[i - 1] ^ (this->state[i - 1] >> 30))
+                                                * 1566083941UL)) - i;
+            this->state[i] &= 0xFFFFFFFFUL;   // For WORDSIZE > 32 bit machines
+            ++i;
+            if (i >= N) {
+                this->state[0] = this->state[N - 1];
+                i = 1;
+            }
+        }
+
+        this->state[0] = 0x80000000UL;    // MSB is 1; assuring non-zero initial array
+    };
+
+    void srand(value_type initSeed = 0) {
+        if (initSeed == 0) {
+            time_t timer;
+            ::time(&timer);
+            initSeed = static_cast<value_type>(timer);
+        }
+        this->init(initSeed);
+        this->next_state();
+    }
+
+    std::uint32_t libc_rand() {
+#if defined(RAND_MAX) && (RAND_MAX == 0x7FFF)
+    return (std::uint32_t)(
+          (((std::uint32_t)::rand() & RAND_MAX) << 30)
+        | (((std::uint32_t)::rand() & RAND_MAX) << 15)
+        |  ((std::uint32_t)::rand() & RAND_MAX)
+        );
+#elif defined(RAND_MAX) && (RAND_MAX >= 0xFFFF)
+    return (std::uint32_t)(
+          (((std::uint32_t)::rand() & RAND_MAX) << 16)
+        |  ((std::uint32_t)::rand() & RAND_MAX)
+        );
+#else
+    return (std::uint32_t)(
+          (((std::uint32_t)::rand() & 0x00FF) << 24)
+        | (((std::uint32_t)::rand() & 0x00FF) << 16)
+        | (((std::uint32_t)::rand() & 0x00FF) << 8)
+        |  ((std::uint32_t)::rand() & 0x00FF)
+        );
+#endif
+    }
+
+    value_type rand() {
+        value_type y;
+        if (0 == --this->left) {
+            this->next_state();
+        }
+
+        if (next != nullptr)
+            y = *(this->next++);
+        else
+            y = static_cast<value_type>(this->libc_rand());
+
+        // Tempering
+        y ^= (y >> 11);
+        y ^= (y <<  7) & 0x9d2c5680UL;
+        y ^= (y << 15) & 0xefc60000UL;
+        y ^= (y >> 18);
+        return y;
+    }
+
+    std::int32_t nextInt32() {
+        return static_cast<std::int32_t>(this->rand());
+    }
+
+    std::uint32_t nextUInt32() {
+        return static_cast<std::uint32_t>(this->rand());
+    }
+
+    std::int64_t nextInt64() {
+        return static_cast<std::int64_t>(((std::uint64_t)this->nextUInt32() << 32) |
+                                          (this->nextUInt32() & 0xFFFFFFFFUL));
+    }
+
+    std::uint64_t nextUInt64() {
+        return static_cast<std::uint64_t>(((std::uint64_t)this->nextUInt32() << 32) |
+                                           (this->nextUInt32() & 0xFFFFFFFFUL));
+    }
+};
+
+} // namespace jstd
+
+#endif // JSTD_SYSTEM_MT19937_H
