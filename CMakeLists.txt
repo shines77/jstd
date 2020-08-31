@@ -50,8 +50,7 @@ include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 
 if (NOT MSVC)
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
-    ##set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=c++11 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC -U__STRICT_ANSI__")
-    set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=c++11 -march=native -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC -U__STRICT_ANSI__")
+    set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=c++11 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC -U__STRICT_ANSI__")
     ## add_compile_options(-D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
@@ -190,6 +189,12 @@ endif()
 # Disable jstd library compile
 endif(JSTD_ENABLED)
 
+add_custom_target(release
+    COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${CMAKE_SOURCE_DIR}
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
+    COMMENT "Switch CMAKE_BUILD_TYPE to Release"
+)
+
 project(dict-test)
 
 include_directories(include)
@@ -206,12 +211,6 @@ set(SOURCE_FILES
     src/main/jstd/basic/assert-c.c
     src/test/dict_test/main.cpp
     )
-
-add_custom_target(release
-    COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${CMAKE_SOURCE_DIR}
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
-    COMMENT "Switch CMAKE_BUILD_TYPE to Release"
-)
 
 add_executable(dict-test ${SOURCE_FILES})
 target_link_libraries(dict-test ${EXTRA_LIBS})
@@ -235,3 +234,31 @@ set(SOURCE_FILES
 
 add_executable(benchmark ${SOURCE_FILES})
 target_link_libraries(benchmark ${EXTRA_LIBS})
+
+if (NOT MSVC)
+    ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
+    set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=c++17 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC -U__STRICT_ANSI__")
+    ## add_compile_options(-D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+endif()
+
+project(benchmark-c++17)
+
+include_directories(include)
+include_directories(src)
+include_directories(src/main)
+include_directories(src/test)
+include_directories(src/unittest)
+include_directories(src/test/benchmark)
+
+set(SOURCE_FILES
+    src/main/jstd/system/getchar.c
+    src/main/jstd/system/sleep.c
+    src/main/jstd/system/crtdbg_env.c
+    src/main/jstd/basic/assert-c.c
+    src/test/benchmark/main.cpp
+    )
+
+add_executable(benchmark-c++17 ${SOURCE_FILES})
+target_link_libraries(benchmark-c++17 ${EXTRA_LIBS})
