@@ -109,9 +109,9 @@ if (MSVC)
   set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 endif()
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
 
 # add objects to the jstd lib
 add_library(${JSTD_LIBNAME} ${JSTD_SOURCES} ${TARGET_OBJS} ${JSTD_DEF_FILE})
@@ -200,19 +200,19 @@ add_custom_target(release
 
 project(dict-test)
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/dict_test)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
+include_directories(../../src/test)
+include_directories(../../src/unittest)
+include_directories(../../src/test/dict_test)
 
 set(SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
-    src/test/dict_test/main.cpp
+    ../../src/main/jstd/system/getchar.c
+    ../../src/main/jstd/system/sleep.c
+    ../../src/main/jstd/system/crtdbg_env.c
+    ../../src/main/jstd/basic/assert-c.c
+    ../../src/test/dict_test/main.cpp
     )
 
 add_executable(dict-test ${SOURCE_FILES})
@@ -220,19 +220,19 @@ target_link_libraries(dict-test ${EXTRA_LIBS})
 
 project(benchmark)
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/benchmark)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
+include_directories(../../src/test)
+include_directories(../../src/unittest)
+include_directories(../../src/test/benchmark)
 
 set(SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
-    src/test/benchmark/main.cpp
+    ../../src/main/jstd/system/getchar.c
+    ../../src/main/jstd/system/sleep.c
+    ../../src/main/jstd/system/crtdbg_env.c
+    ../../src/main/jstd/basic/assert-c.c
+    ../../src/test/benchmark/main.cpp
     )
 
 add_executable(benchmark ${SOURCE_FILES})
