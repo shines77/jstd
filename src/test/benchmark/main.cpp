@@ -70,10 +70,10 @@
 #include <jstd/string/string_view.h>
 #include <jstd/string/string_view_array.h>
 #include <jstd/system/Console.h>
+#include <jstd/system/RandomGen.h>
 #include <jstd/test/StopWatch.h>
 #include <jstd/test/CPUWarmUp.h>
 #include <jstd/test/ProcessMemInfo.h>
-#include <jstd/system/RandomGen.h>
 
 //#include <jstd/all.h>
 
@@ -756,9 +756,7 @@ bool read_dict_words(const std::string & filename)
 
 int main(int argc, char * argv[])
 {
-    jstd::LibcRandom    random(20200831);
     jstd::MT19937       mt_random(20200831);
-    jstd::RandomGen     randomGen(20200831);
     jstd::MtRandomGen   mtRandomGen(20200831);
 
     if (argc == 2) {

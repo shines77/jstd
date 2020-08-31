@@ -72,6 +72,7 @@
 #include <jstd/string/string_view.h>
 #include <jstd/memory/shiftable_ptr.h>
 #include <jstd/system/Console.h>
+#include <jstd/system/RandomGen.h>
 #include <jstd/test/StopWatch.h>
 #include <jstd/test/CPUWarmUp.h>
 #include <jstd/test/ProcessMemInfo.h>

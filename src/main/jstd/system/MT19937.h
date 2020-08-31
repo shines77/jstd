@@ -37,20 +37,18 @@ private:
     value_type   state[N];
 
 public:
-    explicit MT19937(value_type initSeed = 0) : left(1), next(nullptr) {
+    explicit MT19937(value_type initSeed = kMTDefaultSeed) : left(1), next(nullptr) {
         this->init(initSeed);
     }
 
-    MT19937(value_type * init_key, value_type key_len, value_type initSeed = 0)
+    MT19937(value_type * init_key, value_type key_len, value_type initSeed = kMTDefaultSeed)
         : left(1), next(nullptr) {
-        this->init(initSeed);
-        this->init_keys(init_key, key_len);
+        this->init(init_key, key_len, initSeed);
     }
 
-    MT19937(std::vector<value_type> init_key, value_type initSeed = 0)
+    MT19937(std::vector<value_type> init_key, value_type initSeed = kMTDefaultSeed)
         : left(1), next(nullptr) {
-        this->init(initSeed);
-        this->init_keys(init_key, (value_type)init_key.size());
+        this->init(init_key, initSeed);
     }
 
     value_type rand_max() const {
@@ -58,32 +56,6 @@ public:
     }
 
 private:
-    void next_state() {
-        value_type * p = &this->state[0];
-
-        for (value_type i = N - M + 1; --i; ++p) {
-            *p = (p[M] ^ this->twist(p[0], p[1]));
-        }
-
-        for (value_type i = M; --i; ++p) {
-            *p = (p[M - N] ^ this->twist(p[0], p[1]));
-        }
-
-        *p = p[M - N] ^ this->twist(p[0], this->state[0]);
-        this->left = N;
-        this->next = &this->state[0];
-    }
-
-    value_type mixbits(value_type u, value_type v) const {
-        return (u & 0x80000000UL) | (v & 0x7FFFFFFFUL);
-    }
-
-    value_type twist(value_type u, value_type v) const
-    {
-        return ((this->mixbits(u, v) >>  1) ^ ((v & 1UL) ? 2567483615UL : 0UL));
-    }
-
-public:
     void init(value_type initSeed = kMTDefaultSeed) {
         this->state[0] = initSeed & 0xFFFFFFFFUL;
         for (value_type j = 1; j < N; ++j) {
@@ -94,6 +66,16 @@ public:
             // 2002/01/09 modified by Makoto Matsumoto
             this->state[j] &= 0xFFFFFFFFUL;  // For WORDSIZE > 32 bit machines
         }
+    }
+
+    void init(value_type * init_key, value_type key_len, value_type initSeed = kMTDefaultSeed) {
+        this->init(initSeed);
+        this->init_keys(init_key, key_len);
+    }
+
+    void init(std::vector<value_type> init_key, value_type initSeed = kMTDefaultSeed) {
+        this->init(initSeed);
+        this->init_keys(init_key, (value_type)init_key.size());
     }
 
     void init_keys(std::vector<value_type> init_key) {
@@ -134,13 +116,59 @@ public:
         this->state[0] = 0x80000000UL;    // MSB is 1; assuring non-zero initial array
     };
 
-    void srand(value_type initSeed = 0) {
+    void next_state() {
+        value_type * p = &this->state[0];
+
+        for (value_type i = N - M + 1; --i; ++p) {
+            *p = (p[M] ^ this->twist(p[0], p[1]));
+        }
+
+        for (value_type i = M; --i; ++p) {
+            *p = (p[M - N] ^ this->twist(p[0], p[1]));
+        }
+
+        *p = p[M - N] ^ this->twist(p[0], this->state[0]);
+        this->left = N;
+        this->next = &this->state[0];
+    }
+
+    value_type mixbits(value_type u, value_type v) const {
+        return (u & 0x80000000UL) | (v & 0x7FFFFFFFUL);
+    }
+
+    value_type twist(value_type u, value_type v) const
+    {
+        return ((this->mixbits(u, v) >>  1) ^ ((v & 1UL) ? 2567483615UL : 0UL));
+    }
+
+public:
+    void srand(value_type initSeed = kMTDefaultSeed) {
         if (initSeed == 0) {
             time_t timer;
             ::time(&timer);
             initSeed = static_cast<value_type>(timer);
         }
         this->init(initSeed);
+        this->next_state();
+    }
+
+    void srand(value_type * init_key, value_type key_len, value_type initSeed = kMTDefaultSeed) {
+        if (initSeed == 0) {
+            time_t timer;
+            ::time(&timer);
+            initSeed = static_cast<value_type>(timer);
+        }
+        this->init(init_key, key_len, initSeed);
+        this->next_state();
+    }
+
+    void srand(std::vector<value_type> init_key, value_type initSeed = kMTDefaultSeed) {
+        if (initSeed == 0) {
+            time_t timer;
+            ::time(&timer);
+            initSeed = static_cast<value_type>(timer);
+        }
+        this->init(init_key, initSeed);
         this->next_state();
     }
 
