@@ -14,14 +14,13 @@
  ************************************************************************************/
 void jstd_set_crtdbg_env(int display_memory_leak, int always_check_bounds)
 {
-    // Using CRTDBG will check the memory out of bounds problem,
-    // if you use vld, the memory leak information can be closed.
-    int dbg_flag = 0;
-
 #if defined(JSTD_USE_CRTDBG_CHECK) && (JSTD_USE_CRTDBG_CHECK != 0)
 
 #if defined(_MSC_VER)
 #if defined(_DEBUG) || !defined(NDEBUG)
+    // Using CRTDBG will check the memory out of bounds problem,
+    // if you use vld, the memory leak information can be closed.
+    int dbg_flag = 0;
 
     // Setting CRT report mode
     _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);

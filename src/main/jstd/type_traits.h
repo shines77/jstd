@@ -330,7 +330,7 @@ public:
         std::string sname;
         T t;
         Call_name<T>(t, sname, 0);
-        return std::move(sname);
+        return sname;
     }
 };
 

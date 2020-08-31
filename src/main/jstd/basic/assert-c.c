@@ -31,8 +31,8 @@ JIMIC_EXPORTED_FUNC set_c_assertion_handler(jimic_assertion_handler_type new_han
 void JIMIC_EXPORTED_FUNC jimic_assertion_failure(const char * filename, int line,
                                                  const char * expression, const char * comment) {
     static int already_failed;
-    jimic_assertion_handler_type assert_handler;    
-    if (assert_handler = jimic_assertion_handler) {
+    jimic_assertion_handler_type assert_handler = jimic_assertion_handler;    
+    if (assert_handler) {
         (*assert_handler)(filename, line, expression, comment);
     }
     else {
