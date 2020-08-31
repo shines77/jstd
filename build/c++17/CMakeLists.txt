@@ -45,12 +45,12 @@ else()
     set(NO_AFFINITY 1)
 endif()
 
-include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
-include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
+include("${PROJECT_SOURCE_DIR}/../../cmake/utils.cmake")
+include("${PROJECT_SOURCE_DIR}/../../cmake/system.cmake")
 
 if (NOT MSVC)
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
-    set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC -U__STRICT_ANSI__")
+    set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=gnu++17 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -Wunused-variable -Wregister -fPIC -U__STRICT_ANSI__")
     ## add_compile_options(-D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
@@ -197,19 +197,19 @@ add_custom_target(release
 
 project(dict-test)
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/dict_test)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
+include_directories(../../src/test)
+include_directories(../../src/unittest)
+include_directories(../../src/test/dict_test)
 
 set(SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
-    src/test/dict_test/main.cpp
+    ../../src/main/jstd/system/getchar.c
+    ../../src/main/jstd/system/sleep.c
+    ../../src/main/jstd/system/crtdbg_env.c
+    ../../src/main/jstd/basic/assert-c.c
+    ../../src/test/dict_test/main.cpp
     )
 
 add_executable(dict-test ${SOURCE_FILES})
@@ -217,19 +217,19 @@ target_link_libraries(dict-test ${EXTRA_LIBS})
 
 project(benchmark)
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/benchmark)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
+include_directories(../../src/test)
+include_directories(../../src/unittest)
+include_directories(../../src/test/benchmark)
 
 set(SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
-    src/test/benchmark/main.cpp
+    ../../src/main/jstd/system/getchar.c
+    ../../src/main/jstd/system/sleep.c
+    ../../src/main/jstd/system/crtdbg_env.c
+    ../../src/main/jstd/basic/assert-c.c
+    ../../src/test/benchmark/main.cpp
     )
 
 add_executable(benchmark ${SOURCE_FILES})
