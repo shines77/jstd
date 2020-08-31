@@ -7,6 +7,9 @@ set(JSTD_MINOR_VERSION 1)
 set(JSTD_PATCH_VERSION 1.dev)
 set(JSTD_VERSION "${JSTD_MAJOR_VERSION}.${JSTD_MINOR_VERSION}.${JSTD_PATCH_VERSION}")
 
+set(CMAKE_SOURCE_DIR "${CMAKE_SOURCE_DIR}\..\..\")
+set(PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}\..\..\")
+
 if (UNIX)
     # Adhere to GNU filesystem layout conventions
     include(GNUInstallDirs)
@@ -45,8 +48,8 @@ else()
     set(NO_AFFINITY 1)
 endif()
 
-include("${PROJECT_SOURCE_DIR}/../../cmake/utils.cmake")
-include("${PROJECT_SOURCE_DIR}/../../cmake/system.cmake")
+include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
+include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 
 if (NOT MSVC)
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
@@ -197,19 +200,19 @@ add_custom_target(release
 
 project(dict-test)
 
-include_directories(../../include)
-include_directories(../../src)
-include_directories(../../src/main)
-include_directories(../../src/test)
-include_directories(../../src/unittest)
-include_directories(../../src/test/dict_test)
+include_directories(include)
+include_directories(src)
+include_directories(src/main)
+include_directories(src/test)
+include_directories(src/unittest)
+include_directories(src/test/dict_test)
 
 set(SOURCE_FILES
-    ../../src/main/jstd/system/getchar.c
-    ../../src/main/jstd/system/sleep.c
-    ../../src/main/jstd/system/crtdbg_env.c
-    ../../src/main/jstd/basic/assert-c.c
-    ../../src/test/dict_test/main.cpp
+    src/main/jstd/system/getchar.c
+    src/main/jstd/system/sleep.c
+    src/main/jstd/system/crtdbg_env.c
+    src/main/jstd/basic/assert-c.c
+    src/test/dict_test/main.cpp
     )
 
 add_executable(dict-test ${SOURCE_FILES})
@@ -217,19 +220,19 @@ target_link_libraries(dict-test ${EXTRA_LIBS})
 
 project(benchmark)
 
-include_directories(../../include)
-include_directories(../../src)
-include_directories(../../src/main)
-include_directories(../../src/test)
-include_directories(../../src/unittest)
-include_directories(../../src/test/benchmark)
+include_directories(include)
+include_directories(src)
+include_directories(src/main)
+include_directories(src/test)
+include_directories(src/unittest)
+include_directories(src/test/benchmark)
 
 set(SOURCE_FILES
-    ../../src/main/jstd/system/getchar.c
-    ../../src/main/jstd/system/sleep.c
-    ../../src/main/jstd/system/crtdbg_env.c
-    ../../src/main/jstd/basic/assert-c.c
-    ../../src/test/benchmark/main.cpp
+    src/main/jstd/system/getchar.c
+    src/main/jstd/system/sleep.c
+    src/main/jstd/system/crtdbg_env.c
+    src/main/jstd/basic/assert-c.c
+    src/test/benchmark/main.cpp
     )
 
 add_executable(benchmark ${SOURCE_FILES})
