@@ -754,10 +754,30 @@ bool read_dict_words(const std::string & filename)
     return is_ok;
 }
 
+void RandomGenerator_test()
+{
+    int32_t i32 = jstd::RandomGen::nextInt32();
+    uint32_t u32 = jstd::MtRandomGen::nextUInt32();
+    uint64_t u64 = jstd::Mt64RandomGen::nextUInt64();
+
+    printf("\n");
+    printf("RandomGen::nextInt32()      = %d\n"
+           "MtRandomGen::nextUInt32()   = %u\n"
+           "Mt64RandomGen::nextUInt64() = %" PRIu64 "\n",
+           i32, u32, u64);
+    printf("\n");
+}
+
 int main(int argc, char * argv[])
 {
+    jstd::LibcRandom    random(20200831);
     jstd::MT19937       mt_random(20200831);
+    jstd::MT19937_64    mt64_random(20200831);
+    jstd::RandomGen     RandomGen(20200831);
     jstd::MtRandomGen   mtRandomGen(20200831);
+    jstd::Mt64RandomGen mt64RandomGen(20200831);
+
+    RandomGenerator_test();
 
     if (argc == 2) {
         std::string filename = argv[1];
@@ -767,9 +787,6 @@ int main(int argc, char * argv[])
     }
 
     jtest::CPU::warmup(1000);
-
-    int32_t i32 = jstd::RandomGen::nextInt32();
-    uint32_t u32 = jstd::MtRandomGen::nextUInt32();
 
     hashmap_benchmark_all();
 

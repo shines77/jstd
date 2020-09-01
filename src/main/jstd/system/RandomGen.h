@@ -17,100 +17,11 @@
 #include <cstddef>
 #include <cstdlib>      // For std::srand(), std::rand()
 
+#include "jstd/system/LibcRandom.h"
 #include "jstd/system/MT19937.h"
+#include "jstd/system/MT19937_64.h"
 
 namespace jstd {
-
-class LibcRandom {
-public:
-    typedef std::uint32_t   value_type;
-    typedef LibcRandom      this_type;
-
-    explicit LibcRandom(std::uint32_t initSeed = 0) {
-        this->srand(initSeed);
-    }
-
-    ~LibcRandom() {}
-
-    value_type rand_max() const {
-#if defined(RAND_MAX)
-        return static_cast<value_type>(RAND_MAX);
-#else
-        return 0;
-#endif
-    }
-
-    void srand(value_type initSeed = 0) {
-        if (initSeed == 0)
-            ::srand(static_cast<std::uint32_t>(::time(NULL)));
-        else
-            ::srand(static_cast<std::uint32_t>(initSeed));
-    }
-
-    value_type rand() {
-        return static_cast<value_type>(::rand());
-    }
-
-    std::uint32_t nextUInt32() {
-#if defined(RAND_MAX) && (RAND_MAX == 0x7FFF)
-    return (std::uint32_t)(
-          (((std::uint32_t)::rand() & RAND_MAX) << 30)
-        | (((std::uint32_t)::rand() & RAND_MAX) << 15)
-        |  ((std::uint32_t)::rand() & RAND_MAX)
-        );
-#elif defined(RAND_MAX) && (RAND_MAX >= 0xFFFF)
-    return (std::uint32_t)(
-          (((std::uint32_t)::rand() & RAND_MAX) << 16)
-        |  ((std::uint32_t)::rand() & RAND_MAX)
-        );
-#else
-    return (std::uint32_t)(
-          (((std::uint32_t)::rand() & 0x00FF) << 24)
-        | (((std::uint32_t)::rand() & 0x00FF) << 16)
-        | (((std::uint32_t)::rand() & 0x00FF) << 8)
-        |  ((std::uint32_t)::rand() & 0x00FF)
-        );
-#endif
-    }
-
-    std::int32_t nextInt32() {
-        return static_cast<std::int32_t>(this->nextUInt32());
-    }
-
-    std::uint64_t nextUInt64() {
-#if defined(RAND_MAX) && (RAND_MAX == 0x7FFF)
-    return (std::uint64_t)(
-          (((std::uint64_t)::rand() & RAND_MAX) << 60)
-        | (((std::uint64_t)::rand() & RAND_MAX) << 45)
-        | (((std::uint64_t)::rand() & RAND_MAX) << 30)
-        | (((std::uint64_t)::rand() & RAND_MAX) << 15)
-        |  ((std::uint64_t)::rand() & RAND_MAX)
-        );
-#elif defined(RAND_MAX) && (RAND_MAX >= 0xFFFF)
-    return (std::uint64_t)(
-          (((std::uint64_t)::rand() & RAND_MAX) << 48)
-        | (((std::uint64_t)::rand() & RAND_MAX) << 32)
-        | (((std::uint64_t)::rand() & RAND_MAX) << 16)
-        |  ((std::uint64_t)::rand() & RAND_MAX)
-        );
-#else
-    return (std::uint64_t)(
-          (((std::uint64_t)::rand() & 0x00FF) << 56)
-        | (((std::uint64_t)::rand() & 0x00FF) << 48)
-        | (((std::uint64_t)::rand() & 0x00FF) << 40)
-        | (((std::uint64_t)::rand() & 0x00FF) << 32)
-        | (((std::uint64_t)::rand() & 0x00FF) << 24)
-        | (((std::uint64_t)::rand() & 0x00FF) << 16)
-        | (((std::uint64_t)::rand() & 0x00FF) << 8)
-        |  ((std::uint64_t)::rand() & 0x00FF)
-        );
-#endif
-    }
-
-    std::int64_t nextInt64() {
-        return static_cast<std::int64_t>(this->nextUInt64());
-    }
-};
 
 template <typename RandomAlgorithm>
 class BasicRandomGenerator {
@@ -129,12 +40,16 @@ public:
 
     ~BasicRandomGenerator() {}
 
+    static value_type rand_max() {
+        return this_type::random_.rand_max();
+    }
+
     static void srand(value_type initSeed = 0) {
         this_type::random_.srand(initSeed);
     }
 
     static value_type rand() {
-        this_type::random_.rand();
+        return this_type::random_.rand();
     }
 
     static std::int32_t nextInt32()
@@ -266,6 +181,7 @@ BasicRandomGenerator<RandomAlgorithm>::random_;
 
 typedef BasicRandomGenerator<LibcRandom>    RandomGen;
 typedef BasicRandomGenerator<MT19937>       MtRandomGen;
+typedef BasicRandomGenerator<MT19937_64>    Mt64RandomGen;
 
 } // namespace jstd
 

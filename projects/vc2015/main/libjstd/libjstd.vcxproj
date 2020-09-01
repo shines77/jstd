@@ -213,7 +213,10 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\system\Console.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\crtdbg_env.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\getchar.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\system\LibcRand.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\system\LibcRandom.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\MT19937.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\system\MT19937_64.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\RandomGen.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\sleep.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\CPUWarmUp.h" />
