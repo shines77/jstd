@@ -72,92 +72,92 @@ public:
         return this_type::random_.nextUInt64();
     }
 
-    static std::int32_t nextInt32(std::int32_t minimum, std::int32_t maximum)
+    static std::int32_t nextInt32(std::int32_t minValue, std::int32_t maxValue)
     {
         std::int32_t result;
-        if (minimum < maximum) {
-            result = minimum + std::int32_t(this_type::nextUInt32() %
-                                            std::uint32_t(maximum - minimum + 1));
+        if (minValue < maxValue) {
+            result = minValue + std::int32_t(this_type::nextUInt32() %
+                                            std::uint32_t(maxValue - minValue + 1));
         }
-        else if (minimum > maximum) {
-            result = maximum + std::int32_t(this_type::nextUInt32() %
-                                            std::uint32_t(minimum - maximum + 1));
+        else if (minValue > maxValue) {
+            result = maxValue + std::int32_t(this_type::nextUInt32() %
+                                            std::uint32_t(minValue - maxValue + 1));
         }
         else {
-            result = minimum;
+            result = minValue;
         }
         return result;
     }
 
-    static std::int32_t nextInt32(std::int32_t maximum)
+    static std::int32_t nextInt32(std::int32_t maxValue)
     {
-        return this_type::nextInt32(0, maximum);
+        return this_type::nextInt32(0, maxValue);
     }
 
-    static std::uint32_t nextUInt32(std::uint32_t minimum, std::uint32_t maximum)
+    static std::uint32_t nextUInt32(std::uint32_t minValue, std::uint32_t maxValue)
     {
         std::uint32_t result;
-        if (minimum < maximum) {
-            result = minimum + (this_type::nextUInt32() %
-                                std::uint32_t(maximum - minimum + 1));
+        if (minValue < maxValue) {
+            result = minValue + (this_type::nextUInt32() %
+                                std::uint32_t(maxValue - minValue + 1));
         }
-        else if (minimum > maximum) {
-            result = maximum + (this_type::nextUInt32() %
-                                std::uint32_t(minimum - maximum + 1));
+        else if (minValue > maxValue) {
+            result = maxValue + (this_type::nextUInt32() %
+                                std::uint32_t(minValue - maxValue + 1));
         }
         else {
-            result = minimum;
+            result = minValue;
         }
         return result;
     }
 
-    static std::uint32_t nextUInt32(std::uint32_t maximum)
+    static std::uint32_t nextUInt32(std::uint32_t maxValue)
     {
-        return this_type::nextUInt32(0, maximum);
+        return this_type::nextUInt32(0, maxValue);
     }
 
-    static std::int64_t nextInt64(std::int64_t minimum, std::int64_t maximum)
+    static std::int64_t nextInt64(std::int64_t minValue, std::int64_t maxValue)
     {
         std::int64_t result;
-        if (minimum < maximum) {
-            result = minimum + std::int64_t(this_type::nextUInt64() %
-                                            std::uint64_t(maximum - minimum + 1));
+        if (minValue < maxValue) {
+            result = minValue + std::int64_t(this_type::nextUInt64() %
+                                            std::uint64_t(maxValue - minValue + 1));
         }
-        else if (minimum > maximum) {
-            result = maximum + std::int64_t(this_type::nextUInt64() %
-                                            std::uint64_t(minimum - maximum + 1));
+        else if (minValue > maxValue) {
+            result = maxValue + std::int64_t(this_type::nextUInt64() %
+                                            std::uint64_t(minValue - maxValue + 1));
         }
         else {
-            result = minimum;
+            result = minValue;
         }
         return result;
     }
 
-    static std::int64_t nextInt64(std::int64_t maximum)
+    static std::int64_t nextInt64(std::int64_t maxValue)
     {
-        return this_type::nextInt64(0, maximum);
+        return this_type::nextInt64(0, maxValue);
     }
 
-    static std::uint64_t nextUInt64(std::uint64_t minimum, std::uint64_t maximum)
+    static std::uint64_t nextUInt64(std::uint64_t minValue, std::uint64_t maxValue)
     {
         std::uint64_t result;
-        if (minimum < maximum) {
-            result = minimum + (this_type::nextUInt64() %
-                                std::uint64_t(maximum - minimum + 1));
+        if (minValue < maxValue) {
+            result = minValue + (this_type::nextUInt64() %
+                                std::uint64_t(maxValue - minValue + 1));
         }
-        else if (minimum > maximum) {
-            result = maximum + (this_type::nextUInt64() %
-                                std::uint64_t(minimum - maximum + 1));
+        else if (minValue > maxValue) {
+            result = maxValue + (this_type::nextUInt64() %
+                                std::uint64_t(minValue - maxValue + 1));
         }
         else {
-            result = minimum;
+            result = minValue;
         }
         return result;
     }
 
-    static std::uint64_t nextUInt64(std::uint64_t maximum)
+    static std::uint64_t nextUInt64(std::uint64_t maxValue)
     {
-        return this_type::nextUInt64(0, maximum);
+        return this_type::nextUInt64(0, maxValue);
     }
 
     static float nextFloat() {
@@ -172,6 +172,48 @@ public:
     static double nextDouble53() {
         value_type a = this_type::nextUInt32() >> 5, b = this_type::nextUInt32() >> 6;
         return (((double)a * 67108864.0 + b) / 9007199254740992.0);
+    }
+
+    static float nextFloat(float minValue, float maxValue) {
+        float result;
+        if (minValue < maxValue) {
+            result = minValue + (this_type::nextFloat() * (maxValue - minValue));
+        }
+        else if (minValue > maxValue) {
+            result = maxValue + (this_type::nextFloat() * (minValue - maxValue));
+        }
+        else {
+            result = minValue;
+        }
+        return result;
+    }
+
+    static double nextDouble(double minValue, double maxValue) {
+        double result;
+        if (minValue < maxValue) {
+            result = minValue + (this_type::nextDouble() * (maxValue - minValue));
+        }
+        else if (minValue > maxValue) {
+            result = maxValue + (this_type::nextDouble() * (minValue - maxValue));
+        }
+        else {
+            result = minValue;
+        }
+        return result;
+    }
+
+    static double nextDouble53(double minValue, double maxValue) {
+        double result;
+        if (minValue < maxValue) {
+            result = minValue + (this_type::nextDouble53() * (maxValue - minValue));
+        }
+        else if (minValue > maxValue) {
+            result = maxValue + (this_type::nextDouble53() * (minValue - maxValue));
+        }
+        else {
+            result = minValue;
+        }
+        return result;
     }
 };
 

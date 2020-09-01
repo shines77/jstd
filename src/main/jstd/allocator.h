@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cstdlib>      // For std::malloc(), std::free()
 #include <memory>       // For std::pointer_traits<T>
 #include <limits>       // For std::numeric_limits<T>::max()
 //#include <type_traits>  // std::alignment_of<T>
