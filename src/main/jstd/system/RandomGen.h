@@ -52,28 +52,23 @@ public:
         return this_type::random_.rand();
     }
 
-    static std::int32_t nextInt32()
-    {
+    static std::int32_t nextInt32() {
         return this_type::random_.nextInt32();
     }
 
-    static std::uint32_t nextUInt32()
-    {
+    static std::uint32_t nextUInt32() {
         return this_type::random_.nextUInt32();
     }
 
-    static std::int64_t nextInt64()
-    {
+    static std::int64_t nextInt64() {
         return this_type::random_.nextInt64();
     }
 
-    static std::uint64_t nextUInt64()
-    {
+    static std::uint64_t nextUInt64() {
         return this_type::random_.nextUInt64();
     }
 
-    static std::int32_t nextInt32(std::int32_t minValue, std::int32_t maxValue)
-    {
+    static std::int32_t nextInt32(std::int32_t minValue, std::int32_t maxValue) {
         std::int32_t result;
         if (minValue < maxValue) {
             result = minValue + std::int32_t(this_type::nextUInt32() %
@@ -89,13 +84,11 @@ public:
         return result;
     }
 
-    static std::int32_t nextInt32(std::int32_t maxValue)
-    {
+    static std::int32_t nextInt32(std::int32_t maxValue) {
         return this_type::nextInt32(0, maxValue);
     }
 
-    static std::uint32_t nextUInt32(std::uint32_t minValue, std::uint32_t maxValue)
-    {
+    static std::uint32_t nextUInt32(std::uint32_t minValue, std::uint32_t maxValue) {
         std::uint32_t result;
         if (minValue < maxValue) {
             result = minValue + (this_type::nextUInt32() %
@@ -111,13 +104,11 @@ public:
         return result;
     }
 
-    static std::uint32_t nextUInt32(std::uint32_t maxValue)
-    {
+    static std::uint32_t nextUInt32(std::uint32_t maxValue) {
         return this_type::nextUInt32(0, maxValue);
     }
 
-    static std::int64_t nextInt64(std::int64_t minValue, std::int64_t maxValue)
-    {
+    static std::int64_t nextInt64(std::int64_t minValue, std::int64_t maxValue) {
         std::int64_t result;
         if (minValue < maxValue) {
             result = minValue + std::int64_t(this_type::nextUInt64() %
@@ -133,13 +124,11 @@ public:
         return result;
     }
 
-    static std::int64_t nextInt64(std::int64_t maxValue)
-    {
+    static std::int64_t nextInt64(std::int64_t maxValue) {
         return this_type::nextInt64(0, maxValue);
     }
 
-    static std::uint64_t nextUInt64(std::uint64_t minValue, std::uint64_t maxValue)
-    {
+    static std::uint64_t nextUInt64(std::uint64_t minValue, std::uint64_t maxValue) {
         std::uint64_t result;
         if (minValue < maxValue) {
             result = minValue + (this_type::nextUInt64() %
@@ -155,8 +144,7 @@ public:
         return result;
     }
 
-    static std::uint64_t nextUInt64(std::uint64_t maxValue)
-    {
+    static std::uint64_t nextUInt64(std::uint64_t maxValue) {
         return this_type::nextUInt64(0, maxValue);
     }
 
