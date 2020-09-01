@@ -1053,6 +1053,7 @@ protected:
         }
     }
 
+    JSTD_FORCEINLINE
     void rehash_buckets(size_type new_bucket_capacity) {
         assert_bucket_capacity(new_bucket_capacity);
         assert(new_bucket_capacity != this->bucket_capacity_);
@@ -1084,6 +1085,7 @@ protected:
         }
     }
 
+    JSTD_FORCEINLINE
     void add_new_entry_chunk(size_type new_entry_capacity) {
         assert_entry_capacity(new_entry_capacity);
 
@@ -1119,16 +1121,17 @@ protected:
         assert(this->entry_size_ == this->entry_capacity_);
         size_type new_entry_capacity = run_time::round_up_to_pow2(this->entry_size_ + delta_size);
 
+        add_new_entry_chunk(new_entry_capacity);
+
         // Most of the time, we don't need to reallocate the buckets list.
         size_type new_bucket_capacity = new_entry_capacity / kMaxLoadFactor;
-        if (likely(new_bucket_capacity > this->bucket_capacity_)) {
+        if (unlikely(new_bucket_capacity > this->bucket_capacity_)) {
             rehash_buckets(new_bucket_capacity);
         }
-
-        add_new_entry_chunk(new_entry_capacity);
     }
 
     template <bool need_shrink = false>
+    JSTD_FORCEINLINE
     void rehash_impl(size_type new_bucket_capacity) {
         // [ bucket_capacity = entry_size / kMaxLoadFactor ]
         size_type min_bucket_capacity = run_time::round_up_to_pow2(this->min_bucket_count());
@@ -1689,7 +1692,7 @@ protected:
     }
 
     template <typename ...Args>
-    JSTD_INLINE
+    JSTD_FORCEINLINE
     entry_type * emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
@@ -1698,7 +1701,7 @@ protected:
         return new_entry;
     }
 
-    JSTD_INLINE
+    JSTD_FORCEINLINE
     entry_type * emplace_new_entry_from_value(hash_code_t hash_code,
                                               index_type index, n_value_type * value) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
@@ -1709,6 +1712,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    JSTD_FORCEINLINE
     ReturnType emplace_unique(const key_type & key, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1735,6 +1739,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    JSTD_FORCEINLINE
     ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1763,6 +1768,7 @@ protected:
         return ReturnType(iterator(entry), inserted);
     }
 
+    JSTD_FORCEINLINE
     size_type erase_key(const key_type & key) {
         assert(this->buckets_ != nullptr);
 
@@ -1823,6 +1829,7 @@ protected:
         return size_type(0);
     }
 
+    JSTD_FORCEINLINE
     void update_version() {
 #if DICTIONARY_SUPPORT_VERSION
         ++(this->version_);
@@ -2287,6 +2294,7 @@ protected:
 #endif
     }
 
+    JSTD_FORCEINLINE
     void transfer_entry_to_new(entry_type * old_entry, entry_type * new_entry) {
         new_entry->next      = new_entry + 1;
         new_entry->hash_code = old_entry->hash_code;
@@ -2787,6 +2795,7 @@ public:
         this->rehash_impl<true>(new_bucket_capacity);
     }
 
+    JSTD_FORCEINLINE
     void rearrange(size_type arrangeType) {
         if (arrangeType == ArrangeType::Reorder) {
             rearrange_reorder();

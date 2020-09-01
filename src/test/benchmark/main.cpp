@@ -756,6 +756,13 @@ bool read_dict_words(const std::string & filename)
 
 void RandomGenerator_test()
 {
+    jstd::LibcRandom    random(20200831);
+    jstd::MT19937       mt_random(20200831);
+    jstd::MT19937_64    mt64_random(20200831);
+    jstd::RandomGen     RandomGen(20200831);
+    jstd::MtRandomGen   mtRandomGen(20200831);
+    jstd::Mt64RandomGen mt64RandomGen(20200831);
+
     int32_t i32 = jstd::RandomGen::nextInt32();
     uint32_t u32 = jstd::MtRandomGen::nextUInt32();
     uint64_t u64 = jstd::Mt64RandomGen::nextUInt64();
@@ -770,13 +777,6 @@ void RandomGenerator_test()
 
 int main(int argc, char * argv[])
 {
-    jstd::LibcRandom    random(20200831);
-    jstd::MT19937       mt_random(20200831);
-    jstd::MT19937_64    mt64_random(20200831);
-    jstd::RandomGen     RandomGen(20200831);
-    jstd::MtRandomGen   mtRandomGen(20200831);
-    jstd::Mt64RandomGen mt64RandomGen(20200831);
-
     RandomGenerator_test();
 
     if (argc == 2) {
