@@ -236,9 +236,58 @@ void print_error(std::size_t index, const jstd::string_view & key, const jstd::s
            index + 1, skey.c_str(), svalue.c_str());
 }
 
+template <typename Container>
+void print_test_time(std::size_t checksum, double elapsedTime)
+{
+    // printf("---------------------------------------------------------------------------\n");
+    if (jstd::has_name<Container>::value)
+        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    else
+        printf(" %-36s  ", "std::unordered_map<K, V>");
+    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, elapsedTime);
+}
+
+template <typename Vector>
+void copy_and_shuffle_vector(Vector & dest_list, const Vector & src_list) {
+    // copy
+    dest_list.clear();
+    dest_list.reserve(src_list.size());
+    for (std::size_t n = 0; n < src_list.size(); n++) {
+        dest_list.push_back(src_list[n]);
+    }
+
+    // shuffle
+    for (std::size_t n = dest_list.size() - 1; n > 0; n--) {
+        std::size_t rnd_idx = jstd::MtRandomGen::nextUInt32(static_cast<std::uint32_t>(n));
+        std::swap(dest_list[n], dest_list[rnd_idx]);
+    }
+}
+
+template <>
+void copy_and_shuffle_vector(string_view_array<string_view, string_view> & dest_list,
+                             const string_view_array<string_view, string_view> & src_list) {
+    typedef typename string_view_array<string_view, string_view>::value_type    value_type;
+    typedef typename std::remove_pointer<value_type>::type                      element_type;
+
+    // copy
+    dest_list.clear();
+    dest_list.reserve(src_list.size());
+    for (std::size_t n = 0; n < src_list.size(); n++) {
+        value_type value = src_list.at(n);
+        value_type new_value = new element_type(*value);
+        dest_list.push_back(new_value);
+    }
+
+    // shuffle
+    for (std::size_t n = dest_list.size() - 1; n > 0; n--) {
+        std::size_t rnd_idx = jstd::MtRandomGen::nextUInt32(static_cast<std::uint32_t>(n));
+        std::swap(dest_list[n], dest_list[rnd_idx]);
+    }
+}
+
 template <typename Container, typename Vector>
-void test_hashmap_find(const Vector & test_data,
-                       double & elapsedTime, std::size_t & check_sum)
+void test_hashmap_find_sequential(const Vector & test_data,
+                                  double & elapsedTime, std::size_t & check_sum)
 {
     typedef typename Container::const_iterator const_iterator;
 
@@ -248,14 +297,15 @@ void test_hashmap_find(const Vector & test_data,
         repeat_times = (kIterations / data_length) + 1;
     else
         repeat_times = 0;
-    std::size_t checksum = 0;
 
     Container container(kInitCapacity);
     for (std::size_t i = 0; i < data_length; i++) {
         container.emplace(test_data[i].first, test_data[i].second);
     }
 
+    std::size_t checksum = 0;
     jtest::StopWatch sw;
+
     sw.start();
     for (std::size_t n = 0; n < repeat_times; n++) {
         for (std::size_t i = 0; i < data_length; i++) {
@@ -279,12 +329,119 @@ void test_hashmap_find(const Vector & test_data,
     elapsedTime = sw.getElapsedMillisec();
     check_sum = checksum;
 
-    printf("---------------------------------------------------------------------------\n");
-    if (jstd::has_name<Container>::value)
-        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_find_random(const Vector & test_data, const Vector & rand_data,
+                              double & elapsedTime, std::size_t & check_sum)
+{
+    typedef typename Container::const_iterator const_iterator;
+
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
     else
-        printf(" %-36s  ", "std::unordered_map<K, V>");
-    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, elapsedTime);
+        repeat_times = 0;
+
+    Container container(kInitCapacity);
+    for (std::size_t i = 0; i < data_length; i++) {
+        container.emplace(test_data[i].first, test_data[i].second);
+    }
+
+    std::size_t checksum = 0;
+    jtest::StopWatch sw;
+
+    sw.start();
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        for (std::size_t i = 0; i < data_length; i++) {
+            const_iterator iter = container.find(test_data[i].first);
+            if (iter != container.end()) {
+                checksum++;
+            }
+        }
+    }
+    sw.stop();
+
+    elapsedTime = sw.getElapsedMillisec();
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_find_failed(const Vector & test_data, const Vector & rand_data,
+                              double & elapsedTime, std::size_t & check_sum)
+{
+    typedef typename Container::const_iterator const_iterator;
+
+    std::size_t data_length = test_data.size();
+    std::size_t half_len = data_length / 2;
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations * 2 / data_length) + 1;
+    else
+        repeat_times = 0;
+
+    Container container(kInitCapacity);
+    for (std::size_t i = 0; i < half_len; i++) {
+        container.emplace(test_data[i].first, test_data[i].second);
+    }
+
+    std::size_t checksum = 0;
+    jtest::StopWatch sw;
+
+    sw.start();
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        for (std::size_t i = half_len; i < data_length; i++) {
+            const_iterator iter = container.find(test_data[i].first);
+            if (iter != container.end()) {
+                checksum++;
+            }
+        }
+    }
+    sw.stop();
+
+    elapsedTime = sw.getElapsedMillisec();
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_find_empty(const Vector & test_data,
+                             double & elapsedTime, std::size_t & check_sum)
+{
+    typedef typename Container::const_iterator const_iterator;
+
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
+    else
+        repeat_times = 0;
+
+    Container container(kInitCapacity);
+
+    std::size_t checksum = 0;
+    jtest::StopWatch sw;
+
+    sw.start();
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        for (std::size_t i = 0; i < data_length; i++) {
+            const_iterator iter = container.find(test_data[i].first);
+            if (iter != container.end()) {
+                checksum++;
+            }
+        }
+    }
+    sw.stop();
+
+    elapsedTime = sw.getElapsedMillisec();
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
 }
 
 template <typename Container, typename Vector>
@@ -317,12 +474,80 @@ void test_hashmap_insert(const Vector & test_data,
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    printf("---------------------------------------------------------------------------\n");
-    if (jstd::has_name<Container>::value)
-        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_insert_predicted(const Vector & test_data,
+                                   double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
     else
-        printf(" %-36s  ", "std::unordered_map<K, V>");
-    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        container.reserve(data_length);
+
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.insert(std::make_pair(test_data[i].first, test_data[i].second));
+        }
+        sw.stop();
+
+        checksum += container.size();
+        totalTime += sw.getElapsedMillisec();
+    }
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_insert_replace(const Vector & test_data,
+                                 double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
+    else
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.insert(std::make_pair(test_data[i].first, test_data[i].second));
+        }
+
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            std::size_t reverse_idx = data_length - 1 - i;
+            container.insert(std::make_pair(test_data[i].first, test_data[reverse_idx].second));
+        }
+        sw.stop();
+
+        checksum += container.size();
+        totalTime += sw.getElapsedMillisec();
+    }
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
 }
 
 template <typename Container, typename Vector>
@@ -355,17 +580,85 @@ void test_hashmap_emplace(const Vector & test_data,
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    printf("---------------------------------------------------------------------------\n");
-    if (jstd::has_name<Container>::value)
-        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
-    else
-        printf(" %-36s  ", "std::unordered_map<K, V>");
-    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+    print_test_time<Container>(check_sum, elapsedTime);
 }
 
 template <typename Container, typename Vector>
-void test_hashmap_erase(const Vector & test_data,
-                        double & elapsedTime, std::size_t & check_sum)
+void test_hashmap_emplace_predicted(const Vector & test_data,
+                                    double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
+    else
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        container.reserve(data_length);
+
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.emplace(test_data[i].first, test_data[i].second);
+        }
+        sw.stop();
+
+        checksum += container.size();
+        totalTime += sw.getElapsedMillisec();
+    }
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_emplace_replace(const Vector & test_data,
+                                  double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
+    else
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.emplace(test_data[i].first, test_data[i].second);
+        }
+
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            std::size_t reverse_idx = data_length - 1 - i;
+            container.emplace(test_data[i].first, test_data[reverse_idx].second);
+        }
+        sw.stop();
+
+        checksum += container.size();
+        totalTime += sw.getElapsedMillisec();
+    }
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_erase_sequential(const Vector & test_data,
+                                   double & elapsedTime, std::size_t & check_sum)
 {
     std::size_t data_length = test_data.size();
     std::size_t repeat_times;
@@ -408,12 +701,85 @@ void test_hashmap_erase(const Vector & test_data,
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    printf("---------------------------------------------------------------------------\n");
-    if (jstd::has_name<Container>::value)
-        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_erase_random(const Vector & test_data, const Vector & rand_data,
+                               double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations / data_length) + 1;
     else
-        printf(" %-36s  ", "std::unordered_map<K, V>");
-    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.emplace(test_data[i].first, test_data[i].second);
+        }
+        checksum += container.size();
+
+        sw.start();
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.erase(rand_data[i].first);
+        }
+        sw.stop();
+
+        assert(container.size() == 0);
+        checksum += container.size();
+        totalTime += sw.getElapsedMillisec();
+    }
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
+}
+
+template <typename Container, typename Vector>
+void test_hashmap_erase_failed(const Vector & test_data,
+                               double & elapsedTime, std::size_t & check_sum)
+{
+    std::size_t data_length = test_data.size();
+    std::size_t half_len = data_length / 2;
+    std::size_t repeat_times;
+    if (data_length != 0)
+        repeat_times = (kIterations * 2 / data_length) + 1;
+    else
+        repeat_times = 0;
+
+    std::size_t checksum = 0;
+    double totalTime = 0.0;
+    jtest::StopWatch sw;
+        
+    for (std::size_t n = 0; n < repeat_times; n++) {
+        Container container(kInitCapacity);
+        for (std::size_t i = 0; i < half_len; i++) {
+            container.emplace(test_data[i].first, test_data[i].second);
+        }
+        checksum += container.size();
+
+        sw.start();
+        for (std::size_t i = half_len; i < data_length; i++) {
+            container.erase(test_data[i].first);
+        }
+        sw.stop();
+
+        checksum += container.size();
+        totalTime += sw.getElapsedMillisec();
+    }
+
+    elapsedTime = totalTime;
+    check_sum = checksum;
+
+    print_test_time<Container>(check_sum, elapsedTime);
 }
 
 template <typename Container, typename Vector>
@@ -480,12 +846,7 @@ void test_hashmap_rehash(const Vector & test_data,
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    printf("---------------------------------------------------------------------------\n");
-    if (jstd::has_name<Container>::value)
-        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
-    else
-        printf(" %-36s  ", "std::unordered_map<K, V>");
-    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+    print_test_time<Container>(check_sum, elapsedTime);
 }
 
 template <typename Container, typename Vector>
@@ -551,12 +912,7 @@ void test_hashmap_rehash2(const Vector & test_data,
     elapsedTime = totalTime;
     check_sum = checksum;
 
-    printf("---------------------------------------------------------------------------\n");
-    if (jstd::has_name<Container>::value)
-        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
-    else
-        printf(" %-36s  ", "std::unordered_map<K, V>");
-    printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, totalTime);
+    print_test_time<Container>(check_sum, elapsedTime);
 }
 
 template <typename Container1, typename Container2, typename Vector>
@@ -570,13 +926,42 @@ void hashmap_benchmark_simple(const std::string & cat_name,
     double elapsedTime1, elapsedTime2;
     std::size_t checksum1, checksum2;
 
-    //
-    // test hashmap<K, V>/find
-    //
-    test_hashmap_find<Container1, Vector>(test_data, elapsedTime1, checksum1);
-    test_hashmap_find<Container2, Vector>(test_data, elapsedTime2, checksum2);
+    Vector rand_data;
+    copy_and_shuffle_vector(rand_data, test_data);
 
-    result.addResult(cat_id, "hash_map<K, V>/find", elapsedTime1, checksum1, elapsedTime2, checksum2);
+    //
+    // test hashmap<K, V>/find/sequential
+    //
+    test_hashmap_find_sequential<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_find_sequential<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/find/sequential", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/find/random
+    //
+    test_hashmap_find_random<Container1, Vector>(test_data, rand_data, elapsedTime1, checksum1);
+    test_hashmap_find_random<Container2, Vector>(test_data, rand_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/find/random", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/find/failed
+    //
+    test_hashmap_find_failed<Container1, Vector>(test_data, rand_data, elapsedTime1, checksum1);
+    test_hashmap_find_failed<Container2, Vector>(test_data, rand_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/find/failed", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/find/empty
+    //
+    test_hashmap_find_empty<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_find_empty<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/find/empty", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    result.addBlankLine(cat_id);
 
     //
     // test hashmap<K, V>/insert
@@ -587,6 +972,24 @@ void hashmap_benchmark_simple(const std::string & cat_name,
     result.addResult(cat_id, "hash_map<K, V>/insert", elapsedTime1, checksum1, elapsedTime2, checksum2);
 
     //
+    // test hashmap<K, V>/insert/predicted
+    //
+    test_hashmap_insert_predicted<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_insert_predicted<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/insert/predicted", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/insert/replace
+    //
+    test_hashmap_insert_replace<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_insert_replace<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/insert/replace", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    result.addBlankLine(cat_id);
+
+    //
     // test hashmap<K, V>/emplace
     //
     test_hashmap_emplace<Container1, Vector>(test_data, elapsedTime1, checksum1);
@@ -595,12 +998,48 @@ void hashmap_benchmark_simple(const std::string & cat_name,
     result.addResult(cat_id, "hash_map<K, V>/emplace", elapsedTime1, checksum1, elapsedTime2, checksum2);
 
     //
-    // test hashmap<K, V>/erase
+    // test hashmap<K, V>/emplace/predicted
     //
-    test_hashmap_erase<Container1, Vector>(test_data, elapsedTime1, checksum1);
-    test_hashmap_erase<Container2, Vector>(test_data, elapsedTime2, checksum2);
+    test_hashmap_emplace_predicted<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_emplace_predicted<Container2, Vector>(test_data, elapsedTime2, checksum2);
 
-    result.addResult(cat_id, "hash_map<K, V>/erase", elapsedTime1, checksum1, elapsedTime2, checksum2);
+    result.addResult(cat_id, "hash_map<K, V>/emplace/predicted", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/emplace/replace
+    //
+    test_hashmap_emplace_replace<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_emplace_replace<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/emplace/replace", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    result.addBlankLine(cat_id);
+
+    //
+    // test hashmap<K, V>/erase/sequential
+    //
+    test_hashmap_erase_sequential<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_erase_sequential<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/erase/sequential", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/erase/random
+    //
+    test_hashmap_erase_random<Container1, Vector>(test_data, rand_data, elapsedTime1, checksum1);
+    test_hashmap_erase_random<Container2, Vector>(test_data, rand_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/erase/random", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    //
+    // test hashmap<K, V>/erase/failed
+    //
+    test_hashmap_erase_failed<Container1, Vector>(test_data, elapsedTime1, checksum1);
+    test_hashmap_erase_failed<Container2, Vector>(test_data, elapsedTime2, checksum2);
+
+    result.addResult(cat_id, "hash_map<K, V>/erase/failed", elapsedTime1, checksum1, elapsedTime2, checksum2);
+
+    result.addBlankLine(cat_id);
 
     //
     // test hashmap<K, V>/rehash
@@ -645,20 +1084,66 @@ void hashmap_benchmark_all()
         }
     }
 
-    std::unordered_map<std::string, std::string> std_map_ss;
-    jstd::Dictionary<std::string, std::string>   jstd_dict_ss;
-
-    hashmap_benchmark_simple("hash_map<std::string, std::string>",
-                             std_map_ss, jstd_dict_ss,
-                             test_data_ss, test_result);
-
-    printf("\n\n");
-
-    //
-    // Note: Don't remove these braces '{' and '}', 
-    //       otherwise may cause some unpredictable bugs.
-    //
     {
+        //
+        // std::unordered_map<int, int>
+        //
+        std::vector<std::pair<int, int>> test_data_ii;
+
+        for (std::size_t i = 0; i < test_data_ss.size(); i++) {
+            test_data_ii.push_back(std::make_pair(int(i), int(i + 1)));
+        }
+
+        std::unordered_map<int, int> std_map_ii;
+        jstd::Dictionary<int, int>   jstd_dict_ii;
+
+        printf(" hash_map<int, int>\n\n");
+
+        hashmap_benchmark_simple("hash_map<int, int>",
+                                 std_map_ii, jstd_dict_ii,
+                                 test_data_ii, test_result);
+
+        printf("\n");
+    }
+
+    {
+        //
+        // std::unordered_map<size_t, size_t>
+        //
+        std::vector<std::pair<std::size_t, std::size_t>> test_data_uu;
+
+        for (std::size_t i = 0; i < test_data_ss.size(); i++) {
+            test_data_uu.push_back(std::make_pair(i, i + 1));
+        }
+
+        std::unordered_map<std::size_t, std::size_t> std_map_uu;
+        jstd::Dictionary<std::size_t, std::size_t>   jstd_dict_uu;
+
+        printf(" hash_map<std::size_t, std::size_t>\n\n");
+
+        hashmap_benchmark_simple("hash_map<std::size_t, std::size_t>",
+                                 std_map_uu, jstd_dict_uu,
+                                 test_data_uu, test_result);
+
+        printf("\n");
+    }
+
+    {
+        std::unordered_map<std::string, std::string> std_map_ss;
+        jstd::Dictionary<std::string, std::string>   jstd_dict_ss;
+
+        printf(" hash_map<std::string, std::string>\n\n");
+
+        hashmap_benchmark_simple("hash_map<std::string, std::string>",
+                                 std_map_ss, jstd_dict_ss,
+                                 test_data_ss, test_result);
+
+        printf("\n");
+
+        //
+        // Note: Don't remove these braces '{' and '}',
+        // because the life cycle of jstd::string_view depends on std::string.
+        //
         {
             //
             // std::unordered_map<jstd::string_view, jstd::string_view>
@@ -675,56 +1160,19 @@ void hashmap_benchmark_all()
             std::unordered_map<jstd::string_view, jstd::string_view> std_map_svsv;
             jstd::Dictionary<jstd::string_view, jstd::string_view>   jstd_dict_svsv;
 
+            printf(" hash_map<jstd::string_view, jstd::string_view>\n\n");
+
             hashmap_benchmark_simple("hash_map<jstd::string_view, jstd::string_view>",
                                      std_map_svsv, jstd_dict_svsv,
                                      test_data_svsv, test_result);
 
-            printf("\n\n");
-        }
-
-        {
-            //
-            // std::unordered_map<int, int>
-            //
-            std::vector<std::pair<int, int>> test_data_ii;
-
-            for (std::size_t i = 0; i < test_data_ss.size(); i++) {
-                test_data_ii.push_back(std::make_pair(int(i), int(i)));
-            }
-
-            std::unordered_map<int, int> std_map_ii;
-            jstd::Dictionary<int, int>   jstd_dict_ii;
-
-            hashmap_benchmark_simple("hash_map<int, int>",
-                                     std_map_ii, jstd_dict_ii,
-                                     test_data_ii, test_result);
-
-            printf("\n\n");
-        }
-
-        {
-            //
-            // std::unordered_map<size_t, size_t>
-            //
-            std::vector<std::pair<std::size_t, std::size_t>> test_data_uu;
-
-            for (std::size_t i = 0; i < test_data_ss.size(); i++) {
-                test_data_uu.push_back(std::make_pair(i, i));
-            }
-
-            std::unordered_map<std::size_t, std::size_t> std_map_uu;
-            jstd::Dictionary<std::size_t, std::size_t>   jstd_dict_uu;
-
-            hashmap_benchmark_simple("hash_map<std::size_t, std::size_t>",
-                                     std_map_uu, jstd_dict_uu,
-                                     test_data_uu, test_result);
-
-            printf("\n\n");
+            printf("\n");
         }
     }
 
     sw.stop();
 
+    printf("\n");
     test_result.printResult(dict_filename, sw.getElapsedMillisec());
 }
 
@@ -777,7 +1225,7 @@ void RandomGenerator_test()
 
 int main(int argc, char * argv[])
 {
-    RandomGenerator_test();
+    jstd::MtRandomGen mtRandomGen(20200831);
 
     if (argc == 2) {
         std::string filename = argv[1];

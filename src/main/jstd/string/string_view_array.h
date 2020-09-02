@@ -82,11 +82,11 @@ private:
     vector_type array_;
 
     void destroy() {
-        for (size_type i = 0; i < array_.size(); i++) {
-            value_type value = array_[i];
+        for (size_type i = 0; i < this->array_.size(); i++) {
+            value_type value = this->array_[i];
             if (value != nullptr) {
                 delete value;
-                array_[i] = nullptr;
+                this->array_[i] = nullptr;
             }
         }
     }
@@ -148,16 +148,16 @@ public:
         return *(const_cast<const element_type *>(array_[pos]));
     }
 
-    element_type & at(size_type pos) {
+    value_type & at(size_type pos) {
         if (pos < size())
-            return *(array_[pos]);
+            return (array_[pos]);
         else
             throw std::out_of_range("string_view_array<F, S> outof of range.");
     }
 
-    const element_type & at(size_type pos) const {
+    const value_type & at(size_type pos) const {
         if (pos < size())
-            return *(const_cast<const element_type *>(array_[pos]));
+            return *(const_cast<const value_type *>(&array_[pos]));
         else
             throw std::out_of_range("string_view_array<F, S> outof of range.");
     }

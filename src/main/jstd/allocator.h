@@ -60,7 +60,7 @@ void _Deallocate(void * p, std::size_t size = 0) {
 static inline
 void * _AlignedAllocate(std::size_t size, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
     assert(size != 0);
-#ifdef _WIN32
+#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
     void * ptr = ::_aligned_malloc(size, alignment);
 #else
     void * ptr = ::memalign(alignment, size);
@@ -73,7 +73,7 @@ void * _AlignedAllocate(std::size_t size, std::size_t alignment = JSTD_DEFAULT_A
 static inline
 void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
     assert(size != 0);
-#ifdef _WIN32
+#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
     void * new_ptr = ::_aligned_realloc(ptr, size, alignment);
 #else
     // On Unix/Linux, it's have no posix_memalign_realloc() function.
@@ -88,7 +88,7 @@ void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment = 
 
 static inline
 void _AlignedDeallocate(void * p, std::size_t size = 0) {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
     ::_aligned_free(p);
 #else
     ::free(p);

@@ -184,6 +184,15 @@ public:
         return false;
     }
 
+    bool addBlankLine(size_type catId) {
+        BenchmarkCategory * category = getCategory(catId);
+        if (category != nullptr) {
+            category->addResult(catId, "_blank", 0.0, 0, 0.0, 0);
+            return true;
+        }
+        return false;
+    }
+
     std::string formatMsTime(double fMillisec) {
         char time_buf[256];
 
@@ -218,13 +227,13 @@ public:
       ------------------------------------------------------------------------------------------------------
     *******************************************************************************************************/
     void printResult(const std::string & filename, double totalElapsedTime = 0.0) {
-        printf(" Test                                    %23s   %23s      Ratio\n",
-               this->name1_.c_str(), this->name2_.c_str());
-        printf("--------------------------------------------------------------------------------------------------------\n");
-
         for (size_type catId = 0; catId < category_size(); catId++) {
             BenchmarkCategory * category = getCategory(catId);
             if (category != nullptr) {
+                printf(" Test                                    %23s   %23s      Ratio\n",
+                       this->name1_.c_str(), this->name2_.c_str());
+                printf("--------------------------------------------------------------------------------------------------------\n");
+                printf("\n");
                 if (category->name().size() <= 40)
                     printf(" %-40s    checksum    time          checksum    time\n", category->name().c_str());
                 else
@@ -239,15 +248,20 @@ public:
                         ratio = result.elaspedTime1 / result.elaspedTime2;
                     else
                         ratio = 0.0;
-                    printf(" %-38s | %11" PRIuPTR " %11s | %11" PRIuPTR " %11s |   %0.2f\n",
-                           result.name.c_str(),
-                           result.checksum1, formatMsTime(result.elaspedTime1).c_str(),
-                           result.checksum2, formatMsTime(result.elaspedTime2).c_str(),
-                           ratio);
+                    if (result.name != "_blank") {
+                        printf(" %-38s | %11" PRIuPTR " %11s | %11" PRIuPTR " %11s |   %0.2f\n",
+                               result.name.c_str(),
+                               result.checksum1, formatMsTime(result.elaspedTime1).c_str(),
+                               result.checksum2, formatMsTime(result.elaspedTime2).c_str(),
+                               ratio);
+                    }
+                    else {
+                        printf("\n");
+                    }
                 }
 
                 if (catId < (category_size() - 1))
-                    printf("\n");
+                    printf("\n\n");
             }
         }
 

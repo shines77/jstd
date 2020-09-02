@@ -1148,6 +1148,11 @@ protected:
         }
     }
 
+    JSTD_FORCEINLINE
+    void resize_impl(size_type new_entry_size) {
+        this->realloc_to(new_entry_size);
+    }
+
 #if USE_FAST_FIND_ENTRY
 
     JSTD_FORCEINLINE
@@ -2627,13 +2632,8 @@ protected:
     }
 
     void realloc_buckets_and_entries(size_type new_entry_capacity, size_type new_bucket_capacity) {
-        assert(run_time::is_pow2(new_entry_capacity));
-        assert(run_time::is_pow2(new_bucket_capacity));
-        assert(new_entry_capacity >= kMinimumCapacity);
-        assert(new_entry_capacity >= this->entry_size_);
-        assert(new_bucket_capacity >= kMinimumCapacity);
-        assert(new_bucket_capacity >= this->entry_size_);
-        assert(new_bucket_capacity >= (new_entry_capacity / kMaxLoadFactor));
+        assert_entry_capacity(new_entry_capacity);
+        assert_bucket_capacity(new_bucket_capacity);
 
         bool bucket_realloc_success = false;
         entry_type ** new_buckets = nullptr;
@@ -2651,17 +2651,24 @@ protected:
         if (likely(new_buckets != nullptr)) {
             entry_type * new_entries = entry_allocator_.allocate(new_entry_capacity);
             if (likely(entry_allocator_.is_ok(new_entries))) {
-                if (likely(new_bucket_capacity == (this->bucket_capacity_ * 2))) {
-                    realloc_all_entries_2x(new_buckets, new_bucket_capacity,
-                                           new_entries, new_entry_capacity);
-                }
-                else if (likely(this->bucket_capacity_ == (new_bucket_capacity * 2))) {
-                    realloc_all_entries_half(new_buckets, new_bucket_capacity,
-                                             new_entries, new_entry_capacity);
+                if (likely(this->entry_size_ != 0)) {
+                    if (likely(new_bucket_capacity == (this->bucket_capacity_ * 2))) {
+                        realloc_all_entries_2x(new_buckets, new_bucket_capacity,
+                                               new_entries, new_entry_capacity);
+                    }
+                    else if (likely(this->bucket_capacity_ == (new_bucket_capacity * 2))) {
+                        realloc_all_entries_half(new_buckets, new_bucket_capacity,
+                                                 new_entries, new_entry_capacity);
+                    }
+                    else {
+                        realloc_all_entries(new_buckets, new_bucket_capacity,
+                                            new_entries, new_entry_capacity);
+                    }
                 }
                 else {
-                    realloc_all_entries(new_buckets, new_bucket_capacity,
-                                        new_entries, new_entry_capacity);
+                    if (new_buckets != this->buckets()) {
+                        std::memset((void *)new_buckets, 0, new_bucket_capacity * sizeof(entry_type *));
+                    }
                 }
 
                 if (new_buckets != this->buckets()) {
@@ -2696,6 +2703,7 @@ protected:
     }
 
 #if 1
+    JSTD_FORCEINLINE
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
             size_type last_chunk_capacity = this->chunk_list_.lastChunk().capacity;
@@ -2705,7 +2713,7 @@ protected:
                 }
                 else {
                     assert(this->chunk_list_.size() == 1);
-                    rearrange_realloc_to_fit();
+                    realloc_to_fit();
                 }
             }
             else {
@@ -2714,6 +2722,7 @@ protected:
         }
     }
 #else
+    JSTD_FORCEINLINE
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
             size_type first_chunk_capacity = this->chunk_list_[0].capacity;
@@ -2740,7 +2749,7 @@ protected:
                     }
                 }
                 else if (this->chunk_list_.size() == 1) {
-                    rearrange_realloc_to_fit();
+                    realloc_to_fit();
                 }
             }
             else {
@@ -2750,8 +2759,9 @@ protected:
     }
 #endif
 
-    void rearrange_realloc_to(size_type target_entry_size) {
-        size_type new_entry_capacity = run_time::round_up_to_pow2(target_entry_size);
+    JSTD_FORCEINLINE
+    void realloc_to(size_type new_entry_size) {
+        size_type new_entry_capacity = run_time::round_up_to_pow2(new_entry_size);
         new_entry_capacity = (std::max)(new_entry_capacity, kMinimumCapacity);
         assert(this->entry_size_ <= new_entry_capacity);
 
@@ -2759,8 +2769,9 @@ protected:
         realloc_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
     }
 
-    void rearrange_realloc_to_fit() {
-        rearrange_realloc_to(this->entry_size_);
+    JSTD_FORCEINLINE
+    void realloc_to_fit() {
+        this->realloc_to(this->entry_size_);
     }
 
 public:
@@ -2773,6 +2784,8 @@ public:
     void clear() {
         this->destroy();
         this->init(kDefaultInitialCapacity);
+
+        this->update_version();
     }
 
     void rehash(size_type bucket_count) {
@@ -2781,8 +2794,18 @@ public:
         this->rehash_impl<false>(new_bucket_capacity);
     }
 
+#if 1
+    void reserve(size_type new_size) {
+        this->resize_impl(new_size);
+    }
+#else
     void reserve(size_type bucket_count) {
         this->rehash(bucket_count);
+    }
+#endif
+
+    void resize(size_type new_size) {
+        this->resize_impl(new_size);
     }
 
     void shrink_to_fit(size_type bucket_count = 0) {
@@ -2801,7 +2824,7 @@ public:
             rearrange_reorder();
         }
         else if (arrangeType == ArrangeType::Realloc) {
-            rearrange_realloc_to_fit();
+            realloc_to_fit();
         }
         else {
             assert(false);
@@ -2831,8 +2854,9 @@ public:
         return const_iterator(nullptr);   // Error: buckets data is invalid
     }
 
+    //
     // insert(key, value)
-
+    //
     insert_return_type insert(const key_type & key, const mapped_type & value) {
         return this->insert_unique<false, insert_return_type>(key, value);
     }
@@ -2865,8 +2889,9 @@ public:
         }
     }
 
+    //
     // insert_no_return(key, value)
-
+    //
     void insert_no_return(const key_type & key, const mapped_type & value) {
         this->insert_unique<false, void_warpper>(key, value);
     }
