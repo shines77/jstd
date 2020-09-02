@@ -285,6 +285,50 @@ void copy_and_shuffle_vector(string_view_array<string_view, string_view> & dest_
     }
 }
 
+template <typename T>
+void reverse_value(T & value)
+{
+    std::reverse(value.begin(), value.end());
+}
+
+template <>
+void reverse_value(std::int32_t & value)
+{
+    value = ~value;
+}
+
+template <>
+void reverse_value(std::uint32_t & value)
+{
+    value = ~value;
+}
+
+template <>
+void reverse_value(std::int64_t & value)
+{
+    value = ~value;
+}
+
+template <>
+void reverse_value(std::uint64_t & value)
+{
+    value = ~value;
+}
+
+template <typename Vector>
+void copy_vector_and_reverse_item(Vector & dest_list, const Vector & src_list) {
+    typedef typename Vector::value_type value_type;
+
+    // copy
+    dest_list.clear();
+    dest_list.reserve(src_list.size());
+    for (std::size_t n = 0; n < src_list.size(); n++) {
+        value_type value = src_list[n];
+        reverse_value(value.first);
+        dest_list.push_back(value);
+    }
+}
+
 template <typename Container, typename Vector>
 void test_hashmap_find_sequential(const Vector & test_data,
                                   double & elapsedTime, std::size_t & check_sum)
@@ -371,21 +415,20 @@ void test_hashmap_find_random(const Vector & test_data, const Vector & rand_data
 }
 
 template <typename Container, typename Vector>
-void test_hashmap_find_failed(const Vector & test_data, const Vector & rand_data,
+void test_hashmap_find_failed(const Vector & test_data, const Vector & reverse_data,
                               double & elapsedTime, std::size_t & check_sum)
 {
     typedef typename Container::const_iterator const_iterator;
 
     std::size_t data_length = test_data.size();
-    std::size_t half_len = data_length / 2;
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations * 2 / data_length) + 1;
+        repeat_times = (kIterations / data_length) + 1;
     else
         repeat_times = 0;
 
     Container container(kInitCapacity);
-    for (std::size_t i = 0; i < half_len; i++) {
+    for (std::size_t i = 0; i < data_length; i++) {
         container.emplace(test_data[i].first, test_data[i].second);
     }
 
@@ -394,8 +437,8 @@ void test_hashmap_find_failed(const Vector & test_data, const Vector & rand_data
 
     sw.start();
     for (std::size_t n = 0; n < repeat_times; n++) {
-        for (std::size_t i = half_len; i < data_length; i++) {
-            const_iterator iter = container.find(test_data[i].first);
+        for (std::size_t i = 0; i < data_length; i++) {
+            const_iterator iter = container.find(reverse_data[i].first);
             if (iter != container.end()) {
                 checksum++;
             }
@@ -744,14 +787,13 @@ void test_hashmap_erase_random(const Vector & test_data, const Vector & rand_dat
 }
 
 template <typename Container, typename Vector>
-void test_hashmap_erase_failed(const Vector & test_data,
+void test_hashmap_erase_failed(const Vector & test_data, const Vector & reverse_data,
                                double & elapsedTime, std::size_t & check_sum)
 {
     std::size_t data_length = test_data.size();
-    std::size_t half_len = data_length / 2;
     std::size_t repeat_times;
     if (data_length != 0)
-        repeat_times = (kIterations * 2 / data_length) + 1;
+        repeat_times = (kIterations / data_length) + 1;
     else
         repeat_times = 0;
 
@@ -761,14 +803,14 @@ void test_hashmap_erase_failed(const Vector & test_data,
         
     for (std::size_t n = 0; n < repeat_times; n++) {
         Container container(kInitCapacity);
-        for (std::size_t i = 0; i < half_len; i++) {
+        for (std::size_t i = 0; i < data_length; i++) {
             container.emplace(test_data[i].first, test_data[i].second);
         }
         checksum += container.size();
 
         sw.start();
-        for (std::size_t i = half_len; i < data_length; i++) {
-            container.erase(test_data[i].first);
+        for (std::size_t i = 0; i < data_length; i++) {
+            container.erase(reverse_data[i].first);
         }
         sw.stop();
 
@@ -918,7 +960,7 @@ void test_hashmap_rehash2(const Vector & test_data,
 template <typename Container1, typename Container2, typename Vector>
 void hashmap_benchmark_simple(const std::string & cat_name,
                               Container1 & container1, Container2 & container2,
-                              const Vector & test_data,
+                              const Vector & test_data, const Vector & reverse_data,
                               BenchmarkResult & result)
 {
     std::size_t cat_id = result.addCategory(cat_name);
@@ -948,8 +990,8 @@ void hashmap_benchmark_simple(const std::string & cat_name,
     //
     // test hashmap<K, V>/find/failed
     //
-    test_hashmap_find_failed<Container1, Vector>(test_data, rand_data, elapsedTime1, checksum1);
-    test_hashmap_find_failed<Container2, Vector>(test_data, rand_data, elapsedTime2, checksum2);
+    test_hashmap_find_failed<Container1, Vector>(test_data, reverse_data, elapsedTime1, checksum1);
+    test_hashmap_find_failed<Container2, Vector>(test_data, reverse_data, elapsedTime2, checksum2);
 
     result.addResult(cat_id, "hash_map<K, V>/find/failed", elapsedTime1, checksum1, elapsedTime2, checksum2);
 
@@ -1034,8 +1076,8 @@ void hashmap_benchmark_simple(const std::string & cat_name,
     //
     // test hashmap<K, V>/erase/failed
     //
-    test_hashmap_erase_failed<Container1, Vector>(test_data, elapsedTime1, checksum1);
-    test_hashmap_erase_failed<Container2, Vector>(test_data, elapsedTime2, checksum2);
+    test_hashmap_erase_failed<Container1, Vector>(test_data, reverse_data, elapsedTime1, checksum1);
+    test_hashmap_erase_failed<Container2, Vector>(test_data, reverse_data, elapsedTime2, checksum2);
 
     result.addResult(cat_id, "hash_map<K, V>/erase/failed", elapsedTime1, checksum1, elapsedTime2, checksum2);
 
@@ -1089,10 +1131,13 @@ void hashmap_benchmark_all()
         // std::unordered_map<int, int>
         //
         std::vector<std::pair<int, int>> test_data_ii;
+        std::vector<std::pair<int, int>> reverse_data_ii;
 
         for (std::size_t i = 0; i < test_data_ss.size(); i++) {
             test_data_ii.push_back(std::make_pair(int(i), int(i + 1)));
         }
+
+        copy_vector_and_reverse_item(reverse_data_ii, test_data_ii);
 
         std::unordered_map<int, int> std_map_ii;
         jstd::Dictionary<int, int>   jstd_dict_ii;
@@ -1101,7 +1146,7 @@ void hashmap_benchmark_all()
 
         hashmap_benchmark_simple("hash_map<int, int>",
                                  std_map_ii, jstd_dict_ii,
-                                 test_data_ii, test_result);
+                                 test_data_ii, reverse_data_ii, test_result);
 
         printf("\n");
     }
@@ -1111,10 +1156,13 @@ void hashmap_benchmark_all()
         // std::unordered_map<size_t, size_t>
         //
         std::vector<std::pair<std::size_t, std::size_t>> test_data_uu;
+        std::vector<std::pair<std::size_t, std::size_t>> reverse_data_uu;
 
         for (std::size_t i = 0; i < test_data_ss.size(); i++) {
             test_data_uu.push_back(std::make_pair(i, i + 1));
         }
+
+        copy_vector_and_reverse_item(reverse_data_uu, test_data_uu);
 
         std::unordered_map<std::size_t, std::size_t> std_map_uu;
         jstd::Dictionary<std::size_t, std::size_t>   jstd_dict_uu;
@@ -1123,7 +1171,7 @@ void hashmap_benchmark_all()
 
         hashmap_benchmark_simple("hash_map<std::size_t, std::size_t>",
                                  std_map_uu, jstd_dict_uu,
-                                 test_data_uu, test_result);
+                                 test_data_uu, reverse_data_uu, test_result);
 
         printf("\n");
     }
@@ -1132,11 +1180,14 @@ void hashmap_benchmark_all()
         std::unordered_map<std::string, std::string> std_map_ss;
         jstd::Dictionary<std::string, std::string>   jstd_dict_ss;
 
+        std::vector<std::pair<std::string, std::string>> reverse_data_ss;
+        copy_vector_and_reverse_item(reverse_data_ss, test_data_ss);
+
         printf(" hash_map<std::string, std::string>\n\n");
 
         hashmap_benchmark_simple("hash_map<std::string, std::string>",
                                  std_map_ss, jstd_dict_ss,
-                                 test_data_ss, test_result);
+                                 test_data_ss, reverse_data_ss, test_result);
 
         printf("\n");
 
@@ -1152,9 +1203,13 @@ void hashmap_benchmark_all()
             typedef typename string_view_array_t::element_type              element_type;
 
             string_view_array_t test_data_svsv;
+            string_view_array_t reverse_data_svsv;
 
             for (std::size_t i = 0; i < test_data_ss.size(); i++) {
                 test_data_svsv.push_back(new element_type(test_data_ss[i].first, test_data_ss[i].second));
+            }
+            for (std::size_t i = 0; i < reverse_data_ss.size(); i++) {
+                reverse_data_svsv.push_back(new element_type(reverse_data_ss[i].first, reverse_data_ss[i].second));
             }
 
             std::unordered_map<jstd::string_view, jstd::string_view> std_map_svsv;
@@ -1164,7 +1219,7 @@ void hashmap_benchmark_all()
 
             hashmap_benchmark_simple("hash_map<jstd::string_view, jstd::string_view>",
                                      std_map_svsv, jstd_dict_svsv,
-                                     test_data_svsv, test_result);
+                                     test_data_svsv, reverse_data_svsv, test_result);
 
             printf("\n");
         }
