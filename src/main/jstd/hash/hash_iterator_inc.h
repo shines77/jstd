@@ -5,7 +5,8 @@
 template <typename Owner, typename Node, bool ValueUsePointer = false>
 class iterator_t {
 public:
-    typedef iterator_t<Owner, Node>         this_iter_t;
+    typedef iterator_t<Owner, Node, ValueUsePointer>
+                                            this_iter_t;
     typedef Owner                           owner_type;
 
     typedef typename Node::node_pointer     node_pointer;
@@ -17,12 +18,12 @@ public:
 
     typedef forward_iterator_tag            iterator_category;
 
-    template <typename, typename>
+    template <typename, typename, bool>
     friend class const_iterator_t;
 
 protected:
-    node_pointer node_;
-    const owner_type * owner_;
+    node_pointer        node_;
+    const owner_type *  owner_;
 
 public:
     // construct with null pointer
@@ -37,6 +38,12 @@ public:
     iterator_t(const iterator_t & src)
         : node_(const_cast<node_pointer>(src.get_node())),
           owner_(const_cast<const owner_type *>(src.get_owner())) {}
+
+    iterator_t & operator = (const iterator_t & rhs) {
+        this->node_ = rhs.get_node();
+        this->owner_ = rhs.get_owner();
+        return *this;
+    }
 
     reference operator * () const {
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
@@ -97,7 +104,8 @@ public:
 template <typename Owner, typename Node, bool ValueUsePointer = false>
 class const_iterator_t {
 public:
-    typedef const_iterator_t<Owner, Node>   this_iter_t;
+    typedef const_iterator_t<Owner, Node, ValueUsePointer>
+                                            this_iter_t;
     typedef Owner                           owner_type;
 
     typedef typename Node::node_pointer     node_pointer;
@@ -112,13 +120,13 @@ public:
 
     typedef forward_iterator_tag            iterator_category;
 
-    friend class iterator_t<Owner, Node>;
+    friend class iterator_t<Owner, Node, ValueUsePointer>;
 
 protected:
-    typedef iterator_t<Owner, Node>         normal_iterator;
+    typedef iterator_t<Owner, Node, ValueUsePointer> normal_iterator;
 
-    node_pointer node_;
-    const owner_type * owner_;
+    node_pointer        node_;
+    const owner_type *  owner_;
 
 public:
     // construct with null pointer
@@ -137,6 +145,18 @@ public:
     const_iterator_t(const normal_iterator & src)
         : node_(const_cast<node_pointer>(src.get_node())),
           owner_(const_cast<const owner_type *>(src.get_owner())) {}
+
+    const_iterator_t & operator = (const const_iterator_t & rhs) {
+        this->node_ = rhs.get_node();
+        this->owner_ = rhs.get_owner();
+        return *this;
+    }
+
+    const_iterator_t & operator = (const normal_iterator & rhs) {
+        this->node_ = rhs.get_node();
+        this->owner_ = rhs.get_owner();
+        return *this;
+    }
 
     reference operator * () const {
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
@@ -189,7 +209,8 @@ public:
 template <typename Owner, typename Node, bool ValueUsePointer = false>
 class local_iterator_t {
 public:
-    typedef local_iterator_t<Owner, Node>   this_iter_t;
+    typedef local_iterator_t<Owner, Node, ValueUsePointer>
+                                            this_iter_t;
     typedef Owner                           owner_type;
 
     typedef typename Node::node_pointer     node_pointer;
@@ -201,12 +222,12 @@ public:
 
     typedef forward_iterator_tag            iterator_category;
 
-    template <typename, typename>
+    template <typename, typename, bool>
     friend class const_local_iterator_t;
 
 protected:
-    node_pointer node_;
-    const owner_type * owner_;
+    node_pointer        node_;
+    const owner_type *  owner_;
 
 public:
     // construct with null pointer
@@ -221,6 +242,12 @@ public:
     local_iterator_t(const local_iterator_t & src)
         : node_(const_cast<node_pointer>(src.get_node())),
           owner_(const_cast<const owner_type *>(src.get_owner())) {}
+
+    local_iterator_t & operator = (const local_iterator_t & rhs) {
+        this->node_ = rhs.get_node();
+        this->owner_ = rhs.get_owner();
+        return *this;
+    }
 
     reference operator * () const {
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
@@ -281,7 +308,8 @@ public:
 template <typename Owner, typename Node, bool ValueUsePointer = false>
 class const_local_iterator_t {
 public:
-    typedef const_local_iterator_t<Owner, Node> this_iter_t;
+    typedef const_local_iterator_t<Owner, Node, ValueUsePointer>
+                                                this_iter_t;
     typedef Owner                               owner_type;
 
     typedef typename Node::node_pointer         node_pointer;
@@ -296,13 +324,13 @@ public:
 
     typedef forward_iterator_tag                iterator_category;
 
-    friend class local_iterator_t<Owner, Node>;
+    friend class local_iterator_t<Owner, Node, ValueUsePointer>;
 
 protected:
-    typedef local_iterator_t<Owner, Node>       normal_iterator;
+    typedef local_iterator_t<Owner, Node, ValueUsePointer> normal_iterator;
 
-    node_pointer node_;
-    const owner_type * owner_;
+    node_pointer        node_;
+    const owner_type *  owner_;
 
 public:
     // construct with null pointer
@@ -318,6 +346,18 @@ public:
     const_local_iterator_t(const normal_iterator & src)
         : node_(const_cast<node_pointer>(src.get_node())),
           owner_(const_cast<owner_type *>(src.get_owner())) {}
+
+    const_local_iterator_t & operator = (const const_local_iterator_t & rhs) {
+        this->node_ = rhs.get_node();
+        this->owner_ = rhs.get_owner();
+        return *this;
+    }
+
+    const_local_iterator_t & operator = (const normal_iterator & rhs) {
+        this->node_ = rhs.get_node();
+        this->owner_ = rhs.get_owner();
+        return *this;
+    }
 
     reference operator * () const {
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)

@@ -22,7 +22,7 @@
 #include <cstdlib>      // For std::malloc(), std::free()
 #include <memory>       // For std::pointer_traits<T>
 #include <limits>       // For std::numeric_limits<T>::max()
-//#include <type_traits>  // std::alignment_of<T>
+#include <type_traits>  // std::alignment_of<T>
 
 #include <new>          // ::operator new, ::operator new[], ::operator delete
 
@@ -109,9 +109,12 @@ std::size_t aligned_to(std::size_t size, std::size_t alignment)
 
 template <typename T>
 struct align_of {
+#if 0
     static const std::size_t value = (alignof(T) >= alignof(std::max_align_t))
                                     ? alignof(T) :  alignof(std::max_align_t);
-    //static constexpr std::size_t value = std::alignment_of<T>::value;
+#else
+    static constexpr std::size_t value = std::alignment_of<T>::value;
+#endif
 };
 
 template <class Derive, class T, std::size_t Alignment = align_of<T>::value>
