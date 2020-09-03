@@ -45,12 +45,12 @@ namespace jstd {
 template <typename Key, typename Value>
 constexpr bool isValuePointer()
 {
-    return ((sizeof(Key) + sizeof(value)) > (sizeof(void *) * 2));
+    return ((sizeof(Key) + sizeof(Value)) > (sizeof(void *) * 2));
 }
 
 template < typename Key, typename Value,
            std::size_t HashFunc = HashFunc_Default,
-           bool ValueUsePointer = isValuePointer<Key, value>,
+           bool ValueUsePointer = isValuePointer<Key, Value>,
            std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
            typename Hasher = hash<Key, std::uint32_t, HashFunc>,
            typename KeyEqual = equal_to<Key>,

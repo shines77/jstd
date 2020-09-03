@@ -37,7 +37,7 @@ public:
 
     iterator_t(const iterator_t & src)
         : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(const_cast<const owner_type *>(src.get_owner())) {}
+          owner_(src.get_owner()) {}
 
     iterator_t & operator = (const iterator_t & rhs) {
         this->node_ = rhs.get_node();
@@ -140,11 +140,11 @@ public:
 
     const_iterator_t(const const_iterator_t & src)
         : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(const_cast<const owner_type *>(src.get_owner())) {}
+          owner_(src.get_owner()) {}
 
     const_iterator_t(const normal_iterator & src)
         : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(const_cast<const owner_type *>(src.get_owner())) {}
+          owner_(src.get_owner()) {}
 
     const_iterator_t & operator = (const const_iterator_t & rhs) {
         this->node_ = rhs.get_node();
@@ -197,11 +197,19 @@ public:
         return (this->node_ != rhs.node_);
     }
 
-    const owner_type * get_owner() {
+    owner_type * get_owner() {
+        return this->owner_;
+    }
+
+    const owner_type * get_owner() const {
         return const_cast<const owner_type *>(this->owner_);
     }
 
-    const node_pointer get_node() {
+    node_pointer get_node()  {
+        return this->node_;
+    }
+
+    const node_pointer get_node() const {
         return const_cast<const node_pointer>(this->node_);
     }
 };
@@ -241,7 +249,7 @@ public:
 
     local_iterator_t(const local_iterator_t & src)
         : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(const_cast<const owner_type *>(src.get_owner())) {}
+          owner_(src.get_owner()) {}
 
     local_iterator_t & operator = (const local_iterator_t & rhs) {
         this->node_ = rhs.get_node();
@@ -341,11 +349,11 @@ public:
 
     const_local_iterator_t(const const_local_iterator_t & src)
         : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(const_cast<owner_type *>(src.get_owner())) {}
+          owner_(src.get_owner()) {}
 
     const_local_iterator_t(const normal_iterator & src)
         : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(const_cast<owner_type *>(src.get_owner())) {}
+          owner_(src.get_owner()) {}
 
     const_local_iterator_t & operator = (const const_local_iterator_t & rhs) {
         this->node_ = rhs.get_node();
@@ -398,11 +406,19 @@ public:
         return (this->node_ != rhs.node_);
     }
 
-    const owner_type * get_owner() {
+    owner_type * get_owner() {
+        return this->owner_;
+    }
+
+    const owner_type * get_owner() const {
         return const_cast<const owner_type *>(this->owner_);
     }
 
-    const node_pointer get_node() {
+    node_pointer get_node()  {
+        return this->node_;
+    }
+
+    const node_pointer get_node() const {
         return const_cast<const node_pointer>(this->node_);
     }
 };
