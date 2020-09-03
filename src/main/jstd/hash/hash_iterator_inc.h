@@ -1,12 +1,13 @@
 
+#ifdef  JSTD_HASH_DICTIONARY_ONLY_H
+
 #ifndef JSTD_HASH_ITERATOR_INC
 #define JSTD_HASH_ITERATOR_INC
 
-template <typename Owner, typename Node, bool ValueUsePointer = false>
+template <typename Owner, typename Node>
 class iterator_t {
 public:
-    typedef iterator_t<Owner, Node, ValueUsePointer>
-                                            this_iter_t;
+    typedef iterator_t<Owner, Node>         this_iter_t;
     typedef Owner                           owner_type;
 
     typedef typename Node::node_pointer     node_pointer;
@@ -18,7 +19,7 @@ public:
 
     typedef forward_iterator_tag            iterator_category;
 
-    template <typename, typename, bool>
+    template <typename, typename>
     friend class const_iterator_t;
 
 protected:
@@ -101,11 +102,10 @@ public:
     }
 };
 
-template <typename Owner, typename Node, bool ValueUsePointer = false>
+template <typename Owner, typename Node>
 class const_iterator_t {
 public:
-    typedef const_iterator_t<Owner, Node, ValueUsePointer>
-                                            this_iter_t;
+    typedef const_iterator_t<Owner, Node>   this_iter_t;
     typedef Owner                           owner_type;
 
     typedef typename Node::node_pointer     node_pointer;
@@ -120,10 +120,10 @@ public:
 
     typedef forward_iterator_tag            iterator_category;
 
-    friend class iterator_t<Owner, Node, ValueUsePointer>;
+    friend class iterator_t<Owner, Node>;
 
 protected:
-    typedef iterator_t<Owner, Node, ValueUsePointer> normal_iterator;
+    typedef iterator_t<Owner, Node>         normal_iterator;
 
     node_pointer        node_;
     const owner_type *  owner_;
@@ -214,11 +214,10 @@ public:
     }
 };
 
-template <typename Owner, typename Node, bool ValueUsePointer = false>
+template <typename Owner, typename Node>
 class local_iterator_t {
 public:
-    typedef local_iterator_t<Owner, Node, ValueUsePointer>
-                                            this_iter_t;
+    typedef local_iterator_t<Owner, Node>   this_iter_t;
     typedef Owner                           owner_type;
 
     typedef typename Node::node_pointer     node_pointer;
@@ -230,7 +229,7 @@ public:
 
     typedef forward_iterator_tag            iterator_category;
 
-    template <typename, typename, bool>
+    template <typename, typename>
     friend class const_local_iterator_t;
 
 protected:
@@ -313,11 +312,10 @@ public:
     }
 };
 
-template <typename Owner, typename Node, bool ValueUsePointer = false>
+template <typename Owner, typename Node>
 class const_local_iterator_t {
 public:
-    typedef const_local_iterator_t<Owner, Node, ValueUsePointer>
-                                                this_iter_t;
+    typedef const_local_iterator_t<Owner, Node> this_iter_t;
     typedef Owner                               owner_type;
 
     typedef typename Node::node_pointer         node_pointer;
@@ -332,19 +330,22 @@ public:
 
     typedef forward_iterator_tag                iterator_category;
 
-    friend class local_iterator_t<Owner, Node, ValueUsePointer>;
+    friend class local_iterator_t<Owner, Node>;
 
 protected:
-    typedef local_iterator_t<Owner, Node, ValueUsePointer> normal_iterator;
+    typedef local_iterator_t<Owner, Node>       normal_iterator;
 
     node_pointer        node_;
     const owner_type *  owner_;
 
 public:
     // construct with null pointer
-    const_local_iterator_t(const owner_type * owner, node_pointer node = nullptr) : node_(node) {}
+    const_local_iterator_t(const owner_type * owner, node_pointer node = nullptr)
+        : node_(node), owner_(owner) {}
+
 #if !defined(_MSC_VER) || (_MSC_VER >= 1600)
-    const_local_iterator_t(const owner_type * owner, std::nullptr_t) : node_(nullptr) {}
+    const_local_iterator_t(const owner_type * owner, std::nullptr_t)
+        : node_(nullptr), owner_(owner) {}
 #endif
 
     const_local_iterator_t(const const_local_iterator_t & src)
@@ -424,3 +425,5 @@ public:
 };
 
 #endif // JSTD_HASH_ITERATOR_INC
+
+#endif // JSTD_HASH_DICTIONARY_ONLY_H
