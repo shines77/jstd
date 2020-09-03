@@ -336,11 +336,11 @@ public:
 
     #include "jstd/hash/hash_iterator_inc.h"
 
-    typedef iterator_t<this_type, entry_type>                iterator;
-    typedef const_iterator_t<this_type, entry_type>          const_iterator;
+    typedef iterator_t<this_type, entry_type, ValueUsePointer>              iterator;
+    typedef const_iterator_t<this_type, entry_type, ValueUsePointer>        const_iterator;
 
-    typedef local_iterator_t<this_type, entry_type>          local_iterator;
-    typedef const_local_iterator_t<this_type, entry_type>    const_local_iterator;
+    typedef local_iterator_t<this_type, entry_type, ValueUsePointer>        local_iterator;
+    typedef const_local_iterator_t<this_type, entry_type, ValueUsePointer>  const_local_iterator;
 
     typedef std::pair<iterator, bool>   insert_return_type;
 
