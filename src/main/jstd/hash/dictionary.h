@@ -37,12 +37,20 @@
 #define ENABLE_JSTD_DICTIONARY          1
 #define DICTIONARY_SUPPORT_VERSION      0
 
+#undef  USE_FAST_FIND_ENTRY
 #define USE_FAST_FIND_ENTRY             1
 
 namespace jstd {
 
+template <typename Key, typename Value>
+constexpr bool isValuePointer()
+{
+    return ((sizeof(Key) + sizeof(value)) > (sizeof(void *) * 2));
+}
+
 template < typename Key, typename Value,
            std::size_t HashFunc = HashFunc_Default,
+           bool ValueUsePointer = isValuePointer<Key, value>,
            std::size_t Alignment = align_of<std::pair<const Key, Value>>::value,
            typename Hasher = hash<Key, std::uint32_t, HashFunc>,
            typename KeyEqual = equal_to<Key>,
@@ -64,7 +72,7 @@ public:
                                             ssize_type;
     typedef std::size_t                     index_type;
     typedef typename Hasher::result_type    hash_code_t;
-    typedef BasicDictionary<Key, Value, HashFunc, Alignment, Hasher, KeyEqual, Allocator>
+    typedef BasicDictionary<Key, Value, HashFunc, ValueUsePointer, Alignment, Hasher, KeyEqual, Allocator>
                                             this_type;
 
     struct ArrangeType {
@@ -171,16 +179,18 @@ public:
         typedef hash_entry &                    node_reference;
         typedef const hash_entry *              const_node_pointer;
         typedef const hash_entry &              const_node_reference;
-        typedef typename this_type::value_type  value_type;
+        typedef typename this_type::value_type  element_type;
+
+        typedef typename std::conditional<ValueUsePointer, element_type *, element_type>::type
+                                                value_type;
 
         hash_entry * next;
         hash_code_t  hash_code;
         entry_attr_t attrib;
-        this_type *  owner;
         alignas(Alignment)
         value_type   value;
 
-        hash_entry() : next(nullptr), hash_code(0), attrib(0), owner(nullptr) {}
+        hash_entry() : next(nullptr), hash_code(0), attrib(0) {}
 
         ~hash_entry() {
 #ifndef NDEBUG
@@ -447,31 +457,31 @@ public:
     }
 
     iterator begin() const {
-        return iterator(find_first_valid_entry());
+        return iterator(this, find_first_valid_entry());
     }
     iterator end() const {
-        return iterator(nullptr);
+        return iterator(this, nullptr);
     }
 
     const_iterator cbegin() const {
-        return const_iterator(iterator(find_first_valid_entry()));
+        return const_iterator(iterator(this, find_first_valid_entry()));
     }
     const_iterator cend() const {
-        return const_iterator(nullptr);
+        return const_iterator(this, nullptr);
     }
 
     local_iterator l_begin() const {
-        return local_iterator(find_first_valid_entry());
+        return local_iterator(this, find_first_valid_entry());
     }
     local_iterator l_end() const {
-        return local_iterator(nullptr);
+        return local_iterator(this, nullptr);
     }
 
     const_local_iterator l_cbegin() const {
-        return const_local_iterator(local_iterator(find_first_valid_entry()));
+        return const_local_iterator(this, local_iterator(find_first_valid_entry()));
     }
     const_local_iterator l_cend() const {
-        return const_local_iterator(nullptr);
+        return const_local_iterator(this, nullptr);
     }
 
     bool valid() const { return (this->buckets() != nullptr); }
@@ -741,7 +751,7 @@ protected:
         return first;
     }
 
-    entry_type * next_link_entry(entry_type * node) {
+    entry_type * next_link_entry(entry_type * node) const {
         if (likely(node->next != nullptr)) {
             return node->next;
         }
@@ -1581,7 +1591,6 @@ protected:
 
         new_entry->next = this->buckets_[index];
         new_entry->hash_code = hash_code;
-        new_entry->owner = this;
         this->buckets_[index] = new_entry;
     }
 
@@ -1638,7 +1647,7 @@ protected:
 
         this->update_version();
 
-        return ReturnType(iterator(entry), inserted);
+        return ReturnType(iterator(this, entry), inserted);
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
@@ -1664,7 +1673,7 @@ protected:
 
         this->update_version();
 
-        return ReturnType(iterator(entry), inserted);
+        return ReturnType(iterator(this, entry), inserted);
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
@@ -1693,7 +1702,7 @@ protected:
 
         this->update_version();
 
-        return ReturnType(iterator(entry), inserted);
+        return ReturnType(iterator(this, entry), inserted);
     }
 
     template <typename ...Args>
@@ -1740,7 +1749,7 @@ protected:
 
         this->update_version();
 
-        return ReturnType(iterator(entry), inserted);
+        return ReturnType(iterator(this, entry), inserted);
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
@@ -1770,7 +1779,7 @@ protected:
         this->n_allocator_.destroy(value_tmp);
         this->update_version();
 
-        return ReturnType(iterator(entry), inserted);
+        return ReturnType(iterator(this, entry), inserted);
     }
 
     JSTD_FORCEINLINE
@@ -2304,7 +2313,6 @@ protected:
         new_entry->next      = new_entry + 1;
         new_entry->hash_code = old_entry->hash_code;
         new_entry->attrib.setValue(old_entry->attrib.getEntryType(), 0);
-        new_entry->owner     = old_entry->owner;
         old_entry->attrib.setFreeEntry();
 
         entry_value_move_assignment(old_entry, new_entry);
@@ -2839,19 +2847,19 @@ public:
     iterator find(const key_type & key) {
         if (likely(this->buckets() != nullptr)) {
             entry_type * entry = this->find_entry(key);
-            return iterator(entry);
+            return iterator(this, entry);
         }
 
-        return iterator(nullptr);   // Error: buckets data is invalid
+        return iterator(this, nullptr);   // Error: buckets data is invalid
     }
 
     const_iterator find(const key_type & key) const {
         if (likely(this->buckets() != nullptr)) {
             entry_type * entry = this->find_entry(key);
-            return const_iterator(entry);
+            return const_iterator(this, entry);
         }
 
-        return const_iterator(nullptr);   // Error: buckets data is invalid
+        return const_iterator(this, nullptr);   // Error: buckets data is invalid
     }
 
     //
@@ -2984,20 +2992,20 @@ public:
 }; // BasicDictionary<K, V>
 
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, Alignment>;
+using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment>;
 
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, Alignment>;
+using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, false, Alignment>;
 
 #if JSTD_HAVE_SSE42_CRC32C
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment>;
+using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C, false, Alignment>;
 
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment>;
+using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, false, Alignment>;
 #else
 template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, Alignment>;
+using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment>;
 #endif // JSTD_HAVE_SSE42_CRC32C
 
 } // namespace jstd
