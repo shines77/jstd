@@ -77,7 +77,7 @@
 
 //#include <jstd/all.h>
 
-#include "Benchmark.h"
+#include "BenchmarkResult.h"
 
 using namespace jstd;
 using namespace jtest;

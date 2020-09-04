@@ -334,9 +334,9 @@ public:
         lhs.swap(rhs);
     }
 
-    #define JSTD_HASH_DICTIONARY_ONLY_H
+    #define JSTD_HASH_DICTIONARY_HEADER_ONLY_H
     #include "jstd/hash/hash_iterator_inc.h"
-    #undef  JSTD_HASH_DICTIONARY_ONLY_H
+    #undef  JSTD_HASH_DICTIONARY_HEADER_ONLY_H
 
     typedef iterator_t<this_type, entry_type>               iterator;
     typedef const_iterator_t<this_type, entry_type>         const_iterator;

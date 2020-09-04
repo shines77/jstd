@@ -175,10 +175,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\src\test\benchmark\main.cpp" />
+    <ClCompile Include="..\..\..\..\src\test\benchmark\benchmark.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\src\test\benchmark\Benchmark.h" />
+    <ClInclude Include="..\..\..\..\src\test\benchmark\BenchmarkResult.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

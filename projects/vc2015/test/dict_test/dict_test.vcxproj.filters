@@ -7,7 +7,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\src\test\dict_test\main.cpp">
+    <ClCompile Include="..\..\..\..\src\test\dict_test\dict_test.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
