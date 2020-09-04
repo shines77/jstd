@@ -25,6 +25,7 @@
 #include "jstd/basic/inttypes.h"
 
 #include <stdio.h>
+#include <stdlib.h>     // For ::atoll()
 #include <string.h>
 
 #include <iostream>
@@ -32,7 +33,6 @@
 #include <string>
 
 namespace jtest {
-namespace CurrentProcess {
 
 #if defined(_MSC_VER) || defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
 
@@ -41,6 +41,7 @@ namespace CurrentProcess {
 // See: https://blog.csdn.net/springontime/article/details/80625850
 //
 
+static inline
 int get_mem_info(std::string & mem_size)
 {
     HANDLE handle = ::GetCurrentProcess();
@@ -62,12 +63,33 @@ int get_mem_info(std::string & mem_size)
     return 0;
 }
 
+static inline
+std::size_t GetCurrentMemoryUsage()
+{
+    HANDLE handle = ::GetCurrentProcess();
+
+    PROCESS_MEMORY_COUNTERS_EX pmc = { 0 };
+    if (!::GetProcessMemoryInfo(handle, (PROCESS_MEMORY_COUNTERS *)&pmc, sizeof(pmc))) {
+        DWORD errCode = ::GetLastError();
+        printf("GetProcessMemoryInfo() failed, lastErrorCode: %d\n\n", errCode);
+        return 0;
+    }
+
+    //
+    // Physical memory currently occupied
+    // WorkingSetSize: %d (KB)
+    //
+    std::size_t memory_usage = static_cast<std::size_t>(pmc.WorkingSetSize);
+    return memory_usage;
+}
+
 #else
 
 //
 // See: https://blog.csdn.net/weiyuefei/article/details/52281312
 //
 
+static inline
 int get_mem_info(std::string & str_mem_size)
 {
     pid_t pid = getpid();
@@ -98,9 +120,45 @@ int get_mem_info(std::string & str_mem_size)
     return 0;
 }
 
+static inline
+std::size_t GetCurrentMemoryUsage()
+{
+    pid_t pid = getpid();
+
+    char filename[128];
+    ::snprintf(filename, sizeof(filename), "/proc/%d/status", pid);
+
+    std::ifstream ifs;
+    ifs.open(filename, std::ios::in);
+    if (!ifs.is_open()) {
+        std::cout << "open " << filename << " error!" << std::endl << std::endl;
+        return 0;
+    }
+
+    std::size_t memory_usage = 0;
+    char buf[512];
+    char mem_size[64];
+    char mem_unit[64];
+
+    while (ifs.getline(buf, sizeof(buf) - 1)) {
+        if (::strncmp(buf, "VmRSS:", 6) == 0) {
+            ::sscanf(buf + 6, "%s%s", mem_size, mem_unit);
+            std::size_t memory_usage = static_cast<std::size_t>(::atoll(mem_size));
+            std::string memory_uint = mem_unit;
+            if (memory_uint == "KB" || memory_uint == "kb")
+                memory_usage *= 1024;
+            if (memory_uint == "MB" || memory_uint == "mb")
+                memory_usage *= (1024 * 1024);
+            break;
+        }
+    }
+
+    ifs.close();
+    return memory_usage;
+}
+
 #endif // _MSC_VER
 
-} // namespace Process
 } // namespace jtest
 
 #endif // JSTD_TEST_PROCESS_MEMINFO_H

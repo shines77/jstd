@@ -87,6 +87,9 @@ static const bool FLAGS_test_dense_hash_map = true;
 static const bool FLAGS_test_hash_map = true;
 static const bool FLAGS_test_map = true;
 
+static const bool FLAGS_test_std_unordered_map = true;
+static const bool FLAGS_test_jstd_dictionary = true;
+
 static const bool FLAGS_test_4_bytes = true;
 static const bool FLAGS_test_8_bytes = true;
 static const bool FLAGS_test_16_bytes = true;
@@ -159,7 +162,7 @@ public:
         //}
         hash_val += static_cast<std::uint32_t>((this->key_ & 0xFFUL) * kHashLen);
         g_num_hashes++;
-        return SPARSEHASH_HASH<int>()(hash_val);
+        return hash_val;
     }
 
     bool operator == (const this_type & that) const {
@@ -183,6 +186,7 @@ public:
 private:
     std::uint32_t key_;   // the key used for hashing
 
+public:
     HashObject() : key_(0) {}
     HashObject(std::uint32_t key) : key_(key) {}
     HashObject(const this_type & that) {
@@ -220,6 +224,7 @@ public:
 private:
     std::size_t key_;   // the key used for hashing
 
+public:
     HashObject() : key_(0) {}
     HashObject(std::size_t key) : key_(key) {}
     HashObject(const this_type & that) {
@@ -247,41 +252,71 @@ private:
     }
 };
 
-template <typename Key>
+template <typename HashObj, typename ResultType = std::uint32_t>
 class HashFn {
 public:
+    typedef HashObj                     hash_object_t;
+    typedef typename HashObj::key_type  key_type;
+    typedef ResultType                  result_type;
+
     // These two public members are required by msvc.  4 and 8 are defaults.
     static const std::size_t bucket_size = 4;
     static const std::size_t min_buckets = 8;
 
+    result_type operator () (const hash_object_t & obj) const {
+        return static_cast<result_type>(obj.Hash());
+    }
+
+    // Do the identity hash for pointers.
+    result_type operator () (const hash_object_t * obj) const {
+        return reinterpret_cast<result_type>(obj);
+    }
+
+    // Less operator for MSVC's hash containers.
+    bool operator () (const hash_object_t & a,
+                      const hash_object_t & b) const {
+        return (a < b);
+    }
+
+    bool operator () (const hash_object_t * a,
+                      const hash_object_t * b) const {
+        return (a < b);
+    }
+
     template <std::size_t Size, std::size_t HashSize>
-    std::size_t operator()(const HashObject<Key, Size, HashSize> & obj) const {
-        return obj.Hash();
+    result_type operator () (const HashObject<key_type, Size, HashSize> & obj) const {
+        return static_cast<result_type>(obj.Hash());
     }
 
     // Do the identity hash for pointers.
     template <std::size_t Size, std::size_t HashSize>
-    std::size_t operator () (const HashObject<Key, Size, HashSize> * obj) const {
-        return reinterpret_cast<std::uintptr_t>(obj);
+    result_type operator () (const HashObject<key_type, Size, HashSize> * obj) const {
+        return reinterpret_cast<result_type>(obj);
     }
 
     // Less operator for MSVC's hash containers.
     template <std::size_t Size, std::size_t HashSize>
-    bool operator () (const HashObject<Key, Size, HashSize> & a,
-                    const HashObject<Key, Size, HashSize> & b) const {
+    bool operator () (const HashObject<key_type, Size, HashSize> & a,
+                      const HashObject<key_type, Size, HashSize> & b) const {
         return (a < b);
     }
 
     template <std::size_t Size, std::size_t HashSize>
-    bool operator () (const HashObject<Key, Size, HashSize> * a,
-                    const HashObject<Key, Size, HashSize> * b) const {
+    bool operator () (const HashObject<key_type, Size, HashSize> * a,
+                      const HashObject<key_type, Size, HashSize> * b) const {
         return (a < b);
     }
 };
 
-template <typename Key, typename Value, typename Hash>
-class StdUnorderedMap : public std::unordered_map<Key, Value, Hash> {
+template <typename Key, typename Value, typename Hasher>
+class StdUnorderedMap : public std::unordered_map<Key, Value, Hasher> {
 public:
+    typedef std::unordered_map<Key, Value, Hasher> this_type;
+
+    StdUnorderedMap() : this_type() {}
+    StdUnorderedMap(std::size_t initCapacity) : this_type(initCapacity) {
+    }
+
     // resize() is called rehash() in tr1
     void resize(std::size_t newSize) {
         this->rehash(newSize);
@@ -326,27 +361,475 @@ void print_test_time(std::size_t checksum, double elapsedTime)
     printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, elapsedTime);
 }
 
+void reset_counter()
+{
+    g_num_copies = 0;
+    g_num_hashes = 0;
+}
+
+template <typename Vector>
+void shuffle_vector(Vector & vector) {
+    // shuffle
+    for (std::size_t n = vector.size() - 1; n > 0; n--) {
+        std::size_t rnd_idx = jstd::MtRandomGen::nextUInt32(static_cast<std::uint32_t>(n));
+        std::swap(vector[n], vector[rnd_idx]);
+    }
+}
+
+static void report_result(char const * title, double ut, std::size_t iters,
+                          size_t start_memory, size_t end_memory) {
+    // Construct heap growth report text if applicable
+    char heap[128] = "";
+    if (end_memory > start_memory) {
+        snprintf(heap, sizeof(heap), "%7.1f MB",
+                 (end_memory - start_memory) / 1048576.0);
+    }
+
+    printf("%-24s %9.2f ns  (%8" PRIuPTR " hashes, %8" PRIuPTR " copies) %s\n",
+           title, (ut * 1000000000.0 / iters),
+           g_num_hashes, g_num_copies,
+           heap);
+    ::fflush(stdout);
+}
+
+template <class MapType, class Vector>
+static void time_map_find(char const * title, std::size_t iters,
+                          const Vector & indices) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+    std::size_t r;
+    mapped_type i;
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+
+    for (i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+
+    r = 1;
+    reset_counter();
+    sw.start();
+    for (i = 0; i < max_iters; i++) {
+        r ^= static_cast<std::size_t>(hashmap.find(indices[i]) != hashmap.end());
+    }
+    sw.stop();
+    double ut = sw.getElapsedSecond();
+
+    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
+    report_result(title, ut, iters, 0, 0);
+}
+
+template <class MapType, class Vector>
+static void time_map_find_failed_impl(char const * title, std::size_t iters,
+                                      Vector & indices) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+    std::size_t r;
+    mapped_type i;
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+
+    for (i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+
+    for (mapped_type i = 0; i < max_iters; i++) {
+        indices[i] = i + 1 + max_iters;
+    }
+
+    r = 1;
+    reset_counter();
+    sw.start();
+    for (i = 0; i < max_iters; i++) {
+        r ^= static_cast<std::size_t>(hashmap.find(indices[i]) != hashmap.end());
+    }
+    sw.stop();
+    double ut = sw.getElapsedSecond();
+
+    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
+    report_result(title, ut, iters, 0, 0);
+}
+
+template <class MapType, class Vector>
+static void time_map_find_empty_impl(char const * title, std::size_t iters,
+                                     const Vector & indices) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+    std::size_t r;
+    mapped_type i;
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+
+    r = 1;
+    reset_counter();
+    sw.start();
+    for (i = 0; i < max_iters; i++) {
+        r ^= static_cast<std::size_t>(hashmap.find(indices[i]) != hashmap.end());
+    }
+    sw.stop();
+    double ut = sw.getElapsedSecond();
+
+    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
+    report_result(title, ut, iters, 0, 0);
+}
+
+template <class MapType>
+static void time_map_find_sequential(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    std::vector<mapped_type> v(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        v[i] = i + 1;
+    }
+
+    time_map_find<MapType>("map_find_sequential", iters, v);
+}
+
+template <class MapType>
+static void time_map_find_random(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    std::vector<mapped_type> v(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        v[i] = i + 1;
+    }
+
+    shuffle_vector(v);
+
+    time_map_find<MapType>("map_find_random", iters, v);
+}
+
+template <class MapType>
+static void time_map_find_failed(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    std::vector<mapped_type> v(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        v[i] = i + 1;
+    }
+
+    time_map_find_failed_impl<MapType>("map_find_failed", iters, v);
+}
+
+template <class MapType>
+static void time_map_find_empty(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    std::vector<mapped_type> v(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        v[i] = i + 1;
+    }
+
+    time_map_find_empty_impl<MapType>("map_find_empty", iters, v);
+}
+
+template <class MapType>
+static void time_map_insert(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.insert(std::make_pair(i, i + 1));
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_insert", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_insert_predicted(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    hashmap.resize(iters);
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.insert(std::make_pair(i, i + 1));
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_insert_predicted", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_insert_replace(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.insert(std::make_pair(i, i + 1));
+    }
+
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.insert(std::make_pair(i, i + 2));
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_insert_replace", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_emplace(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_emplace", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_emplace_predicted(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    hashmap.resize(iters);
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_emplace_predicted", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_emplace_replace(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 2);
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_emplace_replace", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_erase(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.erase(i);
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_erase", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_erase_failed(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = max_iters; i < max_iters * 2; i++) {
+        hashmap.erase(i);
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_erase_failed", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_toggle(std::size_t iters) {
+    typedef typename MapType::mapped_type mapped_type;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    reset_counter();
+    sw.start();
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+        hashmap.erase(i);
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    report_result("map_toggle", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void time_map_iterate(std::size_t iters) {
+    typedef typename MapType::mapped_type       mapped_type;
+    typedef typename MapType::const_iterator    const_iterator;
+
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+    mapped_type r;
+
+    mapped_type max_iters = static_cast<mapped_type>(iters);
+    for (mapped_type i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
+    }
+
+    const std::size_t start = GetCurrentMemoryUsage();
+
+    r = 1;
+    reset_counter();
+    sw.start();
+    for (const_iterator it = hashmap.cbegin(), it_end = hashmap.cend(); it != it_end; ++it) {
+        r ^= it->second;
+    }
+    sw.stop();
+
+    double ut = sw.getElapsedSecond();
+    const std::size_t finish = GetCurrentMemoryUsage();
+    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
+    report_result("map_iterate", ut, iters, start, finish);
+}
+
+template <class MapType>
+static void stress_hash_function(std::size_t desired_insertions,
+                                 std::size_t map_size,
+                                 std::size_t stride) {
+}
+
+template <class MapType>
+static void stress_hash_function(std::size_t num_inserts) {
+    static const std::size_t kMapSizes [] = { 256, 1024 };
+    std::size_t len = sizeof(kMapSizes) / sizeof(kMapSizes[0]);
+    for (std::size_t i = 0; i < len; i++) {
+        const std::size_t map_size = kMapSizes[i];
+        for (std::size_t stride = 1; stride <= map_size; stride *= map_size) {
+            stress_hash_function<MapType>(num_inserts, map_size, stride);
+        }
+    }
+}
+
 template <class MapType, class StressMapType>
 static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t iters,
                             bool is_stress_hash_function) {
     printf("\n%s (%" PRIuPTR " byte objects, %" PRIuPTR " iterations):\n", name, obj_size, iters);
-    if (1) time_map_grow<MapType>(iters);
-    if (1) time_map_grow_predicted<MapType>(iters);
-    if (1) time_map_replace<MapType>(iters);
-    if (1) time_map_fetch_random<MapType>(iters);
-    if (1) time_map_fetch_sequential<MapType>(iters);
-    if (1) time_map_fetch_empty<MapType>(iters);
-    if (1) time_map_remove<MapType>(iters);
+
+    if (1) time_map_insert<MapType>(iters);
+    if (1) time_map_insert_predicted<MapType>(iters);
+    if (1) time_map_insert_replace<MapType>(iters);
+
+    if (1) time_map_emplace<MapType>(iters);
+    if (1) time_map_emplace_predicted<MapType>(iters);
+    if (1) time_map_emplace_replace<MapType>(iters);
+
+    if (1) time_map_find_sequential<MapType>(iters);
+    if (1) time_map_find_random<MapType>(iters);
+    if (1) time_map_find_failed<MapType>(iters);
+    if (1) time_map_find_empty<MapType>(iters);
+
+    if (1) time_map_erase<MapType>(iters);
+    if (1) time_map_erase_failed<MapType>(iters);
+
     if (1) time_map_toggle<MapType>(iters);
     if (1) time_map_iterate<MapType>(iters);
+
+    printf("\n");
 
     // This last test is useful only if the map type uses hashing.
     // And it's slow, so use fewer iterations.
     if (is_stress_hash_function) {
         // Blank line in the output makes clear that what follows isn't part of the
         // table of results that we just printed.
-        puts("");
         stress_hash_function<StressMapType>(iters / 4);
+        //printf("\n");
     }
 }
 
@@ -356,10 +839,18 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
 
     const bool stress_hash_function = (obj_size <= 8);
 
-    if (FLAGS_test_hash_map) {
-        measure_hashmap<StdUnorderedMap<key_type, Value, HashFn>,
-                        StdUnorderedMap<key_type *, Value, HashFn>>(
+    if (FLAGS_test_std_unordered_map) {
+        measure_hashmap<StdUnorderedMap<key_type,   Value, HashFn<HashObj>>,
+                        StdUnorderedMap<key_type *, Value, HashFn<HashObj>>
+                        >(
             "std::unordered_map<K, V>", obj_size, iters, stress_hash_function);
+    }
+
+    if (FLAGS_test_jstd_dictionary) {
+        measure_hashmap<jstd::Dictionary<key_type,   Value, HashFn<HashObj>>,
+                        jstd::Dictionary<key_type *, Value, HashFn<HashObj>>
+                        >(
+            "jstd::Dectionary<K, V>", obj_size, iters, stress_hash_function);
     }
 }
 
@@ -387,48 +878,21 @@ void benchmark_all_hashmaps(std::size_t iters)
     }
 }
 
-bool read_dict_words(const std::string & filename)
-{
-    bool is_ok = false;
-    try {
-        std::ifstream dict(filename.c_str());
-
-        if (dict.is_open()) {
-            std::string word;
-            while (!dict.eof()) {
-                char buf[256];
-                dict.getline(buf, sizeof(buf));
-                word = buf;
-                dict_words.push_back(word);
-            }
-
-            is_ok = true;
-            dict.close();
-        }
-    }
-    catch (const std::exception & ex) {
-        std::cout << "read_dict_file() Exception: " << ex.what() << std::endl << std::endl;
-        is_ok = false;
-    }
-    return is_ok;
-}
-
 int main(int argc, char * argv[])
 {
     jstd::MtRandomGen mtRandomGen(20200831);
 
     std::size_t iters = kDefaultIters;
-    if (argc == 2) {
-        std::string filename = argv[1];
-        bool read_ok = read_dict_words(filename);
-        dict_words_is_ready = read_ok;
-        dict_filename = filename;
+    if (argc > 1) {
+        // first arg is # of iterations
+        iters = atoi(argv[1]);
     }
 
     jtest::CPU::warmup(1000);
 
-    benchmark_all_hashmaps();
+    benchmark_all_hashmaps(iters);
 
+    printf("\n");
     jstd::Console::ReadKey();
     return 0;
 }

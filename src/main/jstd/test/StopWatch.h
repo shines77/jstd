@@ -163,6 +163,10 @@ public:
         return elapsed_time;
     }
 
+    time_float_t peekElapsedNanosec() const {
+        return (this->peekElapsedTime() * time_coffe::kNanosecCoff);
+    }
+
     time_float_t peekElapsedMicrosec() const {
         return (this->peekElapsedTime() * time_coffe::kMicrosecCoff);
     }
@@ -183,6 +187,10 @@ public:
         __COMPILER_BARRIER();
         time_float_t elapsed_time = impl_type::duration_time(stop_time_, start_time_);
         return elapsed_time;
+    }
+
+    time_float_t getElapsedNanosec() {
+        return (this->getElapsedSecond() * time_coffe::kNanosecCoff);
     }
 
     time_float_t getElapsedMicrosec() {

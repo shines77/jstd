@@ -2993,21 +2993,26 @@ public:
     }
 }; // BasicDictionary<K, V>
 
-template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment>;
+template <typename Key, typename Value,
+          typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31>,
+          std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment, Hasher>;
 
-template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, false, Alignment>;
+template <typename Key, typename Value,
+          typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31Std>,
+          std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, false, Alignment, Hasher>;
 
 #if JSTD_HAVE_SSE42_CRC32C
-template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary_crc32c = BasicDictionary<Key, Value, HashFunc_CRC32C, false, Alignment>;
-
-template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, false, Alignment>;
+template <typename Key, typename Value,
+          typename Hasher = hash<Key, std::uint32_t, HashFunc_CRC32C>,
+          std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, false, Alignment, Hasher>;
 #else
-template <typename Key, typename Value, std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment>;
+template <typename Key, typename Value,
+          typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31>,
+          std::size_t Alignment = align_of<std::pair<const Key, Value>>::value>
+using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment, Hasher>;
 #endif // JSTD_HAVE_SSE42_CRC32C
 
 } // namespace jstd
