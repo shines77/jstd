@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 /* SIMD support features */
 #define JSTD_HAVE_MMX           1
@@ -128,9 +129,9 @@ public:
     typedef Key                             key_type;
     typedef HashObject<Key, Size, HashSize> this_type;
 
-    static const std::size_t kMinSize = (std::max)(sizeof(Key), sizeof(int));
-    static const std::size_t kSize = (std::max)(Size, kMinSize);
-    static const std::size_t kHashSize = (std::min)((std::max)(HashSize, kMinSize), kSize);
+    static const std::size_t kMinSize = (jstd::max)(sizeof(Key), sizeof(int));
+    static const std::size_t kSize = (jstd::max)(Size, kMinSize);
+    static const std::size_t kHashSize = (jstd::min)((jstd::max)(HashSize, kMinSize), kSize);
     static const std::size_t kBufLen = (kSize > sizeof(Key)) ? (kSize - sizeof(Key)) : 0;
     static const std::size_t kHashLen = (kHashSize > sizeof(Key)) ? (kHashSize - sizeof(Key)) : 0;
 

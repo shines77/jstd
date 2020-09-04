@@ -58,6 +58,18 @@ struct integral_traits {
     static const unsigned_type max_num = static_cast<unsigned_type>(-1);
 };
 
+template <typename T>
+constexpr
+const T & max(const T & a, const T & b) {
+  return ((a > b) ? a : b);
+}
+
+template <typename T>
+constexpr
+const T & min(const T & a, const T & b) {
+  return ((a < b) ? a : b);
+}
+
 //
 // is_relocatable<T>
 //
