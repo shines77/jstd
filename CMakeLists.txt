@@ -249,7 +249,7 @@ set(SOURCE_FILES
     src/main/jstd/system/sleep.c
     src/main/jstd/system/crtdbg_env.c
     src/main/jstd/basic/assert-c.c
-    src/test/benchmark/time_hash_map.cpp
+    src/test/time_hash_map/time_hash_map.cpp
     )
 
 add_executable(time_hash_map ${SOURCE_FILES})
