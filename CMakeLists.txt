@@ -209,7 +209,7 @@ set(SOURCE_FILES
     src/main/jstd/system/sleep.c
     src/main/jstd/system/crtdbg_env.c
     src/main/jstd/basic/assert-c.c
-    src/test/dict_test/main.cpp
+    src/test/dict_test/dict_test.cpp
     )
 
 add_executable(dict-test ${SOURCE_FILES})
@@ -229,8 +229,28 @@ set(SOURCE_FILES
     src/main/jstd/system/sleep.c
     src/main/jstd/system/crtdbg_env.c
     src/main/jstd/basic/assert-c.c
-    src/test/benchmark/main.cpp
+    src/test/benchmark/benchmark.cpp
     )
 
 add_executable(benchmark ${SOURCE_FILES})
 target_link_libraries(benchmark ${EXTRA_LIBS})
+
+project(time_hash_map)
+
+include_directories(include)
+include_directories(src)
+include_directories(src/main)
+include_directories(src/test)
+include_directories(src/unittest)
+include_directories(src/test/time_hash_map)
+
+set(SOURCE_FILES
+    src/main/jstd/system/getchar.c
+    src/main/jstd/system/sleep.c
+    src/main/jstd/system/crtdbg_env.c
+    src/main/jstd/basic/assert-c.c
+    src/test/benchmark/time_hash_map.cpp
+    )
+
+add_executable(time_hash_map ${SOURCE_FILES})
+target_link_libraries(time_hash_map ${EXTRA_LIBS})
