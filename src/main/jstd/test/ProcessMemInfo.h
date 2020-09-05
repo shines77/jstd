@@ -142,12 +142,12 @@ std::size_t GetCurrentMemoryUsage()
 
     while (ifs.getline(buf, sizeof(buf) - 1)) {
         if (::strncmp(buf, "VmRSS:", 6) == 0) {
-            ::sscanf(buf + 6, "%s%s", mem_size, mem_unit);
+            ::sscanf(buf + 6, "%s %s", mem_size, mem_unit);
             std::size_t memory_usage = static_cast<std::size_t>(::atoll(mem_size));
             std::string memory_uint = mem_unit;
-            if (memory_uint == "KB" || memory_uint == "kb")
+            if (memory_uint == "kB" || memory_uint == "KB")
                 memory_usage *= 1024;
-            if (memory_uint == "MB" || memory_uint == "mb")
+            else if (memory_uint == "mB" || memory_uint == "MB")
                 memory_usage *= (1024 * 1024);
             break;
         }
