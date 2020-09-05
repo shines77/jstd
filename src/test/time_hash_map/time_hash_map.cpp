@@ -110,13 +110,9 @@ static const std::size_t kInitCapacity = 16;
 // (1) making HashObject bigger than it ought to be (this is very
 // important for our testing), and (2) having to pass around
 // HashObject objects everywhere, which is annoying.
-static std::size_t g_num_hashes;
-static std::size_t g_num_copies;
-
-static std::vector<std::string> dict_words;
-
-static std::string dict_filename;
-static bool dict_words_is_ready = false;
+static std::size_t g_num_hashes = 0;
+static std::size_t g_num_copies = 0;
+static std::size_t g_num_moves = 0;
 
 /*
  * These are the objects we hash.  Size is the size of the object
@@ -143,8 +139,8 @@ public:
     HashObject() : key_(0) {
         ::memset(this->buffer_, 0, sizeof(this->buffer_));
     }
-    HashObject(std::size_t key) : key_(key) {
-        ::memset(this->buffer_, key & 0xFFUL, sizeof(this->buffer_));   // a "random" char
+    HashObject(key_type key) : key_(key) {
+        ::memset(this->buffer_, (int)(key & 0xFFUL), sizeof(this->buffer_));   // a "random" char
     }
     HashObject(const this_type & that) {
         operator = (that);
@@ -264,25 +260,25 @@ public:
     static const std::size_t bucket_size = 4;
     static const std::size_t min_buckets = 8;
 
-    result_type operator () (const hash_object_t & obj) const {
-        return static_cast<result_type>(obj.Hash());
-    }
+    //result_type operator () (const hash_object_t & obj) const {
+    //    return static_cast<result_type>(obj.Hash());
+    //}
 
-    // Do the identity hash for pointers.
-    result_type operator () (const hash_object_t * obj) const {
-        return reinterpret_cast<result_type>(obj);
-    }
+    //// Do the identity hash for pointers.
+    //result_type operator () (const hash_object_t * obj) const {
+    //    return reinterpret_cast<result_type>(obj);
+    //}
 
-    // Less operator for MSVC's hash containers.
-    bool operator () (const hash_object_t & a,
-                      const hash_object_t & b) const {
-        return (a < b);
-    }
+    //// Less operator for MSVC's hash containers.
+    //bool operator () (const hash_object_t & a,
+    //                  const hash_object_t & b) const {
+    //    return (a < b);
+    //}
 
-    bool operator () (const hash_object_t * a,
-                      const hash_object_t * b) const {
-        return (a < b);
-    }
+    //bool operator () (const hash_object_t * a,
+    //                  const hash_object_t * b) const {
+    //    return (a < b);
+    //}
 
     template <std::size_t Size, std::size_t HashSize>
     result_type operator () (const HashObject<key_type, Size, HashSize> & obj) const {
@@ -324,33 +320,6 @@ public:
     }
 };
 
-template <typename Key, typename Value>
-void print_error(std::size_t index, const Key & key, const Value & value)
-{
-    std::string skey   = std::to_string(key);
-    std::string svalue = std::to_string(value);
-
-    printf("[%6" PRIuPTR "]: key = \"%s\", value = \"%s\"\n",
-           index + 1, skey.c_str(), svalue.c_str());
-}
-
-template <>
-void print_error(std::size_t index, const std::string & key, const std::string & value)
-{
-    printf("[%6" PRIuPTR "]: key = \"%s\", value = \"%s\"\n",
-           index + 1, key.c_str(), value.c_str());
-}
-
-template <>
-void print_error(std::size_t index, const jstd::string_view & key, const jstd::string_view & value)
-{
-    std::string skey   = key.to_string();
-    std::string svalue = value.to_string();
-
-    printf("[%6" PRIuPTR "]: key = \"%s\", value = \"%s\"\n",
-           index + 1, skey.c_str(), svalue.c_str());
-}
-
 template <typename Container>
 void print_test_time(std::size_t checksum, double elapsedTime)
 {
@@ -366,6 +335,7 @@ void reset_counter()
 {
     g_num_copies = 0;
     g_num_hashes = 0;
+    g_num_moves  = 0;
 }
 
 template <typename Vector>
@@ -386,7 +356,7 @@ static void report_result(char const * title, double ut, std::size_t iters,
                  (end_memory - start_memory) / 1048576.0);
     }
 
-    printf("%-24s %9.2f ns  (%8" PRIuPTR " hashes, %8" PRIuPTR " copies) %s\n",
+    printf("%-24s %8.2f ns  (%8" PRIuPTR " hashes, %8" PRIuPTR " copies) %s\n",
            title, (ut * 1000000000.0 / iters),
            g_num_hashes, g_num_copies,
            heap);
@@ -407,62 +377,6 @@ static void time_map_find(char const * title, std::size_t iters,
     for (i = 0; i < max_iters; i++) {
         hashmap.emplace(i, i + 1);
     }
-
-    r = 1;
-    reset_counter();
-    sw.start();
-    for (i = 0; i < max_iters; i++) {
-        r ^= static_cast<std::size_t>(hashmap.find(indices[i]) != hashmap.end());
-    }
-    sw.stop();
-    double ut = sw.getElapsedSecond();
-
-    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
-    report_result(title, ut, iters, 0, 0);
-}
-
-template <class MapType, class Vector>
-static void time_map_find_failed_impl(char const * title, std::size_t iters,
-                                      Vector & indices) {
-    typedef typename MapType::mapped_type mapped_type;
-
-    MapType hashmap(kInitCapacity);
-    StopWatch sw;
-    std::size_t r;
-    mapped_type i;
-    mapped_type max_iters = static_cast<mapped_type>(iters);
-
-    for (i = 0; i < max_iters; i++) {
-        hashmap.emplace(i, i + 1);
-    }
-
-    for (mapped_type i = 0; i < max_iters; i++) {
-        indices[i] = i + 1 + max_iters;
-    }
-
-    r = 1;
-    reset_counter();
-    sw.start();
-    for (i = 0; i < max_iters; i++) {
-        r ^= static_cast<std::size_t>(hashmap.find(indices[i]) != hashmap.end());
-    }
-    sw.stop();
-    double ut = sw.getElapsedSecond();
-
-    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
-    report_result(title, ut, iters, 0, 0);
-}
-
-template <class MapType, class Vector>
-static void time_map_find_empty_impl(char const * title, std::size_t iters,
-                                     const Vector & indices) {
-    typedef typename MapType::mapped_type mapped_type;
-
-    MapType hashmap(kInitCapacity);
-    StopWatch sw;
-    std::size_t r;
-    mapped_type i;
-    mapped_type max_iters = static_cast<mapped_type>(iters);
 
     r = 1;
     reset_counter();
@@ -509,26 +423,50 @@ template <class MapType>
 static void time_map_find_failed(std::size_t iters) {
     typedef typename MapType::mapped_type mapped_type;
 
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+    std::size_t r;
+    mapped_type i;
     mapped_type max_iters = static_cast<mapped_type>(iters);
-    std::vector<mapped_type> v(iters);
-    for (mapped_type i = 0; i < max_iters; i++) {
-        v[i] = i + 1;
+
+    for (i = 0; i < max_iters; i++) {
+        hashmap.emplace(i, i + 1);
     }
 
-    time_map_find_failed_impl<MapType>("map_find_failed", iters, v);
+    r = 1;
+    reset_counter();
+    sw.start();
+    for (i = max_iters; i < max_iters * 2; i++) {
+        r ^= static_cast<std::size_t>(hashmap.find(i) != hashmap.end());
+    }
+    sw.stop();
+    double ut = sw.getElapsedSecond();
+
+    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
+    report_result("map_find_failed", ut, iters, 0, 0);
 }
 
 template <class MapType>
 static void time_map_find_empty(std::size_t iters) {
     typedef typename MapType::mapped_type mapped_type;
 
+    MapType hashmap(kInitCapacity);
+    StopWatch sw;
+    std::size_t r;
+    mapped_type i;
     mapped_type max_iters = static_cast<mapped_type>(iters);
-    std::vector<mapped_type> v(iters);
-    for (mapped_type i = 0; i < max_iters; i++) {
-        v[i] = i + 1;
-    }
 
-    time_map_find_empty_impl<MapType>("map_find_empty", iters, v);
+    r = 1;
+    reset_counter();
+    sw.start();
+    for (i = 0; i < max_iters; i++) {
+        r ^= static_cast<std::size_t>(hashmap.find(i) != hashmap.end());
+    }
+    sw.stop();
+    double ut = sw.getElapsedSecond();
+
+    ::srand(static_cast<unsigned int>(r));   // keep compiler from optimizing away r (we never call rand())
+    report_result("map_find_empty", ut, iters, 0, 0);
 }
 
 template <class MapType>
@@ -841,15 +779,15 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
     const bool stress_hash_function = (obj_size <= 8);
 
     if (FLAGS_test_std_unordered_map) {
-        measure_hashmap<StdUnorderedMap<key_type,   Value, HashFn<HashObj>>,
-                        StdUnorderedMap<key_type *, Value, HashFn<HashObj>>
+        measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<HashObj>>,
+                        StdUnorderedMap<HashObj *, Value, HashFn<HashObj>>
                         >(
             "std::unordered_map<K, V>", obj_size, iters, stress_hash_function);
     }
 
     if (FLAGS_test_jstd_dictionary) {
-        measure_hashmap<jstd::Dictionary<key_type,   Value, HashFn<HashObj>>,
-                        jstd::Dictionary<key_type *, Value, HashFn<HashObj>>
+        measure_hashmap<jstd::Dictionary<HashObj,   Value, HashFn<HashObj>>,
+                        jstd::Dictionary<HashObj *, Value, HashFn<HashObj>>
                         >(
             "jstd::Dectionary<K, V>", obj_size, iters, stress_hash_function);
     }
