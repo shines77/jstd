@@ -354,9 +354,15 @@ template <typename Key, typename Value, typename Hasher>
 class StdHashMap : public hash_map<Key, Value, Hasher> {
 public:
     typedef hash_map<Key, Value, Hasher> this_type;
+    typedef Value                        mapped_type;
+    typedef typename Key::key_type       ident_type;
 
     StdHashMap() : this_type() {}
     StdHashMap(std::size_t initCapacity) : this_type() {
+    }
+
+    void emplace(ident_type id, mapped_type value) {
+        this->operator [](id) = value;
     }
 
     // Don't need to do anything: hash_map is already easy to use!
@@ -758,7 +764,7 @@ static void time_map_iterate(std::size_t iters) {
     r = 1;
     reset_counter();
     sw.start();
-    for (const_iterator it = hashmap.cbegin(), it_end = hashmap.cend(); it != it_end; ++it) {
+    for (const_iterator it = hashmap.begin(), it_end = hashmap.end(); it != it_end; ++it) {
         r ^= it->second;
     }
     sw.stop();
@@ -825,8 +831,6 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
 
 template <typename HashObj, typename Value>
 static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
-    typedef typename HashObj::key_type key_type;
-
     const bool stress_hash_function = (obj_size <= 8);
 
     if (FLAGS_test_std_hash_map) {
