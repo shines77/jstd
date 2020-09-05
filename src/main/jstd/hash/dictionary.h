@@ -1715,6 +1715,7 @@ protected:
             if (!OnlyIfAbsent) {
                 // If key is a rvalue, we move it.
                 key_type key_tmp = std::forward<key_type>(key);
+                (void)key_tmp;
                 this->update_mapped_value(entry, std::forward<mapped_type>(value));
             }
             inserted = false;
