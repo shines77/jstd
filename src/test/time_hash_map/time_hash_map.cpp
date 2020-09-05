@@ -10,6 +10,8 @@
 #define __SSE4_2__              1
 #endif
 
+#define _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,6 +27,11 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
+#if defined(_MSC_VER)
+#include <hash_map>
+#else
+#include <ext/hash_map>
+#endif
 #include <algorithm>
 
 /* SIMD support features */
@@ -80,16 +87,22 @@
 
 #include "BenchmarkResult.h"
 
+#if defined(_MSC_VER)
+using namespace stdext;
+#else
+using namespace __gnu_cxx;
+#endif
+
 using namespace jstd;
 using namespace jtest;
 
 static const bool FLAGS_test_sparse_hash_map = true;
 static const bool FLAGS_test_dense_hash_map = true;
-static const bool FLAGS_test_hash_map = true;
-static const bool FLAGS_test_map = true;
 
+static const bool FLAGS_test_std_hash_map = true;
 static const bool FLAGS_test_std_unordered_map = true;
 static const bool FLAGS_test_jstd_dictionary = true;
+static const bool FLAGS_test_map = true;
 
 static const bool FLAGS_test_4_bytes = true;
 static const bool FLAGS_test_8_bytes = true;
@@ -111,8 +124,17 @@ static const std::size_t kInitCapacity = 16;
 // important for our testing), and (2) having to pass around
 // HashObject objects everywhere, which is annoying.
 static std::size_t g_num_hashes = 0;
+static std::size_t g_num_constructor = 0;
 static std::size_t g_num_copies = 0;
 static std::size_t g_num_moves = 0;
+
+static void reset_counter()
+{
+    g_num_hashes = 0;
+    g_num_constructor = 0;
+    g_num_copies = 0;
+    g_num_moves  = 0;
+}
 
 /*
  * These are the objects we hash.  Size is the size of the object
@@ -138,9 +160,11 @@ private:
 public:
     HashObject() : key_(0) {
         ::memset(this->buffer_, 0, sizeof(this->buffer_));
+        g_num_constructor++;
     }
     HashObject(key_type key) : key_(key) {
         ::memset(this->buffer_, (int)(key & 0xFFUL), sizeof(this->buffer_));   // a "random" char
+        g_num_constructor++;
     }
     HashObject(const this_type & that) {
         operator = (that);
@@ -184,8 +208,12 @@ private:
     std::uint32_t key_;   // the key used for hashing
 
 public:
-    HashObject() : key_(0) {}
-    HashObject(std::uint32_t key) : key_(key) {}
+    HashObject() : key_(0) {
+        g_num_constructor++;
+    }
+    HashObject(std::uint32_t key) : key_(key) {
+        g_num_constructor++;
+    }
     HashObject(const this_type & that) {
         operator = (that);
     }
@@ -222,8 +250,12 @@ private:
     std::size_t key_;   // the key used for hashing
 
 public:
-    HashObject() : key_(0) {}
-    HashObject(std::size_t key) : key_(key) {}
+    HashObject() : key_(0) {
+        g_num_constructor++;
+    }
+    HashObject(std::size_t key) : key_(key) {
+        g_num_constructor++;
+    }
     HashObject(const this_type & that) {
         operator = (that);
     }
@@ -305,6 +337,32 @@ public:
     }
 };
 
+#if defined(_MSC_VER)
+template <typename Key, typename Value, typename Hasher>
+class StdHashMap : public hash_map<Key, Value, Hasher> {
+public:
+    typedef hash_map<Key, Value, Hasher> this_type;
+
+    StdHashMap() : this_type() {}
+    StdHashMap(std::size_t initCapacity) : this_type() {
+    }
+
+    void resize(size_t r) { /* Not support */ }
+};
+#else
+template <typename Key, typename Value, typename Hasher>
+class StdHashMap : public hash_map<Key, Value, Hasher> {
+public:
+    typedef hash_map<Key, Value, Hasher> this_type;
+
+    StdHashMap() : this_type() {}
+    StdHashMap(std::size_t initCapacity) : this_type() {
+    }
+
+    // Don't need to do anything: hash_map is already easy to use!
+};
+#endif
+
 template <typename Key, typename Value, typename Hasher>
 class StdUnorderedMap : public std::unordered_map<Key, Value, Hasher> {
 public:
@@ -320,6 +378,15 @@ public:
     }
 };
 
+template <typename Vector>
+void shuffle_vector(Vector & vector) {
+    // shuffle
+    for (std::size_t n = vector.size() - 1; n > 0; n--) {
+        std::size_t rnd_idx = jstd::MtRandomGen::nextUInt32(static_cast<std::uint32_t>(n));
+        std::swap(vector[n], vector[rnd_idx]);
+    }
+}
+
 template <typename Container>
 void print_test_time(std::size_t checksum, double elapsedTime)
 {
@@ -331,22 +398,6 @@ void print_test_time(std::size_t checksum, double elapsedTime)
     printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, elapsedTime);
 }
 
-void reset_counter()
-{
-    g_num_copies = 0;
-    g_num_hashes = 0;
-    g_num_moves  = 0;
-}
-
-template <typename Vector>
-void shuffle_vector(Vector & vector) {
-    // shuffle
-    for (std::size_t n = vector.size() - 1; n > 0; n--) {
-        std::size_t rnd_idx = jstd::MtRandomGen::nextUInt32(static_cast<std::uint32_t>(n));
-        std::swap(vector[n], vector[rnd_idx]);
-    }
-}
-
 static void report_result(char const * title, double ut, std::size_t iters,
                           size_t start_memory, size_t end_memory) {
     // Construct heap growth report text if applicable
@@ -356,9 +407,9 @@ static void report_result(char const * title, double ut, std::size_t iters,
                  (end_memory - start_memory) / 1048576.0);
     }
 
-    printf("%-24s %8.2f ns  (%8" PRIuPTR " hashes, %8" PRIuPTR " copies) %s\n",
+    printf("%-24s %8.2f ns  (%8" PRIuPTR " hashes, %8" PRIuPTR " copies, %8" PRIuPTR " ctor) %s\n",
            title, (ut * 1000000000.0 / iters),
-           g_num_hashes, g_num_copies,
+           g_num_hashes, g_num_copies, g_num_constructor,
            heap);
     ::fflush(stdout);
 }
@@ -739,7 +790,7 @@ static void stress_hash_function(std::size_t num_inserts) {
 template <class MapType, class StressMapType>
 static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t iters,
                             bool is_stress_hash_function) {
-    printf("\n%s (%" PRIuPTR " byte objects, %" PRIuPTR " iterations):\n", name, obj_size, iters);
+    printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " iterations):\n", name, obj_size, iters);
 
     if (1) time_map_insert<MapType>(iters);
     if (1) time_map_insert_predicted<MapType>(iters);
@@ -777,6 +828,13 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
     typedef typename HashObj::key_type key_type;
 
     const bool stress_hash_function = (obj_size <= 8);
+
+    if (FLAGS_test_std_hash_map) {
+        measure_hashmap<StdHashMap<HashObj,   Value, HashFn<HashObj>>,
+                        StdHashMap<HashObj *, Value, HashFn<HashObj>>
+                        >(
+            "stdext::hash_map<K, V>", obj_size, iters, stress_hash_function);
+    }
 
     if (FLAGS_test_std_unordered_map) {
         measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<HashObj>>,
@@ -831,7 +889,6 @@ int main(int argc, char * argv[])
 
     benchmark_all_hashmaps(iters);
 
-    printf("\n");
     jstd::Console::ReadKey();
     return 0;
 }
