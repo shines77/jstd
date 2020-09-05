@@ -1437,6 +1437,24 @@ protected:
     }
 
     JSTD_FORCEINLINE
+    void construct_value(entry_type * new_entry, n_value_type && value) {
+        if (new_entry->attrib.isFreeEntry()) {
+            // Use placement new method to construct value_type [by move assignment].
+            this->n_allocator_.constructor((n_value_type *)&(new_entry->value),
+                                           std::forward<n_value_type>(value));
+        }
+        else {
+            assert(new_entry->attrib.isReusableEntry());
+            n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
+            //std::swap(*n_value, value);
+            std::swap(n_value->first, value.first);
+            std::swap(n_value->second, value.second);
+        }
+
+        new_entry->attrib.setInUseEntry();
+    }
+
+    JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, n_value_type * value) {
         if (new_entry->attrib.isFreeEntry()) {
             // Use placement new method to construct value_type [by move assignment].
@@ -1719,6 +1737,16 @@ protected:
 
     JSTD_FORCEINLINE
     entry_type * emplace_new_entry_from_value(hash_code_t hash_code,
+                                              index_type index, n_value_type && value) {
+        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        this->insert_to_bucket(new_entry, hash_code, index);
+        this->construct_value(new_entry, std::forward<n_value_type>(value));
+        this->entry_size_++;
+        return new_entry;
+    }
+
+    JSTD_FORCEINLINE
+    entry_type * emplace_new_entry_from_value(hash_code_t hash_code,
                                               index_type index, n_value_type * value) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
@@ -1760,7 +1788,7 @@ protected:
         assert(this->buckets() != nullptr);
         bool inserted;
 
-        n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
+        n_value_type value_tmp(std::forward<Args>(args)...);
         const key_type & key = this->get_key(value_tmp);
 
         hash_code_t hash_code = this->get_hash(key);
@@ -1768,17 +1796,17 @@ protected:
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            entry = this->emplace_new_entry_from_value(hash_code, index, value_tmp);
+            entry = this->emplace_new_entry_from_value(hash_code, index,
+                                                       std::forward<n_value_type>(value_tmp));
             inserted = true;
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_mapped_value(entry, *value_tmp);
+                this->update_mapped_value(entry, value_tmp);
             }
             inserted = false;
         }
 
-        this->n_allocator_.destroy(value_tmp);
         this->update_version();
 
         return ReturnType(iterator(this, entry), inserted);
