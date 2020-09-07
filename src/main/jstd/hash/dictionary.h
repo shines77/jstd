@@ -382,8 +382,8 @@ protected:
     std::allocator<mapped_type>                     mapped_allocator_;
     typename std::allocator<value_type>::allocator  value_allocator_;
 
-    // Default initial capacity is 16.
-    static const size_type kDefaultInitialCapacity = 16;
+    // Default initial capacity is 8.
+    static const size_type kDefaultInitialCapacity = 8;
     // Minimum capacity is 8.
     static const size_type kMinimumCapacity = 8;
     // Maximum capacity is 1 << (sizeof(std::size_t) - 1).
@@ -2366,7 +2366,7 @@ protected:
         }
         else {
             // No matching chunk found
-            assert(false);
+            this->realloc_to(new_entry_capacity);
         }
     }
 
@@ -2580,7 +2580,12 @@ protected:
 
         for (size_type index = 0; index < old_bucket_capacity; index++) {
             entry_type * old_entry = this->buckets_[index];
-            if (likely(old_entry != nullptr)) {
+            if (likely(old_entry == nullptr)) {
+                index_type new_index = index + old_bucket_capacity;
+                new_buckets[index] = nullptr;
+                new_buckets[new_index] = nullptr;
+            }
+            else {
                 entry_type * new_prev = nullptr;
                 entry_type * old_list = nullptr;
                 entry_type * new_list = nullptr;
@@ -2626,11 +2631,6 @@ protected:
                 index_type new_index = index + old_bucket_capacity;
                 new_buckets[index] = old_list;
                 new_buckets[new_index] = new_list;
-            }
-            else {
-                index_type new_index = index + old_bucket_capacity;
-                new_buckets[index] = nullptr;
-                new_buckets[new_index] = nullptr;
             }
         }
     }
@@ -2694,7 +2694,15 @@ protected:
 
         for (size_type index = 0; index < new_bucket_capacity; index++) {
             entry_type * old_first = this->buckets_[index];
-            if (likely(old_first != nullptr)) {
+            if (likely(old_first == nullptr)) {
+                index_type new_index = index + new_bucket_capacity;
+                new_entry_count = realloc_high_bucket_push_back(
+                                            new_entry_count, nullptr,
+                                            index, new_index,
+                                            new_buckets, new_bucket_capacity,
+                                            new_entries, new_entry_capacity);
+            }
+            else {
                 // Get the first free entry in the new entries list.
                 entry_type * new_entry = &new_entries[new_entry_count++];
                 assert(new_entry_count <= this->entry_size_);
@@ -2726,17 +2734,9 @@ protected:
                 assert(new_entry != nullptr);
                 new_entry->next = nullptr;
 
-                index_type new_index = index + old_bucket_capacity;
+                index_type new_index = index + new_bucket_capacity;
                 new_entry_count = realloc_high_bucket_push_back(
                                             new_entry_count, new_prev,
-                                            index, new_index,
-                                            new_buckets, new_bucket_capacity,
-                                            new_entries, new_entry_capacity);
-            }
-            else {
-                index_type new_index = index + old_bucket_capacity;
-                new_entry_count = realloc_high_bucket_push_back(
-                                            new_entry_count, nullptr,
                                             index, new_index,
                                             new_buckets, new_bucket_capacity,
                                             new_entries, new_entry_capacity);
