@@ -246,6 +246,9 @@ public:
     }
 };
 
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(__amd64__) || defined(__x86_64__) || defined(__LP64__)
+
 // A specialization for the case sizeof(buffer_) == 0
 template <>
 class HashObject<std::size_t, sizeof(std::size_t), sizeof(std::size_t)> {
@@ -287,6 +290,8 @@ public:
         return this->key_ <= that.key_;
     }
 };
+
+#endif  // _WIN64 || __amd64__
 
 template <typename HashObj, typename ResultType = std::uint32_t>
 class HashFn {

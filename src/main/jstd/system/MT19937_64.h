@@ -142,11 +142,11 @@ public:
     static const value_type kMTDefaultSeed = 19650218019770711ULL;
     static const value_type kMTRandMax = 0xFFFFFFFFFFFFFFFFULL;
 
-    static const value_type N = 312, M = 156;
+    static const std::size_t N = 312, M = 156;
 
 private:
     value_type * next;
-    value_type   left;
+    std::size_t  left;
     value_type   state[N];
 
 public:
@@ -154,12 +154,12 @@ public:
         this->init(initSeed);
     }
 
-    MT19937_64(value_type * init_key, value_type key_len, value_type initSeed = kMTDefaultSeed)
+    MT19937_64(const value_type * init_key, std::size_t key_len, value_type initSeed = kMTDefaultSeed)
         : next(nullptr), left(1) {
         this->init(init_key, key_len, initSeed);
     }
 
-    MT19937_64(std::vector<value_type> init_key, value_type initSeed = kMTDefaultSeed)
+    MT19937_64(const std::vector<value_type> & init_key, value_type initSeed = kMTDefaultSeed)
         : next(nullptr), left(1) {
         this->init(init_key, initSeed);
     }
@@ -178,7 +178,7 @@ private:
             initSeed = static_cast<value_type>(timer);
         }
         this->state[0] = initSeed;
-        for (value_type j = 1; j < N; ++j) {
+        for (std::size_t j = 1; j < N; ++j) {
             this->state[j] = (6364136223846793005ULL * (this->state[j - 1] ^ (this->state[j - 1] >> 30)) + j);
             // See Knuth TAOCP Vol2. 3rd Ed. P.106 for multiplier.
             // In the previous versions, MSBs of the seed affect
@@ -188,28 +188,28 @@ private:
         }
     }
 
-    void init(value_type * init_key, value_type key_len, value_type initSeed = kMTDefaultSeed) {
+    void init(const value_type * init_key, std::size_t key_len, value_type initSeed = kMTDefaultSeed) {
         this->init(initSeed);
         this->init_keys(init_key, key_len);
     }
 
-    void init(std::vector<value_type> init_key, value_type initSeed = kMTDefaultSeed) {
+    void init(const std::vector<value_type> & init_key, value_type initSeed = kMTDefaultSeed) {
         this->init(initSeed);
-        this->init_keys(init_key, (value_type)init_key.size());
+        this->init_keys(init_key, init_key.size());
     }
 
-    void init_keys(std::vector<value_type> init_key) {
-        this->init_keys(init_key, (value_type)init_key.size());
+    void init_keys(const std::vector<value_type> & init_key) {
+        this->init_keys(init_key, init_key.size());
     }
 
     template <typename ValueList>
-    void init_keys(const ValueList & init_key, value_type key_len) {
-        value_type i = 1, j = 0;
-        value_type k = (N > key_len) ? N : key_len;
+    void init_keys(const ValueList & init_key, std::size_t key_len) {
+        std::size_t i = 1, j = 0;
+        std::size_t k = (N > key_len) ? N : key_len;
         for (; k > 0; --k) {
             // non linear
             this->state[i] = (this->state[i] ^ ((this->state[i - 1] ^ (this->state[i - 1] >> 30))
-                                                * 1664525UL)) + init_key[j] + j;
+                                                * (value_type)1664525UL)) + init_key[j] + j;
             this->state[i] &= 0xFFFFFFFFFFFFFFFFULL;
             ++i;
             ++j;
@@ -239,11 +239,11 @@ private:
     void next_state() {
         value_type * p = &this->state[0];
 
-        for (value_type i = N - M + 1; --i; ++p) {
+        for (std::size_t i = N - M + 1; --i; ++p) {
             *p = (p[M] ^ this->twist(p[0], p[1]));
         }
 
-        for (value_type i = M; --i; ++p) {
+        for (std::size_t i = M; --i; ++p) {
             *p = (p[M - N] ^ this->twist(p[0], p[1]));
         }
 
@@ -266,12 +266,12 @@ public:
         this->next_state();
     }
 
-    void srand(value_type * init_key, value_type key_len, value_type initSeed = kMTDefaultSeed) {
+    void srand(const value_type * init_key, std::size_t key_len, value_type initSeed = kMTDefaultSeed) {
         this->init(init_key, key_len, initSeed);
         this->next_state();
     }
 
-    void srand(std::vector<value_type> init_key, value_type initSeed = kMTDefaultSeed) {
+    void srand(const std::vector<value_type> & init_key, value_type initSeed = kMTDefaultSeed) {
         this->init(init_key, initSeed);
         this->next_state();
     }

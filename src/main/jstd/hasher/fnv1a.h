@@ -44,7 +44,7 @@
 #define _xmm_loadu_128(p)       _mm_loadu_si128((__m128i const *)(p))
 
 #define _exract_u32(xmm, index) \
-                                (uint32_t)_mm_extract_epi32(xmm, index)
+                                ((uint32_t)_mm_extract_epi32(xmm, index))
 
 //
 // __m128i a = _mm_setr_epi32(0, 1, 2, 3);
@@ -169,7 +169,7 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
     size_t loop_cnt;
     size_t line_offset;
 
-#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__)
+#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__) || defined(__AVX2__)
     __m128i xmm0;
     __m128i xmm1;
     __m128i xmm2;
@@ -182,7 +182,7 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
     __m128i __kPRIME  = _mm_set1_epi32(709607);
 #endif
 
-#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__)
+#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__) || defined(__AVX2__)
     // kStepSize = 3 * 4 * (2 * sizeof(uint32_t)) = 3 * 32 = 96
     if (data_len >= kStepSize) {
         // Actually 3 * 32 is the minimum and not useful, 200++ makes more sense.
@@ -318,7 +318,7 @@ uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
     size_t loop_cnt;
     size_t line_offset;
 
-#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__)
+#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__) || defined(__AVX2__)
     __m128i xmm0;
     __m128i xmm1;
     __m128i xmm2;
@@ -337,7 +337,7 @@ uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
     __m128i __kPRIME  = _mm_set1_epi32(709607);
 #endif
 
-#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__)
+#if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__) || defined(__AVX2__)
     // kStepSize = 3 * 2 * 4 * (2 * sizeof(uint32_t)) = 3 * 2 * 32 = 192
     if (data_len >= kStepSize) {
         // Actually 3 * 2 * 32 is the minimum and not useful, 200++ makes more sense.
