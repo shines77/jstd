@@ -21,6 +21,7 @@
 
 #ifndef __COMPILER_BARRIER
 #if defined(_MSC_VER) || defined(__ICL) || defined(__INTEL_COMPILER)
+#include <intrin.h>
 #define __COMPILER_BARRIER()        _ReadWriteBarrier()
 #else
 #define __COMPILER_BARRIER()        asm volatile ("" : : : "memory")
