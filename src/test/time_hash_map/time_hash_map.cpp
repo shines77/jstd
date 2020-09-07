@@ -10,6 +10,7 @@
 #define __SSE4_2__              1
 #endif
 
+// For avoid the MSVC stdext::hasp_map<K,V>'s deprecation warnings.
 #define _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
 
 #include <stdlib.h>

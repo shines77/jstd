@@ -103,9 +103,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\nothrow_new.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\crc32c.h">
-      <Filter>src\hash</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash.h">
       <Filter>src\hash</Filter>
     </ClInclude>
@@ -279,6 +276,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\system\LibcRand.h">
       <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\crc32c.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\sha1.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\x86_intrin.h">
+      <Filter>src\support</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

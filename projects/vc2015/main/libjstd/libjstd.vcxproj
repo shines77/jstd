@@ -172,7 +172,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\config\linux\config.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\config\macos\config.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\config\win32\config.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\crc32c.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_traits.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_v1.h" />
@@ -207,9 +206,12 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_view_array.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_forward.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_reverse.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\crc32c.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\popcnt.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\PowerOf2.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\sha1.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\SSEHelper.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\x86_intrin.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\Console.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\crtdbg_env.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\getchar.h" />
