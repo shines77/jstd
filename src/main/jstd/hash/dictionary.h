@@ -458,11 +458,19 @@ public:
         this->destroy();
     }
 
-    iterator begin() const {
+    // iterator
+    iterator begin() {
         return iterator(this, find_first_valid_entry());
     }
-    iterator end() const {
+    iterator end() {
         return iterator(this, nullptr);
+    }
+
+    const_iterator begin() const {
+        return const_iterator(this, find_first_valid_entry());
+    }
+    const_iterator end() const {
+        return const_iterator(this, nullptr);
     }
 
     const_iterator cbegin() const {
@@ -472,15 +480,23 @@ public:
         return const_iterator(this, nullptr);
     }
 
-    local_iterator l_begin() const {
+    // local_iterator
+    local_iterator l_begin() {
         return local_iterator(this, find_first_valid_entry());
     }
-    local_iterator l_end() const {
+    local_iterator l_end() {
         return local_iterator(this, nullptr);
     }
 
+    const_local_iterator l_begin() const {
+        return const_local_iterator(this, find_first_valid_entry());
+    }
+    const_local_iterator l_end() const {
+        return const_local_iterator(this, nullptr);
+    }
+
     const_local_iterator l_cbegin() const {
-        return const_local_iterator(this, local_iterator(find_first_valid_entry()));
+        return const_local_iterator(local_iterator(this, find_first_valid_entry()));
     }
     const_local_iterator l_cend() const {
         return const_local_iterator(this, nullptr);
@@ -1437,6 +1453,24 @@ protected:
     }
 
     JSTD_FORCEINLINE
+    void construct_value(entry_type * new_entry, value_type && value) {
+        if (new_entry->attrib.isFreeEntry()) {
+            // Use placement new method to construct value_type [by move assignment].
+            this->n_allocator_.constructor(&(new_entry->value),
+                                           std::forward<value_type>(value));
+        }
+        else {
+            assert(new_entry->attrib.isReusableEntry());
+            value_type * pvalue = &new_entry->value;
+            //std::swap(*pvalue, value);
+            std::swap(pvalue->first, value.first);
+            std::swap(pvalue->second, value.second);
+        }
+
+        new_entry->attrib.setInUseEntry();
+    }
+
+    JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, n_value_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
             // Use placement new method to construct value_type [by move assignment].
@@ -1645,6 +1679,16 @@ protected:
         return new_entry;
     }
 
+    JSTD_FORCEINLINE
+    entry_type * insert_new_entry(hash_code_t hash_code, index_type index,
+                                  n_value_type && value) {
+        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        this->insert_to_bucket(new_entry, hash_code, index);
+        this->construct_value(new_entry, std::forward<n_value_type>(value));
+        this->entry_size_++;
+        return new_entry;
+    }
+
     template <bool OnlyIfAbsent, typename ReturnType>
     ReturnType insert_unique(const key_type & key, const mapped_type & value) {
         assert(this->buckets() != nullptr);
@@ -1726,6 +1770,35 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
+    template <bool OnlyIfAbsent, typename ReturnType>
+    ReturnType insert_unique(n_value_type && value) {
+        assert(this->buckets() != nullptr);
+        bool inserted;
+
+        hash_code_t hash_code = this->get_hash(value.first);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * entry = this->find_entry(value.first, hash_code, index);
+        if (likely(entry == nullptr)) {
+            entry = this->insert_new_entry(hash_code, index,
+                                           std::forward<n_value_type>(value));
+            inserted = true;
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                // If key is a rvalue, we move it.
+                key_type key_tmp = std::forward<key_type>(value.first);
+                (void)key_tmp;
+                this->update_mapped_value(entry, std::forward<mapped_type>(value.second));
+            }
+            inserted = false;
+        }
+
+        this->update_version();
+
+        return ReturnType(iterator(this, entry), inserted);
+    }
+
     template <typename ...Args>
     JSTD_FORCEINLINE
     entry_type * emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
@@ -1790,7 +1863,8 @@ protected:
         bool inserted;
 
         n_value_type value_tmp(std::forward<Args>(args)...);
-        const key_type & key = this->get_key(value_tmp);
+        //const key_type & key = this->get_key(value_tmp);
+        const key_type & key = value_tmp.first;
 
         hash_code_t hash_code = this->get_hash(key);
         index_type index = this->index_for(hash_code);
@@ -2914,18 +2988,21 @@ public:
     }
 
     insert_return_type insert(value_type && value) {
+#if 1
+        bool has_move_constructor = std::is_trivially_move_constructible<value_type>::value;
+        bool has_move_assignment = std::is_trivially_move_assignable<value_type>::value;
+        return this->insert_unique<false, insert_return_type>(
+            std::forward<n_value_type>(*reinterpret_cast<n_value_type *>(&value)));
+#else   
         bool is_rvalue = std::is_rvalue_reference<decltype(std::forward<value_type>(value))>::value;
         if (is_rvalue) {
-#if 1
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&value);
             return this->insert(std::move(n_value->first), std::move(n_value->second));
-#else
-            return this->insert(std::move(value.first), std::move(value.second));
-#endif
         }
         else {
             return this->insert(value.first, value.second);
         }
+#endif
     }
 
     //
