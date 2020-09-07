@@ -75,4 +75,8 @@
 #include <mm3dnow.h>
 #endif
 
+#ifdef __FMA4__
+//#include <fma4intrin.h>
+#endif
+
 #endif // JSTD_SUPPORT_X86_INTRIN_H

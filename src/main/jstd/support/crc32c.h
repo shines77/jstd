@@ -1,6 +1,6 @@
 
-#ifndef JSTD_SUPPORT_CRC32C_H
-#define JSTD_SUPPORT_CRC32C_H
+#ifndef JSTD_SUPPORT_HASH_CRC32C_H
+#define JSTD_SUPPORT_HASH_CRC32C_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -14,8 +14,8 @@
 
 #ifndef __SSE4_2__
 // Just for coding in msvc or test, please comment it in the release version.
-//#define __SSE4_2__      1
-#endif // __SSE4_2__
+#define __SSE4_2__      1
+#endif
 
 #ifdef __SSE4_2__
 #include <nmmintrin.h>  // For SSE 4.2
@@ -52,7 +52,7 @@ static const uint32_t kInitPrime32 = 0x165667C5UL;
 
 #ifdef __SSE4_2__
 
-static uint32_t intel_crc32c_x86(const char * data, size_t length)
+static uint32_t intel_hash_crc32c_x86(const char * data, size_t length)
 {
     assert(data != nullptr);
 
@@ -92,7 +92,7 @@ static uint32_t intel_crc32c_x86(const char * data, size_t length)
 
 #if JSTD_IS_X86_64
 
-static uint32_t intel_crc32c_x64(const char * data, size_t length)
+static uint32_t intel_hash_crc32c_x64(const char * data, size_t length)
 {
     assert(data != nullptr);
 
@@ -132,7 +132,7 @@ static uint32_t intel_crc32c_x64(const char * data, size_t length)
 
 #endif //JSTD_IS_X86_64
 
-static uint32_t intel_crc32c_simple_x86(const char * data, size_t length)
+static uint32_t intel_hash_crc32c_simple_x86(const char * data, size_t length)
 {
     assert(data != nullptr);
     uint32_t crc32 = ~0;
@@ -159,7 +159,7 @@ static uint32_t intel_crc32c_simple_x86(const char * data, size_t length)
 
 #if JSTD_IS_X86_64
 
-static uint32_t intel_crc32c_simple_x64(const char * data, size_t length)
+static uint32_t intel_hash_crc32c_simple_x64(const char * data, size_t length)
 {
     assert(data != nullptr);
     uint64_t crc64 = ~0;
@@ -189,13 +189,13 @@ static uint32_t intel_crc32c_simple_x64(const char * data, size_t length)
 
 #endif // __SSE4_2__
 
-static uint32_t crc32c(const char * data, size_t length)
+static uint32_t hash_crc32c(const char * data, size_t length)
 {
 #ifdef __SSE4_2__
   #if JSTD_IS_X86_64
-    return intel_crc32c_x64(data, length);
+    return intel_hash_crc32c_x64(data, length);
   #else
-    return intel_crc32c_x86(data, length);
+    return intel_hash_crc32c_x86(data, length);
   #endif
 #else
     return hashes::Times31(data, length);
@@ -207,4 +207,4 @@ static uint32_t crc32c(const char * data, size_t length)
 
 #undef JSTD_IS_X86_64
 
-#endif // JSTD_SUPPORT_CRC32C_H
+#endif // JSTD_SUPPORT_HASH_CRC32C_H
