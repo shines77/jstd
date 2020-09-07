@@ -37,11 +37,18 @@
 #include <immintrin.h>  // For AVX
 #endif
 
-#define _rotl_KAZE32(x, n)  (((x) << (n)) | ((x) >> (32 - (n))))
-#define _rotl_KAZE128(x, n) _mm_or_si128(_mm_slli_si128(x, n), _mm_srli_si128(x, 128 - n))
+#define _rotl_twise32(x, n)     (((x) << (n)) | ((x) >> (32 - (n))))
+#define _rotl_twise128(x, n)    _mm_or_si128(_mm_slli_si128(x, (n)), _mm_srli_si128(x, (128 - (n))))
 
-#define _xmm_load(p)        _mm_load_si128((__m128i const *)(p))
-#define _xmm_loadu(p)       _mm_loadu_si128((__m128i const *)(p))
+#define _xmm_load_128(p)        _mm_load_si128((__m128i const *)(p))
+#define _xmm_loadu_128(p)       _mm_loadu_si128((__m128i const *)(p))
+
+#define _exract_u32(xmm, index) \
+                                (uint32_t)_mm_extract_epi32(xmm, index)
+
+//
+// __m128i a = _mm_setr_epi32(0, 1, 2, 3);
+//
 
 namespace jstd {
 namespace hasher {
@@ -106,8 +113,8 @@ uint32_t FNV1A_Hash_Yoshimura(const char * data, size_t data_len)
             // hash32A = (hash32A ^ (_rotl_KAZE32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;        
             // hash32B = (hash32B ^ (_rotl_KAZE32(*(uint32_t *)(p + 0 + line_offset), 5) ^ *(uint32_t *)(p + 4 + line_offset))) * kPRIME;        
             // revision 2:
-            hash32A = (hash32A ^ (_rotl_KAZE32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 0 + line_offset))) * kPRIME;
-            hash32B = (hash32B ^ (_rotl_KAZE32(*(uint32_t *)(p + 4 + line_offset), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
+            hash32A = (hash32A ^ (_rotl_twise32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 0 + line_offset))) * kPRIME;
+            hash32B = (hash32B ^ (_rotl_twise32(*(uint32_t *)(p + 4 + line_offset), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
             // kHalfStepSize = 2 * sizeof(uint32_t) = 8
             p += kHalfStepSize;
         }
@@ -134,7 +141,7 @@ uint32_t FNV1A_Hash_Yoshimura(const char * data, size_t data_len)
         }
     }
 
-    uint32_t hash32 = (hash32A ^ _rotl_KAZE32(hash32B, 5)) * kPRIME;
+    uint32_t hash32 = (hash32A ^ _rotl_twise32(hash32B, 5)) * kPRIME;
     return (hash32 ^ (hash32 >> 16));
 }
 
@@ -186,20 +193,20 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
         assert(data_len >= loop_cnt * kHalfStepSize);
         line_offset = data_len - loop_cnt * kHalfStepSize;
         for (; loop_cnt > 0; loop_cnt--) {
-            xmm0 = _xmm_loadu(p + 0 * 16);
-            xmm1 = _xmm_loadu(p + 0 * 16 + line_offset);
-            xmm2 = _xmm_loadu(p + 1 * 16);
-            xmm3 = _xmm_loadu(p + 1 * 16 + line_offset);
-            xmm4 = _xmm_loadu(p + 2 * 16);
-            xmm5 = _xmm_loadu(p + 2 * 16 + line_offset);
+            xmm0 = _xmm_loadu_128(p + 0 * 16);
+            xmm1 = _xmm_loadu_128(p + 0 * 16 + line_offset);
+            xmm2 = _xmm_loadu_128(p + 1 * 16);
+            xmm3 = _xmm_loadu_128(p + 1 * 16 + line_offset);
+            xmm4 = _xmm_loadu_128(p + 2 * 16);
+            xmm5 = _xmm_loadu_128(p + 2 * 16 + line_offset);
 #if defined(__SSE2__)
-            __hash32A = _mm_mullo_epi16(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_KAZE128(xmm0, 5), xmm1)), __kPRIME);
-            __hash32B = _mm_mullo_epi16(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_KAZE128(xmm3, 5), xmm2)), __kPRIME);
-            __hash32C = _mm_mullo_epi16(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_KAZE128(xmm4, 5), xmm5)), __kPRIME);
+            __hash32A = _mm_mullo_epi16(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_twise128(xmm0, 5), xmm1)), __kPRIME);
+            __hash32B = _mm_mullo_epi16(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_twise128(xmm3, 5), xmm2)), __kPRIME);
+            __hash32C = _mm_mullo_epi16(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_twise128(xmm4, 5), xmm5)), __kPRIME);
 #else
-            __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_KAZE128(xmm0, 5), xmm1)), __kPRIME);
-            __hash32B = _mm_mullo_epi32(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_KAZE128(xmm3, 5), xmm2)), __kPRIME);
-            __hash32C = _mm_mullo_epi32(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_KAZE128(xmm4, 5), xmm5)), __kPRIME);
+            __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_twise128(xmm0, 5), xmm1)), __kPRIME);
+            __hash32B = _mm_mullo_epi32(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_twise128(xmm3, 5), xmm2)), __kPRIME);
+            __hash32C = _mm_mullo_epi32(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_twise128(xmm4, 5), xmm5)), __kPRIME);
 #endif // __SSE2__
             // kHalfStepSize = 3 * 2 * (2 * sizeof(uint32_t)) = 48
             p += kHalfStepSize;
@@ -213,10 +220,24 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
         __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, __hash32C), __kPRIME);
 #endif // __SSE2__
 
+#ifdef _MSC_VER
         hash32A = (hash32A ^ __hash32A.m128i_u32[0]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[3]) * kPRIME;
         hash32A = (hash32A ^ __hash32A.m128i_u32[1]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[2]) * kPRIME;
+#elif defined(__SEE4_1__)
+        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x00)) * kPRIME;
+        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x03)) * kPRIME;
+        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x01)) * kPRIME;
+        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x02)) * kPRIME;
+#elif defined(__SEE2__)
+        alignas(16) uint32_t m128i_u32[4];
+        _mm_store_si128((__m128i *)m128i_u32, __hash32A);
+        hash32A = (hash32A ^ m128i_u32[0]) * kPRIME;
+        hash32B = (hash32B ^ m128i_u32[3]) * kPRIME;
+        hash32A = (hash32A ^ m128i_u32[1]) * kPRIME;
+        hash32B = (hash32B ^ m128i_u32[2]) * kPRIME;
+#endif
     }
     else if (data_len >= kMinStepSize) {    // kMinStepSize = 3 * (2 * sizeof(uint32_t)) = 24
 #else
@@ -230,21 +251,21 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
         assert(data_len >= loop_cnt * kHalfMinStepSize);
         line_offset = data_len - loop_cnt * kHalfMinStepSize;
         for (; loop_cnt > 0; loop_cnt--) {
-            hash32A = (hash32A ^ (_rotl_KAZE32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 0 + line_offset))) * kPRIME;
-            hash32B = (hash32B ^ (_rotl_KAZE32(*(uint32_t *)(p + 4 + line_offset), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
-            hash32C = (hash32C ^ (_rotl_KAZE32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 8 + line_offset))) * kPRIME;
+            hash32A = (hash32A ^ (_rotl_twise32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 0 + line_offset))) * kPRIME;
+            hash32B = (hash32B ^ (_rotl_twise32(*(uint32_t *)(p + 4 + line_offset), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
+            hash32C = (hash32C ^ (_rotl_twise32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 8 + line_offset))) * kPRIME;
             // kHalfMinStepSize = 3 * sizeof(uint32_t) = 12
             p += kHalfMinStepSize;
         }
 
         // The value of hash32B is merged at the end, see below.
-        hash32A = (hash32A ^ _rotl_KAZE32(hash32C, 5)) * kPRIME;
+        hash32A = (hash32A ^ _rotl_twise32(hash32C, 5)) * kPRIME;
     }
     else {
         // Cases: 0, 1, 2, 3, 4, 5, 6, 7, ..., 31
         if (data_len & (4 * sizeof(uint32_t))) {
-            hash32A = (hash32A ^ (_rotl_KAZE32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
-            hash32B = (hash32B ^ (_rotl_KAZE32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 12))) * kPRIME;
+            hash32A = (hash32A ^ (_rotl_twise32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
+            hash32B = (hash32B ^ (_rotl_twise32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 12))) * kPRIME;
             p += 8 * sizeof(uint16_t);
         }
         // Cases: 0, 1, 2, 3, 4, 5, 6, 7, ..., 15
@@ -268,7 +289,7 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
         }
     }
 
-    uint32_t hash32 = (hash32A ^ _rotl_KAZE32(hash32B, 5)) * kPRIME;
+    uint32_t hash32 = (hash32A ^ _rotl_twise32(hash32B, 5)) * kPRIME;
     return (hash32 ^ (hash32 >> 16));
 }
 
@@ -327,32 +348,32 @@ uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
         assert(data_len >= loop_cnt * kHalfStepSize);
         line_offset = data_len - loop_cnt * kHalfStepSize;
         for (; loop_cnt > 0; loop_cnt--) {
-            xmm0 = _xmm_loadu(p + 0 * 16);
-            xmm1 = _xmm_loadu(p + 0 * 16 + line_offset);
-            xmm2 = _xmm_loadu(p + 1 * 16);
-            xmm3 = _xmm_loadu(p + 1 * 16 + line_offset);
-            xmm4 = _xmm_loadu(p + 2 * 16);
-            xmm5 = _xmm_loadu(p + 2 * 16 + line_offset);
-            xmm0nd = _xmm_loadu(p + 3 * 16);
-            xmm1nd = _xmm_loadu(p + 3 * 16 + line_offset);
-            xmm2nd = _xmm_loadu(p + 4 * 16);
-            xmm3nd = _xmm_loadu(p + 4 * 16 + line_offset);
-            xmm4nd = _xmm_loadu(p + 5 * 16);
-            xmm5nd = _xmm_loadu(p + 5 * 16 + line_offset);
+            xmm0 = _xmm_loadu_128(p + 0 * 16);
+            xmm1 = _xmm_loadu_128(p + 0 * 16 + line_offset);
+            xmm2 = _xmm_loadu_128(p + 1 * 16);
+            xmm3 = _xmm_loadu_128(p + 1 * 16 + line_offset);
+            xmm4 = _xmm_loadu_128(p + 2 * 16);
+            xmm5 = _xmm_loadu_128(p + 2 * 16 + line_offset);
+            xmm0nd = _xmm_loadu_128(p + 3 * 16);
+            xmm1nd = _xmm_loadu_128(p + 3 * 16 + line_offset);
+            xmm2nd = _xmm_loadu_128(p + 4 * 16);
+            xmm3nd = _xmm_loadu_128(p + 4 * 16 + line_offset);
+            xmm4nd = _xmm_loadu_128(p + 5 * 16);
+            xmm5nd = _xmm_loadu_128(p + 5 * 16 + line_offset);
 #if defined(__SSE2__)
-            __hash32A = _mm_mullo_epi16(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_KAZE128(xmm0, 5), xmm1)), __kPRIME);
-            __hash32B = _mm_mullo_epi16(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_KAZE128(xmm3, 5), xmm2)), __kPRIME);
-            __hash32C = _mm_mullo_epi16(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_KAZE128(xmm4, 5), xmm5)), __kPRIME);
-            __hash32A = _mm_mullo_epi16(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_KAZE128(xmm0nd, 5), xmm1nd)), __kPRIME);
-            __hash32B = _mm_mullo_epi16(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_KAZE128(xmm3nd, 5), xmm2nd)), __kPRIME);
-            __hash32C = _mm_mullo_epi16(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_KAZE128(xmm4nd, 5), xmm5nd)), __kPRIME);
+            __hash32A = _mm_mullo_epi16(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_twise128(xmm0, 5), xmm1)), __kPRIME);
+            __hash32B = _mm_mullo_epi16(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_twise128(xmm3, 5), xmm2)), __kPRIME);
+            __hash32C = _mm_mullo_epi16(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_twise128(xmm4, 5), xmm5)), __kPRIME);
+            __hash32A = _mm_mullo_epi16(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_twise128(xmm0nd, 5), xmm1nd)), __kPRIME);
+            __hash32B = _mm_mullo_epi16(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_twise128(xmm3nd, 5), xmm2nd)), __kPRIME);
+            __hash32C = _mm_mullo_epi16(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_twise128(xmm4nd, 5), xmm5nd)), __kPRIME);
 #else
-            __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_KAZE128(xmm0, 5), xmm1)), __kPRIME);
-            __hash32B = _mm_mullo_epi32(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_KAZE128(xmm3, 5), xmm2)), __kPRIME);
-            __hash32C = _mm_mullo_epi32(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_KAZE128(xmm4, 5), xmm5)), __kPRIME);
-            __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_KAZE128(xmm0nd, 5), xmm1nd)), __kPRIME);
-            __hash32B = _mm_mullo_epi32(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_KAZE128(xmm3nd, 5), xmm2nd)), __kPRIME);
-            __hash32C = _mm_mullo_epi32(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_KAZE128(xmm4nd, 5), xmm5nd)), __kPRIME);
+            __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_twise128(xmm0, 5), xmm1)), __kPRIME);
+            __hash32B = _mm_mullo_epi32(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_twise128(xmm3, 5), xmm2)), __kPRIME);
+            __hash32C = _mm_mullo_epi32(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_twise128(xmm4, 5), xmm5)), __kPRIME);
+            __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, _mm_xor_si128(_rotl_twise128(xmm0nd, 5), xmm1nd)), __kPRIME);
+            __hash32B = _mm_mullo_epi32(_mm_xor_si128(__hash32B, _mm_xor_si128(_rotl_twise128(xmm3nd, 5), xmm2nd)), __kPRIME);
+            __hash32C = _mm_mullo_epi32(_mm_xor_si128(__hash32C, _mm_xor_si128(_rotl_twise128(xmm4nd, 5), xmm5nd)), __kPRIME);
 #endif // __SSE2__
             // kHalfStepSize = 3 * 4 * (2 * sizeof(uint32_t)) = 3 * 32 = 96
             p += kHalfStepSize;
@@ -366,10 +387,24 @@ uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
         __hash32A = _mm_mullo_epi32(_mm_xor_si128(__hash32A, __hash32C), __kPRIME);
 #endif // __SSE2__
 
+#ifdef _MSC_VER
         hash32A = (hash32A ^ __hash32A.m128i_u32[0]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[3]) * kPRIME;
         hash32A = (hash32A ^ __hash32A.m128i_u32[1]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[2]) * kPRIME;
+#elif defined(__SEE4_1__)
+        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x00)) * kPRIME;
+        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x03)) * kPRIME;
+        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x01)) * kPRIME;
+        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x02)) * kPRIME;
+#elif defined(__SEE2__)
+        alignas(16) uint32_t m128i_u32[4];
+        _mm_store_si128((__m128i *)m128i_u32, __hash32A);
+        hash32A = (hash32A ^ m128i_u32[0]) * kPRIME;
+        hash32B = (hash32B ^ m128i_u32[3]) * kPRIME;
+        hash32A = (hash32A ^ m128i_u32[1]) * kPRIME;
+        hash32B = (hash32B ^ m128i_u32[2]) * kPRIME;
+#endif
     }
     else if (data_len >= kMinStepSize) {    // kMinStepSize = 3 * (2 * sizeof(uint32_t)) = 24
 #else
@@ -383,21 +418,21 @@ uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
         assert(data_len >= loop_cnt * kHalfMinStepSize);
         line_offset = data_len - loop_cnt * kHalfMinStepSize;
         for (; loop_cnt > 0; loop_cnt--) {
-            hash32A = (hash32A ^ (_rotl_KAZE32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 0 + line_offset))) * kPRIME;
-            hash32B = (hash32B ^ (_rotl_KAZE32(*(uint32_t *)(p + 4 + line_offset), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
-            hash32C = (hash32C ^ (_rotl_KAZE32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 8 + line_offset))) * kPRIME;
+            hash32A = (hash32A ^ (_rotl_twise32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 0 + line_offset))) * kPRIME;
+            hash32B = (hash32B ^ (_rotl_twise32(*(uint32_t *)(p + 4 + line_offset), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
+            hash32C = (hash32C ^ (_rotl_twise32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 8 + line_offset))) * kPRIME;
             // kHalfMinStepSize = 3 * sizeof(uint32_t) = 12
             p += kHalfMinStepSize;
         }
 
         // The value of hash32B is merged at the end, see below.
-        hash32A = (hash32A ^ _rotl_KAZE32(hash32C, 5)) * kPRIME;
+        hash32A = (hash32A ^ _rotl_twise32(hash32C, 5)) * kPRIME;
     }
     else {
         // Cases: 0, 1, 2, 3, 4, 5, 6, 7, ..., 31
         if (data_len & (4 * sizeof(uint32_t))) {
-            hash32A = (hash32A ^ (_rotl_KAZE32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
-            hash32B = (hash32B ^ (_rotl_KAZE32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 12))) * kPRIME;
+            hash32A = (hash32A ^ (_rotl_twise32(*(uint32_t *)(p + 0), 5) ^ *(uint32_t *)(p + 4))) * kPRIME;
+            hash32B = (hash32B ^ (_rotl_twise32(*(uint32_t *)(p + 8), 5) ^ *(uint32_t *)(p + 12))) * kPRIME;
             p += 8 * sizeof(uint16_t);
         }
         // Cases: 0, 1, 2, 3, 4, 5, 6, 7, ..., 15
@@ -421,7 +456,7 @@ uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
         }
     }
 
-    uint32_t hash32 = (hash32A ^ _rotl_KAZE32(hash32B, 5)) * kPRIME;
+    uint32_t hash32 = (hash32A ^ _rotl_twise32(hash32B, 5)) * kPRIME;
     return (hash32 ^ (hash32 >> 16));
 }
 
