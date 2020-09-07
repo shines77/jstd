@@ -119,10 +119,10 @@ namespace jstd {
 
 enum hash_func_id_t {
     HashFunc_CRC32C,
-    HashFunc_Default = HashFunc_CRC32C,
     HashFunc_Time31,
     HashFunc_Time31Std,
-    HashFunc_Last
+    HashFunc_Last,
+    HashFunc_Default = HashFunc_CRC32C
 };
 
 template <typename T,
