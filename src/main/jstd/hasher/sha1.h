@@ -1,6 +1,6 @@
 
-#ifndef JSTD_SUPPORT_SHA1_H
-#define JSTD_SUPPORT_SHA1_H
+#ifndef JSTD_HASHER_SHA1_H
+#define JSTD_HASHER_SHA1_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -538,4 +538,4 @@ static uint32_t sha1_x86(const char * data, size_t length)
 } // namespace sha1
 } // namespace jstd
 
-#endif // JSTD_SUPPORT_SHA1_H
+#endif // JSTD_HASHER_SHA1_H

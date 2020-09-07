@@ -64,12 +64,15 @@
 //#include <bmmintrin.h>
 #endif
 
-#if defined (__AES__) || defined (__PCLMUL__)
+#if defined(__AES__) || defined(__PCLMUL__)
+/* For AES && PCLMULQDQ */
 #include <wmmintrin.h>
 #endif
 
+#if defined(__AVX__) || defined(__AVX2__)
 /* For including AVX instructions */
 #include <immintrin.h>
+#endif
 
 #ifdef __3dNOW__
 #include <mm3dnow.h>

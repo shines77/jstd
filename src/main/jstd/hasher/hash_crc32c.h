@@ -1,6 +1,6 @@
 
-#ifndef JSTD_SUPPORT_HASH_CRC32C_H
-#define JSTD_SUPPORT_HASH_CRC32C_H
+#ifndef JSTD_HASHER_HASH_CRC32C_H
+#define JSTD_HASHER_HASH_CRC32C_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -46,7 +46,7 @@
 //
 
 namespace jstd {
-namespace crc32 {
+namespace hasher {
 
 static const uint32_t kInitPrime32 = 0x165667C5UL;
 
@@ -202,9 +202,9 @@ static uint32_t hash_crc32c(const char * data, size_t length)
 #endif
 }
 
-} // namespace crc32
+} // namespace hasher
 } // namespace jstd
 
 #undef JSTD_IS_X86_64
 
-#endif // JSTD_SUPPORT_HASH_CRC32C_H
+#endif // JSTD_HASHER_HASH_CRC32C_H
