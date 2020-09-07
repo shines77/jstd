@@ -88,7 +88,7 @@ namespace hasher {
 // As I said on one Japanese forum, Kiichi Nakai deserves an award worth his weight in gold, nah-nah, in DIAMONDS!
 //
 static
-uint32_t FNV1A_Hash_Yoshimura(const char * data, size_t data_len)
+uint32_t FNV1A_Yoshimura(const char * data, size_t data_len)
 {
     static const size_t kStepSize = (2 * sizeof(uint32_t)) * 2;     // 16 bytes one time
     static const size_t kHalfStepSize = kStepSize / 2;              // 8  bytes
@@ -146,12 +146,12 @@ uint32_t FNV1A_Hash_Yoshimura(const char * data, size_t data_len)
 }
 
 //
-// FNV1A_Hash_Yoshimitsu_TRIADii_XMM revision 1+ aka FNV1A_SaberFatigue, copyleft 2013-Apr-26 Kaze.
+// FNV1A_Yoshimitsu_TRIADii_XMM revision 1+ aka FNV1A_SaberFatigue, copyleft 2013-Apr-26 Kaze.
 // Targeted purpose: x-gram table lookups for Leprechaun r17.
 // Targeted machine: assuming SSE2 is present always - no non-SSE2 counterpart.
 //
 static
-uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
+uint32_t FNV1A_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
 {
     static const size_t kStepSize = 3 * 4 * (2 * sizeof(uint32_t)); // 96 bytes one time
     static const size_t kHalfStepSize = kStepSize / 2;              // 48 bytes
@@ -225,12 +225,7 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
         hash32B = (hash32B ^ __hash32A.m128i_u32[3]) * kPRIME;
         hash32A = (hash32A ^ __hash32A.m128i_u32[1]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[2]) * kPRIME;
-#elif defined(__SEE4_1__)
-        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x00)) * kPRIME;
-        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x03)) * kPRIME;
-        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x01)) * kPRIME;
-        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x02)) * kPRIME;
-#elif defined(__SEE2__)
+#else
         alignas(16) uint32_t m128i_u32[4];
         _mm_store_si128((__m128i *)m128i_u32, __hash32A);
         hash32A = (hash32A ^ m128i_u32[0]) * kPRIME;
@@ -303,7 +298,7 @@ uint32_t FNV1A_Hash_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
 // superfast for 'any length' keys, escpecially useful for text messages.
 //
 static
-uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
+uint32_t FNV1A_penumbra(const char * data, size_t data_len)
 {
     static const size_t kStepSize = 3 * 2 * 4 * (2 * sizeof(uint32_t)); // 192 bytes one time
     static const size_t kHalfStepSize = kStepSize / 2;                  // 96 bytes
@@ -392,12 +387,7 @@ uint32_t FNV1A_Hash_penumbra(const char * data, size_t data_len)
         hash32B = (hash32B ^ __hash32A.m128i_u32[3]) * kPRIME;
         hash32A = (hash32A ^ __hash32A.m128i_u32[1]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[2]) * kPRIME;
-#elif defined(__SEE4_1__)
-        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x00)) * kPRIME;
-        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x03)) * kPRIME;
-        hash32A = (hash32A ^ _exract_u32(__hash32A, 0x01)) * kPRIME;
-        hash32B = (hash32B ^ _exract_u32(__hash32A, 0x02)) * kPRIME;
-#elif defined(__SEE2__)
+#else
         alignas(16) uint32_t m128i_u32[4];
         _mm_store_si128((__m128i *)m128i_u32, __hash32A);
         hash32A = (hash32A ^ m128i_u32[0]) * kPRIME;

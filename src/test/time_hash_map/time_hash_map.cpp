@@ -902,9 +902,9 @@ int main(int argc, char * argv[])
     }
 
     const char * test_str = "abcdefghijklmnopqrstuvwxyz";
-    uint32_t fnv1a_1 = hasher::FNV1A_Hash_Yoshimura(test_str, libc::StrLen(test_str));
-    uint32_t fnv1a_2 = hasher::FNV1A_Hash_Yoshimitsu_TRIADii_XMM(test_str, libc::StrLen(test_str));
-    uint32_t fnv1a_3 = hasher::FNV1A_Hash_penumbra(test_str, libc::StrLen(test_str));
+    uint32_t fnv1a_1 = hasher::FNV1A_Yoshimura(test_str, libc::StrLen(test_str));
+    uint32_t fnv1a_2 = hasher::FNV1A_Yoshimitsu_TRIADii_XMM(test_str, libc::StrLen(test_str));
+    uint32_t fnv1a_3 = hasher::FNV1A_penumbra(test_str, libc::StrLen(test_str));
 
     jtest::CPU::warmup(1000);
 
