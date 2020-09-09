@@ -901,7 +901,8 @@ int main(int argc, char * argv[])
         iters = atoi(argv[1]);
     }
 
-    const char * test_str = "abcdefghijklmnopqrstuvwxyz";
+    const char * test_str = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+        "abcdefghijklmnopqrstuvwxyz";
     uint32_t fnv1a_1 = hasher::FNV1A_Yoshimura(test_str, libc::StrLen(test_str));
     uint32_t fnv1a_2 = hasher::FNV1A_Yoshimitsu_TRIADii_XMM(test_str, libc::StrLen(test_str));
     uint32_t fnv1a_3 = hasher::FNV1A_penumbra(test_str, libc::StrLen(test_str));
