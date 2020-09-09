@@ -12,9 +12,11 @@
 
 #include <assert.h>
 
+#ifdef _MSC_VER
 #ifndef __SSE4_1__
 // Just for coding in msvc or test, please comment it in the release version.
 #define __SSE4_1__      1
+#endif
 #endif
 
 //
@@ -225,16 +227,16 @@ uint32_t FNV1A_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
         hash32B = (hash32B ^ __hash32A.m128i_u32[3]) * kPRIME;
         hash32A = (hash32A ^ __hash32A.m128i_u32[1]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[2]) * kPRIME;
-#elif defined(__SSE4_1__)
-        uint32_t hash32_0 = _exract_u32(__hash32A, 0x00);
-        uint32_t hash32_1 = _exract_u32(__hash32A, 0x01);
-        uint32_t hash32_2 = _exract_u32(__hash32A, 0x02);
-        uint32_t hash32_3 = _exract_u32(__hash32A, 0x03);
+// #elif defined(__SSE4_1__)
+        // uint32_t hash32_0 = _exract_u32(__hash32A, 0x00);
+        // uint32_t hash32_1 = _exract_u32(__hash32A, 0x01);
+        // uint32_t hash32_2 = _exract_u32(__hash32A, 0x02);
+        // uint32_t hash32_3 = _exract_u32(__hash32A, 0x03);
 
-        hash32A = (hash32A ^ hash32_0) * kPRIME;
-        hash32B = (hash32B ^ hash32_3) * kPRIME;
-        hash32A = (hash32A ^ hash32_2) * kPRIME;
-        hash32B = (hash32B ^ hash32_1) * kPRIME;
+        // hash32A = (hash32A ^ hash32_0) * kPRIME;
+        // hash32B = (hash32B ^ hash32_3) * kPRIME;
+        // hash32A = (hash32A ^ hash32_2) * kPRIME;
+        // hash32B = (hash32B ^ hash32_1) * kPRIME;
 #else
         alignas(16) uint32_t m128i_u32[4];
         _mm_store_si128((__m128i *)&m128i_u32[0], __hash32A);
@@ -397,16 +399,16 @@ uint32_t FNV1A_penumbra(const char * data, size_t data_len)
         hash32B = (hash32B ^ __hash32A.m128i_u32[3]) * kPRIME;
         hash32A = (hash32A ^ __hash32A.m128i_u32[1]) * kPRIME;
         hash32B = (hash32B ^ __hash32A.m128i_u32[2]) * kPRIME;
-#elif defined(__SSE4_1__)
-        uint32_t hash32_0 = _exract_u32(__hash32A, 0x00);
-        uint32_t hash32_1 = _exract_u32(__hash32A, 0x01);
-        uint32_t hash32_2 = _exract_u32(__hash32A, 0x02);
-        uint32_t hash32_3 = _exract_u32(__hash32A, 0x03);
+// #elif defined(__SSE4_1__)
+        // uint32_t hash32_0 = _exract_u32(__hash32A, 0x00);
+        // uint32_t hash32_1 = _exract_u32(__hash32A, 0x01);
+        // uint32_t hash32_2 = _exract_u32(__hash32A, 0x02);
+        // uint32_t hash32_3 = _exract_u32(__hash32A, 0x03);
 
-        hash32A = (hash32A ^ hash32_0) * kPRIME;
-        hash32B = (hash32B ^ hash32_3) * kPRIME;
-        hash32A = (hash32A ^ hash32_2) * kPRIME;
-        hash32B = (hash32B ^ hash32_1) * kPRIME;
+        // hash32A = (hash32A ^ hash32_0) * kPRIME;
+        // hash32B = (hash32B ^ hash32_3) * kPRIME;
+        // hash32A = (hash32A ^ hash32_2) * kPRIME;
+        // hash32B = (hash32B ^ hash32_1) * kPRIME;
 #else
         alignas(16) uint32_t m128i_u32[4];
         _mm_store_si128((__m128i *)&m128i_u32[0], __hash32A);

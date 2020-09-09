@@ -12,9 +12,11 @@
 
 #include <assert.h>
 
+#ifdef _MSC_VER
 #ifndef __SSE4_2__
 // Just for coding in msvc or test, please comment it in the release version.
 #define __SSE4_2__      1
+#endif
 #endif
 
 #ifdef __SSE4_2__
