@@ -56,7 +56,7 @@ protected:
 public:
     basic_string_view() noexcept : data_(nullptr), length_(0) {}
     basic_string_view(const char_type * data) noexcept
-        : data_(data), length_(libc::StrLen(data)) {}
+        : data_(data), length_((data != nullptr) ? libc::StrLen(data) : 0) {}
     basic_string_view(const char_type * data, size_type length) noexcept
         : data_(data), length_(length) {}
     basic_string_view(const char_type * first, const char_type * last) noexcept
@@ -69,12 +69,12 @@ public:
     }
     basic_string_view(this_type && src) noexcept
         : data_(src.c_str()), length_(src.size()) {
-        src.clear();
+        //src.clear();
     }
     basic_string_view(const string_type & src) noexcept
         : data_(src.c_str()), length_(src.size()) {
     }
-    ~basic_string_view() noexcept {
+    ~basic_string_view() {
         /* Do nothing! */
     }
 

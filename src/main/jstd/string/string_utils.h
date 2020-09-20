@@ -111,6 +111,11 @@ CharTy * str_copy(CharTy * dest, const CharTy * src, std::size_t count)
     return dest;
 }
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
+
 static inline
 char * str_copy(char * dest, const char * src, std::size_t count)
 {
@@ -122,6 +127,10 @@ wchar_t * str_copy(wchar_t * dest, const wchar_t * src, std::size_t count)
 {
     return std::wcsncpy(dest, src, count);
 }
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 ////////////////////////////////// is_equal() //////////////////////////////////////
 

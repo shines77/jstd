@@ -45,7 +45,8 @@ namespace jstd {
 template <typename Key, typename Value>
 constexpr bool cValueIsInline()
 {
-    return ((sizeof(Key) + sizeof(Value)) > (sizeof(void *) * 2));
+    //return ((sizeof(Key) + sizeof(Value)) > (sizeof(void *) * 2));
+    return true;
 }
 
 template < typename Key, typename Value,
@@ -181,8 +182,12 @@ public:
         typedef const hash_entry &              const_node_reference;
         typedef typename this_type::value_type  element_type;
 
+#if 0
         typedef typename std::conditional<ValueIsInline, element_type *, element_type>::type
                                                 value_type;
+#else
+        typedef element_type                    value_type;
+#endif
 
         hash_entry * next;
         hash_code_t  hash_code;
@@ -1520,9 +1525,9 @@ protected:
             n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
 
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
-            //std::swap(*n_value, *value_tmp);
-            std::swap(n_value->first, value_tmp->first);
-            std::swap(n_value->second, value_tmp->second);
+            std::swap(*n_value, *value_tmp);
+            //std::swap(n_value->first, value_tmp->first);
+            //std::swap(n_value->second, value_tmp->second);
 
             this->n_allocator_.destroy(value_tmp);
         }
@@ -1929,7 +1934,7 @@ protected:
 
                         if (this->entry_capacity_ > kDefaultInitialCapacity &&
                             this->entry_size_ < this->entry_capacity_ / 8) {
-                            this->rearrange(ArrangeType::Reorder);
+                            rearrange_reorder();
                         }
 
                         this->update_version();
@@ -2426,6 +2431,8 @@ protected:
             this->n_allocator_.constructor(n_new_value, n_old_value->first,
                                                         n_old_value->second);
         }
+
+        this->n_allocator_.destructor(n_old_value);
     }
 
     void entry_value_move_assignment(entry_type * old_entry, entry_type * new_entry) {
@@ -2468,7 +2475,12 @@ protected:
                 entry_type ** new_buckets, size_type new_bucket_capacity,
                 entry_type * new_entries, size_type new_entry_capacity) {
         entry_type * old_first = this->buckets_[new_index];
-        if (likely(old_first != nullptr)) {
+        if (likely(old_first == nullptr)) {
+            if (prev_last == nullptr) {
+                new_buckets[index] = nullptr;
+            }
+        }
+        else {
             // Get the first free entry in the new entries list.
             entry_type * new_entry = &new_entries[new_entry_count++];
             assert(new_entry_count <= this->entry_size_);
@@ -2897,7 +2909,6 @@ protected:
 
         size_type new_bucket_capacity = new_entry_capacity / kMaxLoadFactor;
         if (new_entry_capacity != this->entry_capacity_) {
-            //assert(new_entry_capacity < this->entry_capacity_);
             if (likely(new_bucket_capacity != this->bucket_capacity_)) {
                 realloc_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
             }

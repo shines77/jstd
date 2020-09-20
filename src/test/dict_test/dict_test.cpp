@@ -1721,7 +1721,7 @@ int main(int argc, char * argv[])
         jtest::CPU::warmup(1000);
     }
 
-    //string_view_test();
+    string_view_test();
     //shiftable_ptr_test();
 
     hashtable_uinttest();
