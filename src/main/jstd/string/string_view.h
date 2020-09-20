@@ -69,7 +69,10 @@ public:
     }
     basic_string_view(this_type && src) noexcept
         : data_(src.c_str()), length_(src.size()) {
-        //src.clear();
+        // This is a wrong demonstration
+        //if (&rhs != this) {
+        //    src.clear();
+        //}
     }
     basic_string_view(const string_type & src) noexcept
         : data_(src.c_str()), length_(src.size()) {
@@ -99,7 +102,7 @@ public:
 
     basic_string_view & operator = (const char_type * data) noexcept {
         this->data_ = data;
-        this->length_ = libc::StrLen(data);
+        this->length_ = (data != nullptr) ? libc::StrLen(data) : 0;
         return *this;
     }
 
@@ -110,9 +113,18 @@ public:
     }
 
     basic_string_view & operator = (this_type && rhs) noexcept {
+#if 1
+        // More efficient version
         this->data_ = rhs.data();
         this->length_ = rhs.length();
-        rhs.clear();
+#else
+        // This is a wrong demonstration
+        if (&rhs != this) {
+            this->data_ = rhs.data();
+            this->length_ = rhs.length();
+            rhs.clear();
+        }
+#endif
         return *this;
     }
 

@@ -37,7 +37,9 @@ template <typename CharTy>
 inline std::size_t StrLen(const CharTy * str) {
     assert(str != nullptr);
     const CharTy * start = str;
-    while (CharTy(*str++) != CharTy(0));
+    while (CharTy(*str) != CharTy(0)) {
+        str++;
+    }
     assert(str >= start);
     return std::size_t(str - start);
 }
@@ -52,6 +54,14 @@ template <>
 inline std::size_t StrLen(const wchar_t * str) {
     assert(str != nullptr);
     return std::wcslen(str);
+}
+
+template <typename CharTy>
+inline std::size_t StrLenSafe(const CharTy * str) {
+    if (likely(str != nullptr))
+        return StrLen(str);
+    else
+        return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

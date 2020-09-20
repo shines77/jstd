@@ -1404,44 +1404,86 @@ protected:
     }
 
     JSTD_FORCEINLINE
+    void move_or_swap_value(n_value_type * old_value, n_value_type && new_value) {
+        bool has_move_assignment = std::is_nothrow_move_assignable<n_value_type>::value;
+        // Is noexcept move assignment operator ?
+        if (has_move_assignment) {
+            *old_value = std::move(new_value);
+        }
+        else {
+#if 1
+            std::swap(*old_value, new_value);
+#else
+            std::swap(old_value->first, new_value.first);
+            std::swap(old_value->second, new_value.second);
+#endif
+        }
+    }
+
+    JSTD_FORCEINLINE
+    void move_or_swap_key(key_type * old_value, key_type && new_value) {
+        bool has_move_assignment = std::is_nothrow_move_assignable<key_type>::value;
+        // Is noexcept move assignment operator ?
+        if (has_move_assignment) {   
+            *old_value = std::move(new_value);
+        }
+        else {
+            std::swap(*old_value, new_value);
+        }
+    }
+
+    JSTD_FORCEINLINE
+    void move_or_swap_mapped_value(mapped_type * old_value, mapped_type && new_value) {
+        bool has_move_assignment = std::is_nothrow_move_assignable<mapped_type>::value;
+        // Is noexcept move assignment operator ?
+        if (has_move_assignment) {
+            *old_value = std::move(new_value);
+        }
+        else {
+            std::swap(*old_value, new_value);
+        }
+    }
+
+    JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, const key_type & key,
                                                  const mapped_type & value) {
         if (new_entry->attrib.isFreeEntry()) {
+            new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
             this->allocator_.constructor(&new_entry->value, key, value);
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
+            new_entry->attrib.setInUseEntry();
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
             n_value->first = key;
             n_value->second = value;
         }
-
-        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, const key_type & key,
                                                  mapped_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
+            new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
             this->allocator_.constructor(&new_entry->value, key,
                                          std::forward<mapped_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
+            new_entry->attrib.setInUseEntry();
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
             n_value->first = key;
-            n_value->second = std::forward<mapped_type>(value);
+            move_or_swap_mapped_value(&n_value->second, std::forward<mapped_type>(value));
         }
-
-        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, key_type && key,
                                                  mapped_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
+            new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
             this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
                                            std::forward<key_type>(key),
@@ -1449,90 +1491,63 @@ protected:
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
+            new_entry->attrib.setInUseEntry();
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
-            n_value->first = std::forward<key_type>(key);
-            n_value->second = std::forward<mapped_type>(value);
+            move_or_swap_key(&n_value->first, std::forward<mapped_type>(key));
+            move_or_swap_mapped_value(&n_value->second, std::forward<mapped_type>(value));
         }
-
-        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, value_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
+            new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type [by move assignment].
             this->n_allocator_.constructor(&(new_entry->value),
                                            std::forward<value_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
-            value_type * pvalue = &new_entry->value;
-            //std::swap(*pvalue, value);
-            std::swap(pvalue->first, value.first);
-            std::swap(pvalue->second, value.second);
+            new_entry->attrib.setInUseEntry();
+            n_value_type * old_value = reinterpret_cast<n_value_type *>(&new_entry->value);
+            n_value_type * new_value = reinterpret_cast<n_value_type *>(&value);
+            move_or_swap_value(old_value, std::forward<n_value_type>(*new_value));
         }
-
-        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
     void construct_value(entry_type * new_entry, n_value_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
+            new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type [by move assignment].
             this->n_allocator_.constructor((n_value_type *)&(new_entry->value),
                                            std::forward<n_value_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
+            new_entry->attrib.setInUseEntry();
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
-            //std::swap(*n_value, value);
-            std::swap(n_value->first, value.first);
-            std::swap(n_value->second, value.second);
+            move_or_swap_value(n_value, std::forward<n_value_type>(value));
         }
-
-        new_entry->attrib.setInUseEntry();
-    }
-
-    JSTD_FORCEINLINE
-    void construct_value(entry_type * new_entry, n_value_type * value) {
-        if (new_entry->attrib.isFreeEntry()) {
-            // Use placement new method to construct value_type [by move assignment].
-            this->n_allocator_.constructor((n_value_type *)&(new_entry->value),
-                                           std::move(value->first),
-                                           std::move(value->second));
-        }
-        else {
-            assert(new_entry->attrib.isReusableEntry());
-            n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
-            //std::swap(*n_value, *value);
-            std::swap(n_value->first, value->first);
-            std::swap(n_value->second, value->second);
-        }
-
-        new_entry->attrib.setInUseEntry();
     }
 
     template <typename ...Args>
     JSTD_FORCEINLINE
     void construct_value_args(entry_type * new_entry, Args && ... args) {
         if (new_entry->attrib.isFreeEntry()) {
+            new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
             this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
                                            std::forward<Args>(args)...);
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
-            n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
+            new_entry->attrib.setInUseEntry();
+            n_value_type value_tmp(std::forward<Args>(args)...);
 
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
-            std::swap(*n_value, *value_tmp);
-            //std::swap(n_value->first, value_tmp->first);
-            //std::swap(n_value->second, value_tmp->second);
-
-            this->n_allocator_.destroy(value_tmp);
+            move_or_swap_value(n_value, std::forward<n_value_type>(value_tmp));
         }
-
-        new_entry->attrib.setInUseEntry();
     }
 
     JSTD_FORCEINLINE
@@ -1609,6 +1624,39 @@ protected:
 #endif
 
     JSTD_FORCEINLINE
+    entry_type * got_a_prepare_entry() {
+        if (likely(this->freelist_.is_empty())) {
+            if (unlikely(this->chunk_list_.lastChunk().is_full())) {
+#ifndef NDEBUG
+                size_type old_size = size();
+#endif
+                // Inflate the entry size for 1.
+                this->inflate_entries(1);
+#ifndef NDEBUG
+                size_type new_size = count_entries_size();
+                assert(new_size == old_size);
+#endif
+            }
+
+            // Get a unused entry.
+            entry_type * new_entry = &this->entries_[this->chunk_list_.lastChunkSize()];
+            assert(new_entry != nullptr);
+            uint32_t chunk_id = this->chunk_list_.lastChunkId();
+            new_entry->attrib.setValue(kIsFreeEntry, chunk_id);
+
+            this->chunk_list_.lastChunk().increase();
+            this->chunk_list_.appendEntry(chunk_id);
+            return new_entry;
+        }
+        else {
+            // Pop a free entry from freelist.
+            entry_type * free_entry = this->freelist_.pop_front();
+            this->chunk_list_.appendFreeEntry(free_entry);
+            return free_entry;
+        }
+    }
+
+    JSTD_FORCEINLINE
     entry_type * got_a_free_entry(hash_code_t hash_code, index_type & index) {
         if (likely(this->freelist_.is_empty())) {
             if (unlikely(this->chunk_list_.lastChunk().is_full())) {
@@ -1641,6 +1689,46 @@ protected:
             this->chunk_list_.appendFreeEntry(free_entry);
             return free_entry;
         }
+    }
+
+    JSTD_FORCEINLINE
+    void destroy_prepare_entry(entry_type * entry) {
+        assert(entry->attrib.isFreeEntry() || entry->attrib.isReusableEntry());
+        uint32_t chunk_id = entry->attrib.getChunkId();
+        if (!entry->attrib.isReusableEntry()) {
+            entry->attrib.setReusableEntry();
+        }
+
+        this->chunk_list_.removeEntry(chunk_id);
+        this->freelist_.push_front(entry);
+
+        //
+        // We use lazy destroy the entry->value,
+        // so the code below is commented out.
+        //
+        // Call the destructor for entry->value.
+        //
+        // this->allocator_.destructor(&entry->value);
+        //
+    }
+
+    JSTD_FORCEINLINE
+    void destroy_entry(entry_type * entry) {
+        assert(entry->attrib.isInUseEntry());
+        uint32_t chunk_id = entry->attrib.getChunkId();
+        entry->attrib.setReusableEntry();
+
+        this->chunk_list_.removeEntry(chunk_id);
+        this->freelist_.push_front(entry);
+
+        //
+        // We use lazy destroy the entry->value,
+        // so the code below is commented out.
+        //
+        // Call the destructor for entry->value.
+        //
+        // this->allocator_.destructor(&entry->value);
+        //
     }
 
     JSTD_FORCEINLINE
@@ -1806,7 +1894,7 @@ protected:
 
     template <typename ...Args>
     JSTD_FORCEINLINE
-    entry_type * emplace_new_entry(hash_code_t hash_code, index_type index, Args && ... args) {
+    entry_type * emplace_new_entry_args(hash_code_t hash_code, index_type index, Args && ... args) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value_args(new_entry, std::forward<Args>(args)...);
@@ -1815,8 +1903,8 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    entry_type * emplace_new_entry_from_value(hash_code_t hash_code,
-                                              index_type index, n_value_type && value) {
+    entry_type * emplace_new_entry(hash_code_t hash_code,
+                                   index_type index, n_value_type && value) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, std::forward<n_value_type>(value));
@@ -1825,13 +1913,13 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    entry_type * emplace_new_entry_from_value(hash_code_t hash_code,
-                                              index_type index, n_value_type * value) {
-        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
-        this->insert_to_bucket(new_entry, hash_code, index);
-        this->construct_value(new_entry, value);
+    entry_type * emplace_prepare_entry(entry_type * pre_entry,
+                                       hash_code_t hash_code,
+                                       index_type index) {
+        this->insert_to_bucket(pre_entry, hash_code, index);
+        pre_entry->attrib.setInUseEntry();
         this->entry_size_++;
-        return new_entry;
+        return pre_entry;
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
@@ -1845,8 +1933,8 @@ protected:
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            entry = this->emplace_new_entry(hash_code, index,
-                                            std::forward<Args>(args)...);
+            entry = this->emplace_new_entry_args(hash_code, index,
+                                                 std::forward<Args>(args)...);
             inserted = true;
         }
         else {
@@ -1867,8 +1955,40 @@ protected:
         assert(this->buckets() != nullptr);
         bool inserted;
 
+        entry_type * pre_entry = this->got_a_prepare_entry();
+        n_value_type * n_value = reinterpret_cast<n_value_type *>(&pre_entry->value);
+        n_allocator_.constructor(n_value, std::forward<Args>(args)...);
+
+        const key_type & key = pre_entry->value.first;
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            entry = this->emplace_prepare_entry(pre_entry, hash_code, index);
+            inserted = true;
+        }
+        else {
+            if (!OnlyIfAbsent) {
+                this->update_mapped_value(entry, std::move(n_value->second));
+            }
+            this->destroy_prepare_entry(pre_entry);
+            inserted = false;
+        }
+
+        this->update_version();
+
+        return ReturnType(iterator(this, entry), inserted);
+    }
+
+    template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    JSTD_FORCEINLINE
+    ReturnType emplace_unique_no_prepare(no_key_t nokey, Args && ... args) {
+        assert(this->buckets() != nullptr);
+        bool inserted;
+
         n_value_type value_tmp(std::forward<Args>(args)...);
-        //const key_type & key = this->get_key(value_tmp);
         const key_type & key = value_tmp.first;
 
         hash_code_t hash_code = this->get_hash(key);
@@ -1876,13 +1996,13 @@ protected:
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            entry = this->emplace_new_entry_from_value(hash_code, index,
-                                                       std::forward<n_value_type>(value_tmp));
+            entry = this->emplace_new_entry(hash_code, index,
+                                            std::forward<n_value_type>(value_tmp));
             inserted = true;
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_mapped_value(entry, value_tmp);
+                this->update_mapped_value(entry, std::move(value_tmp.second));
             }
             inserted = false;
         }
@@ -1914,21 +2034,8 @@ protected:
                         else
                             this->buckets_[index] = entry->next;
 
-                        assert(entry->attrib.isInUseEntry());
-                        uint32_t chunk_id = entry->attrib.getChunkId();
-                        entry->attrib.setReusableEntry();
-
-                        this->chunk_list_.removeEntry(chunk_id);
-                        this->freelist_.push_front(entry);
-
-                        //
-                        // We use lazy destroy the entry->value,
-                        // so the code below is commented out.
-                        //
-                        // Call the destructor for entry->value.
-                        //
-                        // this->allocator_.destructor(&entry->value);
-                        //
+                        // Use lazy destroy
+                        this->destroy_entry(entry);
 
                         this->entry_size_--;
 
