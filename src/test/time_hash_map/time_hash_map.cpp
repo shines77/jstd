@@ -119,7 +119,7 @@ static const bool FLAGS_test_256_bytes = true;
 #ifdef NDEBUG
 static const std::size_t kDefaultIters = 10000000;
 #else
-static const std::size_t kDefaultIters = 1000;
+static const std::size_t kDefaultIters = 10000;
 #endif
 
 static const std::size_t kInitCapacity = 16;

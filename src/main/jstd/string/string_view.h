@@ -367,7 +367,8 @@ public:
     }
 
     string_type to_string() const noexcept {
-        return std::move(string_type(this->data_, this->length_));
+        // Use RVO (return value optimization)
+        return string_type(this->data_, this->length_);
     }
 }; // class basic_string_view<CharTy>
 

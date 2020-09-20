@@ -87,7 +87,7 @@ void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment = 
 // TODO: _AlignedDeallocate()
 
 static inline
-void _AlignedDeallocate(void * p, std::size_t size = 0) {
+void _AlignedDeallocate(void * p, std::size_t size = 0, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
     ::_aligned_free(p);
 #else
@@ -324,6 +324,11 @@ struct allocator : public allocator_base<
     static const bool kThrowEx = ThrowEx;
     static const size_type kAlignOf = base_type::kAlignOf;
     static const size_type kAlignment = base_type::kAlignment;
+#if defined(MALLOC_ALIGNMENT)
+    static const size_type kMallocAlignment = MALLOC_ALIGNMENT;
+#else
+    static const size_type kMallocAlignment = 0;
+#endif
 
     allocator() noexcept {}
     allocator(const this_type & other) noexcept {}
@@ -345,9 +350,13 @@ struct allocator : public allocator_base<
         typedef allocator<Other, Alignment, ThrowEx> type;
     };
 
+    bool needAlignedAllocaote() const {
+        return ((kAlignment != 0) && (kAlignment != kMallocAlignment));
+    }
+
     pointer allocate(size_type count = 1) {
         pointer ptr;
-        if (kAlignment != 0)
+        if (needAlignedAllocaote())
             ptr = static_cast<pointer>(_AlignedAllocate(count * sizeof(value_type), kAlignment));
         else
             ptr = static_cast<pointer>(_Allocate(count * sizeof(value_type)));
@@ -360,7 +369,7 @@ struct allocator : public allocator_base<
     template <typename U>
     pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr;
-        if (kAlignment != 0)
+        if (needAlignedAllocaote())
             new_ptr = static_cast<pointer>(_AlignedReallocate((void *)ptr, count * sizeof(value_type), kAlignment));
         else
             new_ptr = static_cast<pointer>(_Reallocate((void *)ptr, count * sizeof(value_type)));
@@ -373,8 +382,8 @@ struct allocator : public allocator_base<
     template <typename U>
     void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
-        if (kAlignment != 0)
-            _AlignedDeallocate((void *)ptr, count * sizeof(value_type));
+        if (needAlignedAllocaote())
+            _AlignedDeallocate((void *)ptr, count * sizeof(value_type), kAlignment);
         else
             _Deallocate((void *)ptr, count * sizeof(value_type));
     }
