@@ -1517,7 +1517,7 @@ protected:
 
     JSTD_FORCEINLINE
     void update_mapped_value(entry_type * entry, value_type && value) {
-        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second))
+        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
     }
 
     JSTD_FORCEINLINE
@@ -1571,7 +1571,7 @@ protected:
 
     JSTD_FORCEINLINE
     void update_mapped_value_args(entry_type * entry, mapped_type && value) {
-        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value))
+        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
     }
 
     template <typename ...Args>
