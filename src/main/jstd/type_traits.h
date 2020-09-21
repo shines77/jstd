@@ -326,9 +326,9 @@ private:
     static No s_No;
 
     template <typename C>
-    static auto Call_name(const C & t, std::string & sname, void *)
+    static auto Call_name(const C * t, std::string * sname, void *)
         -> decltype(std::string{ std::declval<C const>().name() }, Yes{ }) {
-        sname = C::name();
+        *sname = C::name();
         return Yes{ };
     };
 
@@ -341,7 +341,7 @@ public:
     static std::string name() {
         std::string sname;
         T t;
-        Call_name<T>(t, sname, 0);
+        Call_name<T>(&t, &sname, 0);
         return sname;
     }
 };
@@ -386,13 +386,13 @@ private:
     struct really_has;
 
     template <typename C>
-    static const CharTy * Call_c_str(const C & s, really_has<const CharTy * (C::*)() const, &C::c_str> *) {
-        return s.c_str();
+    static const CharTy * Call_c_str(const C * s, really_has<const CharTy * (C::*)() const, &C::c_str> *) {
+        return s->c_str();
     }
 
     template <typename C>
-    static CharTy * Call_c_str(C & s, really_has<CharTy * (C::*)(), &C::c_str> *) {
-        return s.c_str();
+    static CharTy * Call_c_str(C * s, really_has<CharTy * (C::*)(), &C::c_str> *) {
+        return s->c_str();
     }
 
     template <typename>
@@ -402,7 +402,7 @@ private:
 
 public:
     static const CharTy * c_str(const T & s) {
-        const CharTy * data = Call_c_str<T>(s, 0);
+        const CharTy * data = Call_c_str<T>(&s, 0);
         return data;
     }
 };

@@ -71,15 +71,19 @@ public:
     typedef std::size_t size_type;
 
 private:
-    size_type           catId;
+    size_type           cat_id_;
     std::string         name_;
     std::vector<Result> result_list_;
 
 public:
-    BenchmarkCategory(const std::string & name) : catId(size_type(-1)), name_(name) {}
+    BenchmarkCategory(const std::string & name) : cat_id_(size_type(-1)), name_(name) {}
     ~BenchmarkCategory() {}
 
     size_type size() const { return result_list_.size(); }
+
+    size_type getCatId() const {
+        return this->cat_id_;
+    }
 
     std::string & name() {
         return this->name_;
@@ -101,10 +105,11 @@ public:
         return result_list_[index];
     }
 
-    void addResult(size_type catId, const std::string & name,
+    void addResult(size_type cat_id, const std::string & name,
                    double time1, size_type checksum1,
                    double time2, size_type checksum2) {
-        Result result(catId, name, time1, checksum1, time2, checksum2);
+        this->cat_id_ = cat_id;
+        Result result(cat_id, name, time1, checksum1, time2, checksum2);
         result_list_.push_back(std::move(result));
     }
 };
@@ -212,7 +217,7 @@ public:
             snprintf(time_buf, sizeof(time_buf), "%7.2f ns ", fMillisec * 1000000.0);
         }
 
-        return std::move(std::string(time_buf));
+        return std::string(time_buf);
     }
 
     /*******************************************************************************************************

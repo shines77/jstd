@@ -384,8 +384,9 @@ protected:
     allocator<std::pair<Key, Value>, Alignment, allocator_type::kThrowEx>
                                                     n_allocator_;
 
+    typedef typename std::allocator<value_type>::allocator value_allocator_type;
     std::allocator<mapped_type>                     mapped_allocator_;
-    typename std::allocator<value_type>::allocator  value_allocator_;
+    value_allocator_type                            value_allocator_;
 
     // Default initial capacity is 8.
     static const size_type kDefaultInitialCapacity = 8;
