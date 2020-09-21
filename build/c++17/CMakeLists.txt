@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-project(JSTD)
+project(JStd)
 
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 
@@ -22,13 +22,36 @@ include(CMakePackageConfigHelpers)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+include("${PROJECT_SOURCE_DIR}/cmake/detect_cpu_architectures.cmake")
+
+enable_language(ASM_NASM)
+
+if (CMAKE_CL_64)
+    set(CMAKE_CL_ARCH x64)
+else()
+    set(CMAKE_CL_ARCH x86)
+endif()
+
+##
+## See: https://stackoverflow.com/questions/39258250/how-to-detect-if-64-bit-msvc-with-cmake
+##
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # 64 bits
+    set(CMAKE_PLATFORM_ARCH Arch64)
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # 32 bits
+    set(CMAKE_PLATFORM_ARCH Arch32)
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
 message("------------ Options -------------")
-message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-
+message("  CMAKE_BUILD_TYPE         : ${CMAKE_BUILD_TYPE}")
+message("  CMAKE_CL_ARCH            : ${CMAKE_CL_ARCH}")
+message("  CMAKE_PLATFORM_ARCH      : ${CMAKE_PLATFORM_ARCH}")
+message("  CMAKE_CPU_ARCHITECTURES  : ${CMAKE_CPU_ARCHITECTURES}")
 message("----------------------------------")
 
 message("-------------- Env ---------------")
@@ -55,10 +78,24 @@ include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 
 if (NOT MSVC)
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
-    set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=gnu++17 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -Wno-register -fPIC -U__STRICT_ANSI__")
+    # set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=gnu++17 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -Wno-register -Wno-deprecated -fPIC -U__STRICT_ANSI__")
     ## add_compile_options(-D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__)
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+    # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
+    # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+
+    set(CMAKE_CXX_FLAGS_COMMON          "-Wno-deprecated-declarations -Wno-disabled-macro-expansion -Wno-float-equal -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-exit-time-destructors -Wno-missing-prototypes -Wno-padded -Wno-old-style-cast -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-unused-template -Wno-reserved-id-macro -Wno-header-hygiene -Wno-deprecated-register -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-register -Wno-deprecated -fPIC -U__STRICT_ANSI__")
+
+    set(CMAKE_C_FLAGS                   "-std=c99 -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
+    set(CMAKE_C_FLAGS_DEBUG             "-g -pg -D_DEBUG")
+    set(CMAKE_C_FLAGS_MINSIZEREL        "-Os -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE           "-O3 -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O2 -g")
+
+    set(CMAKE_CXX_FLAGS                 "-std=c++11 -stdlib=libstdc++ -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
+    set(CMAKE_CXX_FLAGS_DEBUG           "-g -pg -D_DEBUG")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL      "-Os -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O2 -g")
 endif()
 
 if (MSVC AND MSVC_STATIC_CRT)
@@ -76,13 +113,18 @@ if (MSVC AND MSVC_STATIC_CRT)
 endif()
 
 if (WIN32)
-    add_compile_options(-D_WIN32_WINNT=0x0601 -D_CRT_SECURE_NO_WARNINGS)
+    add_compile_options("-D_WIN32_WINNT=0x0601 -D_CRT_SECURE_NO_WARNINGS")
     ## set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 mswsock)
+endif()
+
+if (UNIX)
+    set(EXTRA_LIBS ${EXTRA_LIBS} pthread)
+else()
+    set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 set(JSTD_ENABLED ON)
 
-# Disable jstd library compile
 if (JSTD_ENABLED)
 
 set(JSTD_LIBNAME jstd${SUFFIX64_UNDERSCORE})
@@ -200,7 +242,6 @@ if (BUILD_SHARED_LIBS AND NOT ${SYMBOLPREFIX}${SYMBOLSUFFIX} STREQUAL "")
     endif()
 endif()
 
-# Disable jstd library compile
 endif(JSTD_ENABLED)
 
 add_custom_target(release

@@ -9,6 +9,9 @@ set(JSTD_MINOR_VERSION 1)
 set(JSTD_PATCH_VERSION 1.dev)
 set(JSTD_VERSION "${JSTD_MAJOR_VERSION}.${JSTD_MINOR_VERSION}.${JSTD_PATCH_VERSION}")
 
+set(CMAKE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../..")
+set(PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../..")
+
 if (UNIX)
     # Adhere to GNU filesystem layout conventions
     include(GNUInstallDirs)
@@ -74,25 +77,74 @@ include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
 include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 
 if (NOT MSVC)
-    ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
-    # set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -Wno-register -Wno-deprecated fPIC -U__STRICT_ANSI__")
-    ## add_compile_options(-D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__)
-    # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
-    # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+    ## Use clang-5.0, libc++ & libstdc++
+    # set(CMAKE_CXX_COMPILER "clang++-6.0")
+    # set(CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libstdc++ -Weverything -Wno-deprecated-declarations -Wno-disabled-macro-expansion -Wno-float-equal -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-exit-time-destructors -Wno-missing-prototypes -Wno-padded -Wno-old-style-cast -Wno-uninitialized -Wno-unused-parameter -Wno-unused-template -Wno-reserved-id-macro -Wno-header-hygiene -Wno-deprecated-register -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align")
+    ## Reserved flags: "-lc++abi"
+    # set(CMAKE_EXE_LINKER_FLAGS "-lstdc++")
 
+    ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
+    ## Reserved flags: -Wall, -D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__
+    # set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-uninitialized -Wno-unused-variable -fPIC -U__STRICT_ANSI__")
+
+    ## add_compile_options(-D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__)
+
+    ##
+    ## See: https://www.cnblogs.com/stonehat/p/7000637.html
+    ##
+    ## Usage: (Ubuntu 16.04 Server)
+    ##
+    ##   apt-get install llvm clang clang-5.0 clang-6.0 clang-8
+    ##
     set(CMAKE_CXX_FLAGS_COMMON          "-Wno-deprecated-declarations -Wno-disabled-macro-expansion -Wno-float-equal -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-exit-time-destructors -Wno-missing-prototypes -Wno-padded -Wno-old-style-cast -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-unused-template -Wno-reserved-id-macro -Wno-header-hygiene -Wno-deprecated-register -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-register -Wno-deprecated -fPIC -U__STRICT_ANSI__")
 
+    set(CMAKE_C_COMPILER                "/usr/bin/clang")
     set(CMAKE_C_FLAGS                   "-std=c99 -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
     set(CMAKE_C_FLAGS_DEBUG             "-g -pg -D_DEBUG")
     set(CMAKE_C_FLAGS_MINSIZEREL        "-Os -DNDEBUG")
     set(CMAKE_C_FLAGS_RELEASE           "-O3 -DNDEBUG")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O2 -g")
 
+    set(CMAKE_CXX_COMPILER              "/usr/bin/clang++")
     set(CMAKE_CXX_FLAGS                 "-std=c++11 -stdlib=libstdc++ -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
     set(CMAKE_CXX_FLAGS_DEBUG           "-g -pg -D_DEBUG")
     set(CMAKE_CXX_FLAGS_MINSIZEREL      "-Os -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O2 -g")
+
+    set(CMAKE_AR        "/usr/bin/llvm-ar")
+    set(CMAKE_LINKER    "/usr/bin/llvm-link")
+    set(CMAKE_NM        "/usr/bin/llvm-nm")
+    set(CMAKE_OBJDUMP   "/usr/bin/llvm-objdump")
+    set(CMAKE_RANLIB    "/usr/bin/llvm-ranlib")
+
+    ## set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
+    ## set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
+
+    ## Reserved flags: "-lc++abi"
+    set(CMAKE_EXE_LINKER_FLAGS "-lstdc++")
+    # set(CMAKE_EXE_LINKER_FLAGS "-lstdstdc++")
+
+    ##
+    ## See: https://cloud.tencent.com/developer/ask/101584
+    ##
+    ## "/usr/bin/c++", "/usr/bin/g++", "/usr/bin/clang++"
+    message("  CMAKE_C_COMPILER:   ${CMAKE_C_COMPILER}")
+    message("  CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        # using Clang
+        if (CONAN_LIBCXX STREQUAL "libstdc++11")
+            add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
+        elseif (CONAN_LIBCXX STREQUAL "libstdc++")
+            add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
+        endif()
+    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+        # using GCC
+    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+        # using Intel C++
+    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
+        # using Visual Studio C++
+    endif()
 endif()
 
 if (MSVC AND MSVC_STATIC_CRT)
@@ -111,7 +163,7 @@ endif()
 
 if (WIN32)
     add_compile_options("-D_WIN32_WINNT=0x0601 -D_CRT_SECURE_NO_WARNINGS")
-    ## set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 mswsock)
+    # set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 mswsock)
 endif()
 
 if (UNIX)
@@ -127,8 +179,8 @@ if (JSTD_ENABLED)
 set(JSTD_LIBNAME jstd${SUFFIX64_UNDERSCORE})
 
 # Set default library output directory
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/clang)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/clang)
 if (MSVC)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${PROJECT_BINARY_DIR}/lib/msvc/Debug)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_BINARY_DIR}/lib/msvc/Release)
@@ -145,22 +197,22 @@ endforeach()
 
 # Only generate .def for dll on MSVC and always produce pdb files for debug and release
 if (MSVC)
-  	if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_LESS 3.4)
-    	set(JSTD_DEF_FILE "${PROJECT_BINARY_DIR}/jstd.def")
-  	endif()
-  	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
-  	set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
+    if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_LESS 3.4)
+        set(JSTD_DEF_FILE "${PROJECT_BINARY_DIR}/jstd.def")
+    endif()
+    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 endif()
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
 
 set(JSTD_SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
+    ../../src/main/jstd/system/getchar.c
+    ../../src/main/jstd/system/sleep.c
+    ../../src/main/jstd/system/crtdbg_env.c
+    ../../src/main/jstd/basic/assert-c.c
     )
 
 # add objects to the jstd lib
@@ -174,25 +226,25 @@ endif()
 
 # Handle MSVC exports
 if (MSVC AND BUILD_SHARED_LIBS)
-  	if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_LESS 3.4)
-    	include("${PROJECT_SOURCE_DIR}/cmake/export.cmake")
-  	else()
-    	# Creates verbose .def file (51KB vs 18KB)
-    	set_target_properties(${JSTD_LIBNAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS true)
-  	endif()
+    if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_LESS 3.4)
+        include("${PROJECT_SOURCE_DIR}/cmake/export.cmake")
+    else()
+        # Creates verbose .def file (51KB vs 18KB)
+        set_target_properties(${JSTD_LIBNAME} PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS true)
+    endif()
 endif()
 
 # Set output for libopenblas
-set_target_properties( ${JSTD_LIBNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set_target_properties( ${JSTD_LIBNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib/clang)
 set_target_properties( ${JSTD_LIBNAME} PROPERTIES LIBRARY_OUTPUT_NAME_DEBUG "${JSTD_LIBNAME}_debug")
 set_target_properties( ${JSTD_LIBNAME} PROPERTIES EXPORT_NAME "jstd")
 
 foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
     string( TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG )
 
-    set_target_properties( ${JSTD_LIBNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG} )
-    set_target_properties( ${JSTD_LIBNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG} )
-    set_target_properties( ${JSTD_LIBNAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR}/lib/${OUTPUTCONFIG} )
+    set_target_properties( ${JSTD_LIBNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR}/lib/clang/${OUTPUTCONFIG} )
+    set_target_properties( ${JSTD_LIBNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR}/lib/clang/${OUTPUTCONFIG} )
+    set_target_properties( ${JSTD_LIBNAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PROJECT_BINARY_DIR}/lib/clang/${OUTPUTCONFIG} )
 endforeach()
 
 if (UNIX)
@@ -249,15 +301,15 @@ add_custom_target(release
 
 project(dict-test)
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/dict_test)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
+include_directories(../../src/test)
+include_directories(../../src/unittest)
+include_directories(../../src/test/dict_test)
 
 set(SOURCE_FILES
-    src/test/dict_test/dict_test.cpp
+    ../../src/test/dict_test/dict_test.cpp
     )
 
 add_executable(dict-test ${SOURCE_FILES})
@@ -265,15 +317,15 @@ target_link_libraries(dict-test ${EXTRA_LIBS} ${JSTD_LIBNAME})
 
 project(benchmark)
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/benchmark)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
+include_directories(../../src/test)
+include_directories(../../src/unittest)
+include_directories(../../src/test/benchmark)
 
 set(SOURCE_FILES
-    src/test/benchmark/benchmark.cpp
+    ../../src/test/benchmark/benchmark.cpp
     )
 
 add_executable(benchmark ${SOURCE_FILES})
@@ -281,15 +333,15 @@ target_link_libraries(benchmark ${EXTRA_LIBS} ${JSTD_LIBNAME})
 
 project(time_hash_map)
 
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/time_hash_map)
+include_directories(../../include)
+include_directories(../../src)
+include_directories(../../src/main)
+include_directories(../../src/test)
+include_directories(../../src/unittest)
+include_directories(../../src/test/time_hash_map)
 
 set(SOURCE_FILES
-    src/test/time_hash_map/time_hash_map.cpp
+    ../../src/test/time_hash_map/time_hash_map.cpp
     )
 
 add_executable(time_hash_map ${SOURCE_FILES})
