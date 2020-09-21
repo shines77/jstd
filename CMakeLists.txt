@@ -88,8 +88,8 @@ set(JSTD_LIBNAME jstd${SUFFIX64_UNDERSCORE})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 if (MSVC)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${PROJECT_BINARY_DIR}/lib/Debug)
-    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_BINARY_DIR}/lib/Release)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${PROJECT_BINARY_DIR}/lib/msvc/Debug)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${PROJECT_BINARY_DIR}/lib/msvc/Release)
 endif()
 
 # get obj vars into format that add_library likes: $<TARGET_OBJS:objlib>
@@ -119,7 +119,6 @@ set(JSTD_SOURCE_FILES
     src/main/jstd/system/sleep.c
     src/main/jstd/system/crtdbg_env.c
     src/main/jstd/basic/assert-c.c
-    src/test/dict_test/dict_test.cpp
     )
 
 # add objects to the jstd lib
