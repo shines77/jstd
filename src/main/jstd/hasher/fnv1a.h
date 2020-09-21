@@ -161,9 +161,9 @@ uint32_t FNV1A_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
     static const size_t kHalfMinStepSize = kMinStepSize / 2;        // 12 bytes
     static const uint32_t kPRIME = 709607;
 
-    uint32_t hash32A = 2166136261;
-    uint32_t hash32B = 2166136261;
-    uint32_t hash32C = 2166136261;
+    uint32_t hash32A = 2166136261UL;
+    uint32_t hash32B = 2166136261UL;
+    uint32_t hash32C = 2166136261UL;
 
     assert(data != nullptr);
     const char * p = data;
@@ -178,10 +178,10 @@ uint32_t FNV1A_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
     __m128i xmm3;
     __m128i xmm4;
     __m128i xmm5;
-    __m128i __hash32A = _mm_set1_epi32(2166136261);
-    __m128i __hash32B = _mm_set1_epi32(2166136261);
-    __m128i __hash32C = _mm_set1_epi32(2166136261);
-    __m128i __kPRIME  = _mm_set1_epi32(709607);
+    __m128i __hash32A = _mm_set1_epi32(2166136261UL);
+    __m128i __hash32B = _mm_set1_epi32(2166136261UL);
+    __m128i __hash32C = _mm_set1_epi32(2166136261UL);
+    __m128i __kPRIME  = _mm_set1_epi32(709607UL);
 #endif
 
 #if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__) || defined(__AVX2__)
@@ -318,9 +318,9 @@ uint32_t FNV1A_penumbra(const char * data, size_t data_len)
     static const size_t kHalfMinStepSize = kMinStepSize / 2;            // 12 bytes
     static const uint32_t kPRIME = 709607;
 
-    uint32_t hash32A = 2166136261;
-    uint32_t hash32B = 2166136261;
-    uint32_t hash32C = 2166136261;
+    uint32_t hash32A = 2166136261UL;
+    uint32_t hash32B = 2166136261UL;
+    uint32_t hash32C = 2166136261UL;
     const char * p = data;
     size_t loop_cnt;
     size_t line_offset;
@@ -338,10 +338,10 @@ uint32_t FNV1A_penumbra(const char * data, size_t data_len)
     __m128i xmm3nd;
     __m128i xmm4nd;
     __m128i xmm5nd;
-    __m128i __hash32A = _mm_set1_epi32(2166136261);
-    __m128i __hash32B = _mm_set1_epi32(2166136261);
-    __m128i __hash32C = _mm_set1_epi32(2166136261);
-    __m128i __kPRIME  = _mm_set1_epi32(709607);
+    __m128i __hash32A = _mm_set1_epi32(2166136261UL);
+    __m128i __hash32B = _mm_set1_epi32(2166136261UL);
+    __m128i __hash32C = _mm_set1_epi32(2166136261UL);
+    __m128i __kPRIME  = _mm_set1_epi32(709607UL);
 #endif
 
 #if defined(__SSE2__) || defined(__SSE4_1__) || defined(__AVX__) || defined(__AVX2__)

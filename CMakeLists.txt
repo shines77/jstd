@@ -164,6 +164,8 @@ set(JSTD_SOURCE_FILES
     src/main/jstd/basic/assert-c.c
     )
 
+# add_subdirectory(main EXCLUDE_FROM_ALL src/main/asm)
+
 # add objects to the jstd lib
 add_library(${JSTD_LIBNAME} ${JSTD_SOURCE_FILES} ${TARGET_OBJS} ${JSTD_DEF_FILE})
 target_include_directories(${JSTD_LIBNAME} INTERFACE $<INSTALL_INTERFACE:jstd/all${SUFFIX64}>)
