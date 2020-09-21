@@ -44,7 +44,7 @@ struct string_format {
 template <typename T>
 struct string_format<T, true, false> {
     std::string to_string(const T & val) {
-        return std::move(std::to_string(val));
+        return std::to_string(val);
     }
 };
 
@@ -58,7 +58,7 @@ struct string_format<T, false, true> {
 template <typename T>
 struct string_format<T, false, false> {
     std::string to_string(const T & val) {
-        return std::move(std::string("0x") + std::string(std::pointer_traits<T>::pointer_to(val)));
+        return (std::string("0x") + std::string(std::pointer_traits<T>::pointer_to(val)));
     }
 };
 
