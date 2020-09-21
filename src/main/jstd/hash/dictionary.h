@@ -1334,76 +1334,6 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void update_mapped_value(entry_type * entry, const value_type & value) {
-        entry->value.second = value.second;
-    }
-
-    JSTD_FORCEINLINE
-    void update_mapped_value(entry_type * entry, value_type && value) {
-        entry->value.second = std::move(value.second);
-    }
-
-    JSTD_FORCEINLINE
-    void update_mapped_value(entry_type * entry, const n_value_type & value) {
-        entry->value.second = value.second;
-    }
-
-    JSTD_FORCEINLINE
-    void update_mapped_value(entry_type * entry, n_value_type && value) {
-        key_type key_tmp = std::move(value.first);
-        entry->value.second = std::move(value.second);
-    }
-
-    JSTD_FORCEINLINE
-    void update_mapped_value(entry_type * entry, const mapped_type & value) {
-        entry->value.second = value;
-    }
-
-    // Update the existed key's value, maybe by move assignment operator.
-    JSTD_FORCEINLINE
-    void update_mapped_value(entry_type * entry, mapped_type && value) {
-        entry->value.second = std::forward<mapped_type>(value);
-    }
-
-    template <typename ...Args>
-    JSTD_FORCEINLINE
-    void update_mapped_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
-#ifndef NDEBUG
-        static int display_count = 0;
-        display_count++;
-        if (display_count < 30) {
-            if (has_c_str<key_type, char>::value)
-                printf("update_mapped_value_args_impl(), key = %s\n", call_c_str<key_type, char>::c_str(key));
-            else
-                printf("update_mapped_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
-        }
-#endif
-#if 0
-        value_allocator_.destructor(&entry->value.second);
-        value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
-#else
-        mapped_type second(std::forward<Args>(args)...);
-        std::swap(entry->value.second, second);
-#endif
-    }
-
-    JSTD_FORCEINLINE
-    void update_mapped_value_args(entry_type * entry, const mapped_type & value) {
-        entry->value.second = value;
-    }
-
-    JSTD_FORCEINLINE
-    void update_mapped_value_args(entry_type * entry, mapped_type && value) {
-        entry->value.second = std::forward<mapped_type>(value);
-    }
-
-    template <typename ...Args>
-    JSTD_FORCEINLINE
-    void update_mapped_value_args(entry_type * entry, Args && ... args) {
-        update_mapped_value_args_impl(entry, std::forward<Args>(args)...);
-    }
-
-    JSTD_FORCEINLINE
     void move_or_swap_value(n_value_type * old_value, n_value_type && new_value) {
         bool has_move_assignment = std::is_nothrow_move_assignable<n_value_type>::value;
         // Is noexcept move assignment operator ?
@@ -1421,14 +1351,14 @@ protected:
     }
 
     JSTD_FORCEINLINE
-    void move_or_swap_key(key_type * old_value, key_type && new_value) {
+    void move_or_swap_key(key_type * old_key, key_type && new_key) {
         bool has_move_assignment = std::is_nothrow_move_assignable<key_type>::value;
         // Is noexcept move assignment operator ?
         if (has_move_assignment) {   
-            *old_value = std::move(new_value);
+            *old_key = std::move(new_key);
         }
         else {
-            std::swap(*old_value, new_value);
+            std::swap(*old_key, new_key);
         }
     }
 
@@ -1550,58 +1480,19 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
-    void update_value(entry_type * old_entry, const key_type & key,
-                                              const mapped_type & value) {
-        value_type value_tmp(key, value);
-        std::swap(old_entry->value, value_tmp);
-    }
-
-    JSTD_FORCEINLINE
-    void update_value(entry_type * old_entry, const key_type & key,
-                                              mapped_type && value) {
-        value_type value_tmp(key, std::forward<mapped_type>(value));
-        std::swap(old_entry->value, value_tmp);
-    }
-
-    JSTD_FORCEINLINE
-    void update_value(entry_type * old_entry, key_type && key,
-                                              mapped_type && value) {
-        n_value_type value_tmp(std::forward<key_type>(key),
-                               std::forward<mapped_type>(value));
-        n_value_type * n_value = reinterpret_cast<n_value_type *>(&old_entry->value);
-        std::swap(*n_value, value_tmp);
-    }
-
-    JSTD_FORCEINLINE
-    void update_value(entry_type * old_entry, const value_type & value) {
-        old_entry->value = value;
-    }
-
-    JSTD_FORCEINLINE
-    void update_value(entry_type * old_entry, value_type && value) {
-        old_entry->value = std::forward<value_type>(value);
-    }
-
-    JSTD_FORCEINLINE
-    void update_value(entry_type * old_entry, n_value_type * value) {
-        n_value_type * n_value = reinterpret_cast<n_value_type *>(&old_entry->value);
-        std::swap(*n_value, *value);
-    }
-
     template <typename ...Args>
     JSTD_FORCEINLINE
     void update_value_args_impl(entry_type * old_entry, const key_type & key, Args && ... args) {
-        mapped_type mapped_value(std::forward<Args>(args)...);
-        std::swap(old_entry->value.second, mapped_value);
+        mapped_type second(std::forward<Args>(args)...);
+        move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
     }
 
     template <typename ...Args>
     JSTD_FORCEINLINE
     void update_value_args_impl(entry_type * old_entry, key_type && key, Args && ... args) {
-        key_type key_tmp = std::move(key);
-        mapped_type mapped_value(std::forward<Args>(args)...);
-        std::swap(old_entry->value.second, mapped_value);
+        //key_type key_tmp = std::move(key);
+        mapped_type second(std::forward<Args>(args)...);
+        move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
     }
 
 #if 1
@@ -1614,14 +1505,80 @@ protected:
     template <typename ...Args>
     JSTD_FORCEINLINE
     void update_value_args(entry_type * old_entry, Args && ... args) {
-        n_value_type * value_tmp = this->n_allocator_.create(std::forward<Args>(args)...);
-
-        n_value_type * n_value = reinterpret_cast<n_value_type *>(&old_entry->value);
-        std::swap(*n_value, *value_tmp);
-
-        this->n_allocator_.destroy(value_tmp);
+        n_value_type value_tmp(std::forward<Args>(args)...);
+        move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(value_tmp.second));
     }
 #endif
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, const value_type & value) {
+        entry->value.second = value.second;
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, value_type && value) {
+        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second))
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, const n_value_type & value) {
+        entry->value.second = value.second;
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, n_value_type && value) {
+        //key_type key_tmp = std::move(value.first);
+        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, const mapped_type & value) {
+        entry->value.second = value;
+    }
+
+    // Update the existed key's value, maybe by move assignment operator.
+    JSTD_FORCEINLINE
+    void update_mapped_value(entry_type * entry, mapped_type && value) {
+        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
+    }
+
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void update_mapped_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
+#ifndef NDEBUG
+        static int display_count = 0;
+        display_count++;
+        if (display_count < 30) {
+            if (has_c_str<key_type, char>::value)
+                printf("update_mapped_value_args_impl(), key = %s\n", call_c_str<key_type, char>::c_str(key));
+            else
+                printf("update_mapped_value_args_impl(), key(non-string) = %u\n", *(uint32_t *)&key);
+        }
+#endif
+#if 1
+        mapped_type second(std::forward<Args>(args)...);
+        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(second));
+#else
+        value_allocator_.destructor(&entry->value.second);
+        value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
+#endif
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value_args(entry_type * entry, const mapped_type & value) {
+        entry->value.second = value;
+    }
+
+    JSTD_FORCEINLINE
+    void update_mapped_value_args(entry_type * entry, mapped_type && value) {
+        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value))
+    }
+
+    template <typename ...Args>
+    JSTD_FORCEINLINE
+    void update_mapped_value_args(entry_type * entry, Args && ... args) {
+        update_mapped_value_args_impl(entry, std::forward<Args>(args)...);
+    }
 
     JSTD_FORCEINLINE
     entry_type * got_a_prepare_entry() {
