@@ -2,6 +2,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 project(JSTD)
 
+set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
+
 set(JSTD_MAJOR_VERSION 0)
 set(JSTD_MINOR_VERSION 1)
 set(JSTD_PATCH_VERSION 1.dev)
@@ -75,6 +77,8 @@ if (WIN32)
     ## set(EXTRA_LIBS ${EXTRA_LIBS} ws2_32 mswsock)
 endif()
 
+set(JSTD_ENABLED ON)
+
 # Disable jstd library compile
 if (JSTD_ENABLED)
 
@@ -110,8 +114,16 @@ include_directories(include)
 include_directories(src)
 include_directories(src/main)
 
+set(JSTD_SOURCE_FILES
+    src/main/jstd/system/getchar.c
+    src/main/jstd/system/sleep.c
+    src/main/jstd/system/crtdbg_env.c
+    src/main/jstd/basic/assert-c.c
+    src/test/dict_test/dict_test.cpp
+    )
+
 # add objects to the jstd lib
-add_library(${JSTD_LIBNAME} ${JSTD_SOURCES} ${TARGET_OBJS} ${JSTD_DEF_FILE})
+add_library(${JSTD_LIBNAME} ${JSTD_SOURCE_FILES} ${TARGET_OBJS} ${JSTD_DEF_FILE})
 target_include_directories(${JSTD_LIBNAME} INTERFACE $<INSTALL_INTERFACE:jstd/all${SUFFIX64}>)
 
 # Android needs to explicitly link against libm
@@ -205,15 +217,11 @@ include_directories(src/unittest)
 include_directories(src/test/dict_test)
 
 set(SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
     src/test/dict_test/dict_test.cpp
     )
 
 add_executable(dict-test ${SOURCE_FILES})
-target_link_libraries(dict-test ${EXTRA_LIBS})
+target_link_libraries(dict-test ${EXTRA_LIBS} ${JSTD_LIBNAME})
 
 project(benchmark)
 
@@ -225,15 +233,11 @@ include_directories(src/unittest)
 include_directories(src/test/benchmark)
 
 set(SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
     src/test/benchmark/benchmark.cpp
     )
 
 add_executable(benchmark ${SOURCE_FILES})
-target_link_libraries(benchmark ${EXTRA_LIBS})
+target_link_libraries(benchmark ${EXTRA_LIBS} ${JSTD_LIBNAME})
 
 project(time_hash_map)
 
@@ -245,12 +249,8 @@ include_directories(src/unittest)
 include_directories(src/test/time_hash_map)
 
 set(SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
     src/test/time_hash_map/time_hash_map.cpp
     )
 
 add_executable(time_hash_map ${SOURCE_FILES})
-target_link_libraries(time_hash_map ${EXTRA_LIBS})
+target_link_libraries(time_hash_map ${EXTRA_LIBS} ${JSTD_LIBNAME})
