@@ -22,6 +22,14 @@ include(CMakePackageConfigHelpers)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    option(NO_AFFINITY "Disable support for CPU affinity masks to avoid binding processes from e.g. R or numpy/scipy to a single core" ON)
+else()
+    set(NO_AFFINITY 1)
+endif()
+
+include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
+include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 include("${PROJECT_SOURCE_DIR}/cmake/detect_cpu_architectures.cmake")
 
 enable_language(ASM_NASM)
@@ -66,15 +74,6 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
 endif()
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    option(NO_AFFINITY "Disable support for CPU affinity masks to avoid binding processes from e.g. R or numpy/scipy to a single core" ON)
-else()
-    set(NO_AFFINITY 1)
-endif()
-
-include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
-include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 
 if (NOT MSVC)
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
