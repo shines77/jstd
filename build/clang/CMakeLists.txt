@@ -12,17 +12,25 @@ set(JSTD_VERSION "${JSTD_MAJOR_VERSION}.${JSTD_MINOR_VERSION}.${JSTD_PATCH_VERSI
 set(CMAKE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/../..")
 set(PROJECT_SOURCE_DIR "${PROJECT_SOURCE_DIR}/../..")
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    option(NO_AFFINITY "Disable support for CPU affinity masks to avoid binding processes from e.g. R or numpy/scipy to a single core" ON)
+else()
+    set(NO_AFFINITY 1)
+endif()
+
+include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
+include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
+include("${PROJECT_SOURCE_DIR}/cmake/detect_cpu_architectures.cmake")
+
 if (UNIX)
     # Adhere to GNU filesystem layout conventions
     include(GNUInstallDirs)
 endif()
 
 include(CMakePackageConfigHelpers)
-
-set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
-
-include("${PROJECT_SOURCE_DIR}/cmake/detect_cpu_architectures.cmake")
 
 enable_language(ASM_NASM)
 
@@ -66,15 +74,6 @@ if (CMAKE_BUILD_TYPE STREQUAL Debug)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
 endif()
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    option(NO_AFFINITY "Disable support for CPU affinity masks to avoid binding processes from e.g. R or numpy/scipy to a single core" ON)
-else()
-    set(NO_AFFINITY 1)
-endif()
-
-include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
-include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 
 if (NOT MSVC)
     ## Use clang-5.0, libc++ & libstdc++
