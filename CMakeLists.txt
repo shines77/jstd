@@ -88,7 +88,7 @@ if (NOT MSVC)
     set(CMAKE_C_FLAGS_RELEASE           "-O3 -DNDEBUG")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O2 -g")
 
-    set(CMAKE_CXX_FLAGS                 "-std=c++11 -stdlib=libstdc++ -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
+    set(CMAKE_CXX_FLAGS                 "-std=gnu++11 -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
     set(CMAKE_CXX_FLAGS_DEBUG           "-g -pg -D_DEBUG")
     set(CMAKE_CXX_FLAGS_MINSIZEREL      "-Os -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -DNDEBUG")
