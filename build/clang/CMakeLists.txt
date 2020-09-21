@@ -96,17 +96,19 @@ if (NOT MSVC)
     ##
     ##   apt-get install llvm clang clang-5.0 clang-6.0 clang-8
     ##
-    set(CMAKE_CXX_FLAGS_COMMON          "-Wno-deprecated-declarations -Wno-disabled-macro-expansion -Wno-float-equal -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-exit-time-destructors -Wno-missing-prototypes -Wno-padded -Wno-old-style-cast -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-unused-template -Wno-reserved-id-macro -Wno-header-hygiene -Wno-deprecated-register -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-register -Wno-deprecated -fPIC -U__STRICT_ANSI__")
+    set(CMAKE_CPP_FLAGS_COMMON          "-Wno-deprecated-declarations -Wno-disabled-macro-expansion -Wno-float-equal -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-global-constructors -Wno-exit-time-destructors -Wno-padded -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-unused-template -Wno-reserved-id-macro -Wno-header-hygiene -Wno-deprecated-register -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-deprecated -fPIC -U__STRICT_ANSI__")
+    set(CMAKE_C_FLAGS_COMMON            "-Wno-missing-prototypes")
+    set(CMAKE_CXX_FLAGS_COMMON          "-Wno-old-style-cast -Wno-register")
 
     set(CMAKE_C_COMPILER                "/usr/bin/clang")
-    set(CMAKE_C_FLAGS                   "-std=c99 -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
+    set(CMAKE_C_FLAGS                   "-std=c99 -march=native -Wall ${CMAKE_CPP_FLAGS_COMMON} ${CMAKE_C_FLAGS_COMMON}")
     set(CMAKE_C_FLAGS_DEBUG             "-g -pg -D_DEBUG")
     set(CMAKE_C_FLAGS_MINSIZEREL        "-Os -DNDEBUG")
     set(CMAKE_C_FLAGS_RELEASE           "-O3 -DNDEBUG")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O2 -g")
 
     set(CMAKE_CXX_COMPILER              "/usr/bin/clang++")
-    set(CMAKE_CXX_FLAGS                 "-std=c++11 -stdlib=libstdc++ -march=native -Wall ${CMAKE_CXX_FLAGS_COMMON}")
+    set(CMAKE_CXX_FLAGS                 "-std=c++11 -stdlib=libstdc++ -march=native -Wall ${CMAKE_CPP_FLAGS_COMMON} ${CMAKE_CXX_FLAGS_COMMON}")
     set(CMAKE_CXX_FLAGS_DEBUG           "-g -pg -D_DEBUG")
     set(CMAKE_CXX_FLAGS_MINSIZEREL      "-Os -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -DNDEBUG")
