@@ -3068,7 +3068,7 @@ protected:
 
 public:
     inline hash_code_t get_hash(const key_type & key) const {
-        hash_code_t hash_code = this->hasher_(key);
+        hash_code_t hash_code = static_cast<hash_code_t>(this->hasher_(key));
         //hash_code = hash_code ^ (hash_code >> 16);
         return hash_code;
     }
