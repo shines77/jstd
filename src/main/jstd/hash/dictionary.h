@@ -2558,8 +2558,7 @@ protected:
     size_type realloc_high_bucket_push_back(
                 size_type new_entry_count, entry_type * prev_last,
                 index_type index, index_type new_index,
-                entry_type ** new_buckets, size_type new_bucket_capacity,
-                entry_type * new_entries, size_type new_entry_capacity) {
+                entry_type ** new_buckets, entry_type * new_entries) {
         entry_type * old_first = this->buckets_[new_index];
         if (likely(old_first == nullptr)) {
             if (prev_last == nullptr) {
@@ -2583,11 +2582,7 @@ protected:
 
                 // Transfer the old entry to new entry.
                 transfer_entry_to_new(old_entry, new_entry);
-#ifndef NDEBUG
-                hash_code_t hash_code = old_entry->hash_code;
-                index_type new_index = this->index_for(hash_code, new_bucket_capacity - 1);
-                assert(new_index == index);
-#endif
+
                 old_entry = old_entry->next;
             }
 
@@ -2624,8 +2619,7 @@ protected:
                 new_entry_count = realloc_high_bucket_push_back(
                                             new_entry_count, nullptr,
                                             index, new_index,
-                                            new_buckets, new_bucket_capacity,
-                                            new_entries, new_entry_capacity);
+                                            new_buckets, new_entries);
             }
             else {
                 // Get the first free entry in the new entries list.
@@ -2663,8 +2657,7 @@ protected:
                 new_entry_count = realloc_high_bucket_push_back(
                                             new_entry_count, new_prev,
                                             index, new_index,
-                                            new_buckets, new_bucket_capacity,
-                                            new_entries, new_entry_capacity);
+                                            new_buckets, new_entries);
             }
         }
     }

@@ -513,8 +513,8 @@ static void time_map_find_failed(std::size_t iters) {
     mapped_type max_iters = static_cast<mapped_type>(iters);
 
     for (i = 0; i < max_iters; i++) {
-        hashmap.emplace(i, i + 1);
-        //hashmap[i] = i + 1;
+        //hashmap.emplace(i, i + 1);
+        hashmap[i] = i + 1;
     }
 
     r = 1;
