@@ -72,7 +72,8 @@ public:
     typedef typename std::make_signed<size_type>::type
                                             ssize_type;
     typedef std::size_t                     index_type;
-    typedef typename Hasher::result_type    hash_code_t;
+    //typedef typename Hasher::result_type    hash_code_t;
+    typedef std::uint32_t                   hash_code_t;
     typedef BasicDictionary<Key, Value, HashFunc, ValueIsInline, Alignment, Hasher, KeyEqual, Allocator>
                                             this_type;
 
