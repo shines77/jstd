@@ -35,11 +35,11 @@ struct hash_entry_chunk {
     size_type    chunk_id;
 
     hash_entry_chunk() : entries(nullptr), size(0), capacity(0), chunk_id(0) {}
-    hash_entry_chunk(entry_type * entries, size_type capacity, size_type chunk_id)
-        : entries(entries), size(0), capacity(capacity), chunk_id(chunk_id) {}
-    hash_entry_chunk(entry_type * entries, size_type size,
-                     size_type capacity, size_type chunk_id)
-        : entries(entries), size(size), capacity(capacity), chunk_id(chunk_id) {}
+    hash_entry_chunk(entry_type * _entries, size_type _capacity, size_type _chunk_id)
+        : entries(_entries), size(0), capacity(_capacity), chunk_id(_chunk_id) {}
+    hash_entry_chunk(entry_type * _entries, size_type _size,
+                     size_type _capacity, size_type _chunk_id)
+        : entries(_entries), size(_size), capacity(_capacity), chunk_id(_chunk_id) {}
     hash_entry_chunk(const hash_entry_chunk & src)
         : entries(src.entries), size(src.size),
           capacity(src.capacity), chunk_id(src.chunk_id) {}
