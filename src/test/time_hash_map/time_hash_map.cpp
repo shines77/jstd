@@ -514,6 +514,7 @@ static void time_map_find_failed(std::size_t iters) {
 
     for (i = 0; i < max_iters; i++) {
         hashmap.emplace(i, i + 1);
+        //hashmap[i] = i + 1;
     }
 
     r = 1;

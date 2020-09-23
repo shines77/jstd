@@ -1188,133 +1188,6 @@ protected:
         this->realloc_to(new_entry_size);
     }
 
-#if USE_FAST_FIND_ENTRY
-
-    JSTD_FORCEINLINE
-    entry_type * find_entry(const key_type & key) {
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_for(hash_code);
-
-        entry_type * first = this->buckets_[index];
-        if (likely(first != nullptr)) {
-            if (likely(first->hash_code == hash_code &&
-                       this->key_is_equal_(key, first->value.first))) {
-                return first;
-            }
-
-            entry_type * entry = first->next;
-            while (likely(entry != nullptr)) {
-                if (likely(entry->hash_code != hash_code)) {
-                    // Do nothing, Continue
-                }
-                else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
-                        return entry;
-                    }
-                }
-                entry = entry->next;
-            }
-        }
-
-        return nullptr;  // Not found
-    }
-
-    JSTD_FORCEINLINE
-    entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
-        assert(this->buckets() != nullptr);
-        entry_type * first = this->buckets_[index];
-        if (likely(first != nullptr)) {
-            if (likely(first->hash_code == hash_code &&
-                       this->key_is_equal_(key, first->value.first))) {
-                return first;
-            }
-
-            entry_type * entry = first->next;
-            while (likely(entry != nullptr)) {
-                if (likely(entry->hash_code != hash_code)) {
-                    // Do nothing, Continue
-                }
-                else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
-                        return entry;
-                    }
-                }
-                entry = entry->next;
-            }
-        }
-
-        return nullptr;  // Not found
-    }
-
-#else // !USE_FAST_FIND_ENTRY
-
-    JSTD_FORCEINLINE
-    entry_type * find_entry(const key_type & key) {
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_for(hash_code);
-
-        entry_type * entry = this->buckets_[index];
-        while (likely(entry != nullptr)) {
-            if (likely(entry->hash_code != hash_code)) {
-                entry = entry->next;
-            }
-            else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    return entry;
-                }
-                entry = entry->next;
-            }
-        }
-
-        return nullptr;  // Not found
-    }
-
-    JSTD_FORCEINLINE
-    entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
-        assert(this->buckets() != nullptr);
-        entry_type * entry = this->buckets_[index];
-        while (likely(entry != nullptr)) {
-            if (likely(entry->hash_code != hash_code)) {
-                entry = entry->next;
-            }
-            else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    return entry;
-                }
-                entry = entry->next;
-            }
-        }
-
-        return nullptr;  // Not found
-    }
-
-#endif // USE_FAST_FIND_ENTRY
-
-    JSTD_FORCEINLINE
-    entry_type * find_before(const key_type & key, entry_type *& before, size_type & index) {
-        hash_code_t hash_code = this->get_hash(key);
-        index = this->index_for(hash_code);
-
-        assert(this->buckets() != nullptr);
-        entry_type * prev = nullptr;
-        entry_type * entry = buckets_[index];
-        while (likely(entry != nullptr)) {
-            if (likely(entry->hash_code != hash_code)) {
-                prev = entry;
-                entry = entry->next;
-            }
-            else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
-                    before = prev;
-                    return entry;
-                }
-                entry = entry->next;
-            }
-        }
-
-        return nullptr;  // Not found
-    }
-
     JSTD_FORCEINLINE
     const key_type & get_key(value_type * value) const {
         return key_extractor<value_type>::extract(*const_cast<const value_type *>(value));
@@ -1425,7 +1298,7 @@ protected:
             assert(new_entry->attrib.isReusableEntry());
             new_entry->attrib.setInUseEntry();
             n_value_type * n_value = reinterpret_cast<n_value_type *>(&new_entry->value);
-            move_or_swap_key(&n_value->first, std::forward<mapped_type>(key));
+            move_or_swap_key(&n_value->first, std::forward<key_type>(key));
             move_or_swap_mapped_value(&n_value->second, std::forward<mapped_type>(value));
         }
     }
@@ -1741,7 +1614,151 @@ protected:
         return new_entry;
     }
 
+#if USE_FAST_FIND_ENTRY
+
+    JSTD_FORCEINLINE
+    entry_type * find_entry(const key_type & key) {
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * first = this->buckets_[index];
+        if (likely(first != nullptr)) {
+            if (likely(first->hash_code == hash_code &&
+                       this->key_is_equal_(key, first->value.first))) {
+                return first;
+            }
+
+            entry_type * entry = first->next;
+            while (likely(entry != nullptr)) {
+                if (likely(entry->hash_code != hash_code)) {
+                    // Do nothing, Continue
+                }
+                else {
+                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                        return entry;
+                    }
+                }
+                entry = entry->next;
+            }
+        }
+
+        return nullptr;  // Not found
+    }
+
+    JSTD_FORCEINLINE
+    entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
+        assert(this->buckets() != nullptr);
+        entry_type * first = this->buckets_[index];
+        if (likely(first != nullptr)) {
+            if (likely(first->hash_code == hash_code &&
+                       this->key_is_equal_(key, first->value.first))) {
+                return first;
+            }
+
+            entry_type * entry = first->next;
+            while (likely(entry != nullptr)) {
+                if (likely(entry->hash_code != hash_code)) {
+                    // Do nothing, Continue
+                }
+                else {
+                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                        return entry;
+                    }
+                }
+                entry = entry->next;
+            }
+        }
+
+        return nullptr;  // Not found
+    }
+
+#else // !USE_FAST_FIND_ENTRY
+
+    JSTD_FORCEINLINE
+    entry_type * find_entry(const key_type & key) {
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * entry = this->buckets_[index];
+        while (likely(entry != nullptr)) {
+            if (likely(entry->hash_code != hash_code)) {
+                entry = entry->next;
+            }
+            else {
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    return entry;
+                }
+                entry = entry->next;
+            }
+        }
+
+        return nullptr;  // Not found
+    }
+
+    JSTD_FORCEINLINE
+    entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
+        assert(this->buckets() != nullptr);
+        entry_type * entry = this->buckets_[index];
+        while (likely(entry != nullptr)) {
+            if (likely(entry->hash_code != hash_code)) {
+                entry = entry->next;
+            }
+            else {
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    return entry;
+                }
+                entry = entry->next;
+            }
+        }
+
+        return nullptr;  // Not found
+    }
+
+#endif // USE_FAST_FIND_ENTRY
+
+    JSTD_FORCEINLINE
+    entry_type * find_before(const key_type & key, entry_type *& before, size_type & index) {
+        hash_code_t hash_code = this->get_hash(key);
+        index = this->index_for(hash_code);
+
+        assert(this->buckets() != nullptr);
+        entry_type * prev = nullptr;
+        entry_type * entry = buckets_[index];
+        while (likely(entry != nullptr)) {
+            if (likely(entry->hash_code != hash_code)) {
+                prev = entry;
+                entry = entry->next;
+            }
+            else {
+                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    before = prev;
+                    return entry;
+                }
+                entry = entry->next;
+            }
+        }
+
+        return nullptr;  // Not found
+    }
+
+    JSTD_FORCEINLINE
+    entry_type * find_or_insert(key_type && key) {
+        assert(this->buckets() != nullptr);
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            entry = this->insert_new_entry(std::forward<key_type>(key), mapped_type(), hash_code, index);
+            this->update_version();
+        }
+
+        return entry;
+    }
+
     template <bool OnlyIfAbsent, typename ReturnType>
+    JSTD_FORCEINLINE
     ReturnType insert_unique(const key_type & key, const mapped_type & value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1751,7 +1768,7 @@ protected:
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            this->insert_new_entry(key, value, hash_code, index);
+            entry = this->insert_new_entry(key, value, hash_code, index);
             inserted = true;
         }
         else {
@@ -1767,6 +1784,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
+    JSTD_FORCEINLINE
     ReturnType insert_unique(const key_type & key, mapped_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1793,6 +1811,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
+    JSTD_FORCEINLINE
     ReturnType insert_unique(key_type && key, mapped_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1823,6 +1842,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
+    JSTD_FORCEINLINE
     ReturnType insert_unique(n_value_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -3108,6 +3128,9 @@ public:
         return (iter != this->end());
     }
 
+    //
+    // find(key)
+    //
     iterator find(const key_type & key) {
         if (likely(this->buckets() != nullptr)) {
             entry_type * entry = this->find_entry(key);
@@ -3124,6 +3147,19 @@ public:
         }
 
         return const_iterator(this, nullptr);   // Error: buckets data is invalid
+    }
+
+    //
+    // operator []
+    //
+    mapped_type & operator [] (const key_type & key) {
+        entry_type * entry = this->find_or_insert(key);
+        return entry->value.second;
+    }
+
+    mapped_type & operator [] (key_type && key) {
+        entry_type * entry = this->find_or_insert(std::move(key));
+        return entry->value.second;
     }
 
     //
