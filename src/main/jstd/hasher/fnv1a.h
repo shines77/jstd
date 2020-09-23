@@ -21,9 +21,6 @@
 
 //
 // See: http://isthe.com/chongo/tech/comp/fnv/
-//
-
-//
 // See: http://www.sanmayce.com/Fastest_Hash/index.html
 //
 
@@ -148,12 +145,12 @@ uint32_t FNV1A_Yoshimura(const char * data, size_t data_len)
 }
 
 //
-// FNV1A_Yoshimitsu_TRIADii_XMM revision 1+ aka FNV1A_SaberFatigue, copyleft 2013-Apr-26 Kaze.
+// FNV1A_Yoshimitsu_TRIADii_xmm revision 1+ aka FNV1A_SaberFatigue, copyleft 2013-Apr-26 Kaze.
 // Targeted purpose: x-gram table lookups for Leprechaun r17.
 // Targeted machine: assuming SSE2 is present always - no non-SSE2 counterpart.
 //
 static
-uint32_t FNV1A_Yoshimitsu_TRIADii_XMM(const char * data, size_t data_len)
+uint32_t FNV1A_Yoshimitsu_TRIADii_xmm(const char * data, size_t data_len)
 {
     static const size_t kStepSize = 3 * 4 * (2 * sizeof(uint32_t)); // 96 bytes one time
     static const size_t kHalfStepSize = kStepSize / 2;              // 48 bytes

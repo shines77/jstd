@@ -70,6 +70,8 @@
 #define USE_JSTD_HASH_TABLE     0
 #define USE_JSTD_DICTIONARY     0
 
+#define USE_FAST_SIMPLE_HASH    1
+
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
 #include <jstd/basic/inttypes.h>
@@ -184,13 +186,17 @@ public:
     }
 
     std::uint32_t Hash() const {
-        std::uint32_t hash_val = static_cast<std::uint32_t>(this->key_);
-        //for (std::size_t i = 0; i < kHashLen; ++i) {
-        //    hash_val += this->buffer_[i];
-        //}
-        hash_val += static_cast<std::uint32_t>((this->key_ & 0xFFUL) * kHashLen);
         g_num_hashes++;
+        std::uint32_t hash_val = static_cast<std::uint32_t>(this->key_);
+#if USE_FAST_SIMPLE_HASH
+        hash_val += static_cast<std::uint32_t>((this->key_ & 0xFFUL) * kHashLen);
         return hash_val;
+#else
+        for (std::size_t i = 0; i < kHashLen; ++i) {
+            hash_val += this->buffer_[i];
+        }
+        return (std::uint32_t)stdext::hash_compare<std::uint32_t>()(std::uint32_t(hash_val));
+#endif
     }
 
     bool operator == (const this_type & that) const {
@@ -232,7 +238,11 @@ public:
 
     std::uint32_t Hash() const {
         g_num_hashes++;
+#if USE_FAST_SIMPLE_HASH
         return static_cast<std::uint32_t>(this->key_);
+#else
+        return (std::uint32_t)stdext::hash_compare<std::uint32_t>()(std::uint32_t(this->key_));
+#endif
     }
 
     bool operator == (const this_type & that) const {
@@ -277,7 +287,11 @@ public:
 
     std::uint32_t Hash() const {
         g_num_hashes++;
+#if USE_FAST_SIMPLE_HASH
         return static_cast<std::uint32_t>(this->key_);
+#else
+        return (std::uint32_t)stdext::hash_compare<std::uint32_t>()(std::uint32_t(this->key_));
+#endif
     }
 
     bool operator == (const this_type & that) const {
@@ -806,9 +820,16 @@ static void stress_hash_function(std::size_t num_inserts) {
 }
 
 template <class MapType, class StressMapType>
-static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t iters,
-                            bool is_stress_hash_function) {
-    printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " iterations):\n", name, obj_size, iters);
+static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t entry_size,
+                            std::size_t iters, bool is_stress_hash_function) {
+    if (entry_size == 0) {
+        printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " byte ValueType, %" PRIuPTR " iterations):\n",
+               name, obj_size, sizeof(MapType::value_type), iters);
+    }
+    else {
+        printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " byte EntryType, %" PRIuPTR " iterations):\n",
+               name, obj_size, entry_size, iters);
+    }
 
     if (1) time_map_insert<MapType>(iters);
     if (1) time_map_insert_predicted<MapType>(iters);
@@ -849,21 +870,23 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
         measure_hashmap<StdHashMap<HashObj,   Value, HashFn<HashObj>>,
                         StdHashMap<HashObj *, Value, HashFn<HashObj>>
                         >(
-            "stdext::hash_map<K, V>", obj_size, iters, stress_hash_function);
+            "stdext::hash_map<K, V>", obj_size, 0, iters, stress_hash_function);
     }
 
     if (FLAGS_test_std_unordered_map) {
         measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<HashObj>>,
                         StdUnorderedMap<HashObj *, Value, HashFn<HashObj>>
                         >(
-            "std::unordered_map<K, V>", obj_size, iters, stress_hash_function);
+            "std::unordered_map<K, V>", obj_size, 0, iters, stress_hash_function);
     }
 
     if (FLAGS_test_jstd_dictionary) {
+        typedef jstd::Dictionary<HashObj, Value, HashFn<HashObj>> JDictionary;
         measure_hashmap<jstd::Dictionary<HashObj,   Value, HashFn<HashObj>>,
                         jstd::Dictionary<HashObj *, Value, HashFn<HashObj>>
                         >(
-            "jstd::Dectionary<K, V>", obj_size, iters, stress_hash_function);
+            "jstd::Dectionary<K, V>", obj_size,
+            sizeof(JDictionary::node_type), iters, stress_hash_function);
     }
 }
 
@@ -898,13 +921,13 @@ int main(int argc, char * argv[])
     std::size_t iters = kDefaultIters;
     if (argc > 1) {
         // first arg is # of iterations
-        iters = atoi(argv[1]);
+        iters = ::atoi(argv[1]);
     }
 
     const char * test_str = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
         "abcdefghijklmnopqrstuvwxyz";
     uint32_t fnv1a_1 = hasher::FNV1A_Yoshimura(test_str, libc::StrLen(test_str));
-    uint32_t fnv1a_2 = hasher::FNV1A_Yoshimitsu_TRIADii_XMM(test_str, libc::StrLen(test_str));
+    uint32_t fnv1a_2 = hasher::FNV1A_Yoshimitsu_TRIADii_xmm(test_str, libc::StrLen(test_str));
     uint32_t fnv1a_3 = hasher::FNV1A_penumbra(test_str, libc::StrLen(test_str));
 
     jtest::CPU::warmup(1000);

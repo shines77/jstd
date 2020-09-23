@@ -205,6 +205,7 @@ public:
     };
 
     typedef hash_entry                                  entry_type;
+    typedef hash_entry                                  node_type;
     typedef typename hash_entry::node_pointer           node_pointer;
     typedef typename hash_entry::node_reference         node_reference;
     typedef typename hash_entry::const_node_pointer     const_node_pointer;
