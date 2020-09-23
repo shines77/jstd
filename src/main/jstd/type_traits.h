@@ -59,14 +59,12 @@ struct integral_traits {
 };
 
 template <typename T>
-constexpr
-const T & max(const T & a, const T & b) {
+constexpr T Max(const T & a, const T & b) {
   return ((a > b) ? a : b);
 }
 
 template <typename T>
-constexpr
-const T & min(const T & a, const T & b) {
+constexpr T Min(const T & a, const T & b) {
   return ((a < b) ? a : b);
 }
 
@@ -100,7 +98,7 @@ struct void_warpper {
     void_warpper() {}
 
     template <typename... Args>
-    void operator () (Args && ... args) {
+    void operator () (Args && ... args) const {
         return void();
     }
 };
