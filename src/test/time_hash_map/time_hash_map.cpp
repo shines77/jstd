@@ -843,7 +843,7 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
                             std::size_t iters, bool is_stress_hash_function) {
     if (entry_size == 0) {
         printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " byte ValueType, %" PRIuPTR " iterations):\n",
-               name, obj_size, sizeof(MapType::value_type), iters);
+               name, obj_size, sizeof(typename MapType::value_type), iters);
     }
     else {
         printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " byte EntryType, %" PRIuPTR " iterations):\n",
@@ -905,7 +905,7 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
                         jstd::Dictionary<HashObj *, Value, HashFn<HashObj>>
                         >(
             "jstd::Dectionary<K, V>", obj_size,
-            sizeof(JDictionary::node_type), iters, is_stress_hash_function);
+            sizeof(typename JDictionary::node_type), iters, is_stress_hash_function);
     }
 }
 
