@@ -30,8 +30,10 @@
 #include <unordered_map>
 #if defined(_MSC_VER)
 #include <hash_map>
+#define STDEXT_HASH_NAMESPACE stdext
 #else
 #include <ext/hash_map>
+#define STDEXT_HASH_NAMESPACE __gnu_cxx
 #endif
 #include <algorithm>
 
@@ -92,19 +94,17 @@
 
 #define USE_FAST_SIMPLE_HASH    0
 
-#if defined(_MSC_VER)
-#define STDEXT_HASH_NAMESPACE stdext
-#else
-#define STDEXT_HASH_NAMESPACE __gnu_cxx
-#endif
-
 #if USE_FAST_SIMPLE_HASH
   #define HASH_MAP_FUNCTION     test::hash
 #else
-  #if 1
-    #define HASH_MAP_FUNCTION   STDEXT_HASH_NAMESPACE::hash_compare
-  #else
+  #if 0
     #define HASH_MAP_FUNCTION   std::hash
+  #else
+    #if defined(_MSC_VER)
+      #define HASH_MAP_FUNCTION STDEXT_HASH_NAMESPACE::hash_compare
+    #else
+      #define HASH_MAP_FUNCTION STDEXT_HASH_NAMESPACE::hash
+    #endif
   #endif
 #endif // USE_FAST_SIMPLE_HASH
 
