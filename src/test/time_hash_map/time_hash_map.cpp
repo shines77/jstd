@@ -70,7 +70,7 @@
 #define USE_JSTD_HASH_TABLE     0
 #define USE_JSTD_DICTIONARY     0
 
-#define USE_FAST_SIMPLE_HASH    1
+#define USE_FAST_SIMPLE_HASH    0
 
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
@@ -868,20 +868,20 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
 
 template <typename HashObj, typename Value>
 static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
-    const bool stress_hash_function = (obj_size <= 8);
+    const bool is_stress_hash_function = (obj_size <= 8);
 
     if (FLAGS_test_std_hash_map) {
         measure_hashmap<StdHashMap<HashObj,   Value, HashFn<HashObj>>,
                         StdHashMap<HashObj *, Value, HashFn<HashObj>>
                         >(
-            "stdext::hash_map<K, V>", obj_size, 0, iters, stress_hash_function);
+            "stdext::hash_map<K, V>", obj_size, 0, iters, is_stress_hash_function);
     }
 
     if (FLAGS_test_std_unordered_map) {
         measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<HashObj>>,
                         StdUnorderedMap<HashObj *, Value, HashFn<HashObj>>
                         >(
-            "std::unordered_map<K, V>", obj_size, 0, iters, stress_hash_function);
+            "std::unordered_map<K, V>", obj_size, 0, iters, is_stress_hash_function);
     }
 
     if (FLAGS_test_jstd_dictionary) {
@@ -890,7 +890,7 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
                         jstd::Dictionary<HashObj *, Value, HashFn<HashObj>>
                         >(
             "jstd::Dectionary<K, V>", obj_size,
-            sizeof(JDictionary::node_type), iters, stress_hash_function);
+            sizeof(JDictionary::node_type), iters, is_stress_hash_function);
     }
 }
 
