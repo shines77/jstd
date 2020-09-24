@@ -70,8 +70,6 @@
 #define USE_JSTD_HASH_TABLE     0
 #define USE_JSTD_DICTIONARY     0
 
-#define USE_FAST_SIMPLE_HASH    0
-
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
 #include <jstd/basic/inttypes.h>
@@ -92,10 +90,24 @@
 
 #include "BenchmarkResult.h"
 
-#if defined(_MSC_VER)
-using namespace stdext;
+#define USE_FAST_SIMPLE_HASH    0
+
+#if USE_FAST_SIMPLE_HASH
+#define HASH_MAP_FUNCTION   test::hash
 #else
-using namespace __gnu_cxx;
+#if 1
+#define HASH_MAP_FUNCTION   stdext::hash_compare
+#else
+#define HASH_MAP_FUNCTION   std::hash
+#endif
+#endif
+
+#if defined(_MSC_VER)
+#define STDEXT_HASH_NAMESPACE stdext
+//using namespace stdext;
+#else
+#define STDEXT_HASH_NAMESPACE __gnu_cxx
+//using namespace __gnu_cxx;
 #endif
 
 using namespace jstd;
@@ -145,6 +157,17 @@ static void reset_counter()
     g_num_moves  = 0;
 }
 
+namespace test {
+
+template <typename Key>
+struct hash {
+    size_t operator () (const Key & key) const {
+        return static_cast<size_t>(key);
+    }
+};
+
+} // namespace test
+
 /*
  * These are the objects we hash.  Size is the size of the object
  * (must be > sizeof(int).  Hashsize is how many of these bytes we
@@ -185,21 +208,19 @@ public:
         g_num_copies++;
     }
 
-    std::uint32_t Hash() const {
+    std::size_t Hash() const {
         g_num_hashes++;
-        std::uint32_t hash_val = static_cast<std::uint32_t>(this->key_);
-#if USE_FAST_SIMPLE_HASH
-        //hash_val += static_cast<std::uint32_t>((this->key_ & 0xFFUL) * kHashLen);
+        std::size_t hash_val = static_cast<std::size_t>(this->key_);
+#if 1
         for (std::size_t i = 0; i < kHashLen; ++i) {
             hash_val += this->buffer_[i];
         }
-        return hash_val;
 #else
-        for (std::size_t i = 0; i < kHashLen; ++i) {
-            hash_val += this->buffer_[i];
-        }
-        return (std::uint32_t)stdext::hash_compare<std::uint32_t>()(std::uint32_t(hash_val));
+        hash_val += static_cast<std::size_t>((this->key_ & 0xFFUL) * kHashLen);
 #endif
+        return static_cast<std::size_t>(
+            HASH_MAP_FUNCTION<std::size_t>()(hash_val)
+        );
     }
 
     bool operator == (const this_type & that) const {
@@ -239,13 +260,11 @@ public:
         g_num_copies++;
     }
 
-    std::uint32_t Hash() const {
+    std::size_t Hash() const {
         g_num_hashes++;
-#if USE_FAST_SIMPLE_HASH
-        return static_cast<std::uint32_t>(this->key_);
-#else
-        return (std::uint32_t)stdext::hash_compare<std::uint32_t>()(std::uint32_t(this->key_));
-#endif
+        return static_cast<std::size_t>(
+            HASH_MAP_FUNCTION<std::uint32_t>()(this->key_)
+        );
     }
 
     bool operator == (const this_type & that) const {
@@ -288,13 +307,11 @@ public:
         g_num_copies++;
     }
 
-    std::uint32_t Hash() const {
+    std::size_t Hash() const {
         g_num_hashes++;
-#if USE_FAST_SIMPLE_HASH
-        return static_cast<std::uint32_t>(this->key_);
-#else
-        return (std::uint32_t)stdext::hash_compare<std::uint32_t>()(std::uint32_t(this->key_));
-#endif
+        return static_cast<std::size_t>(
+            HASH_MAP_FUNCTION<std::size_t>()(this->key_)
+        );
     }
 
     bool operator == (const this_type & that) const {
@@ -310,7 +327,7 @@ public:
 
 #endif  // _WIN64 || __amd64__
 
-template <typename HashObj, typename ResultType = std::uint32_t>
+template <typename HashObj, typename ResultType = std::size_t>
 class HashFn {
 public:
     typedef HashObj                     hash_object_t;
@@ -368,9 +385,9 @@ public:
 
 #if defined(_MSC_VER)
 template <typename Key, typename Value, typename Hasher>
-class StdHashMap : public hash_map<Key, Value, Hasher> {
+class StdHashMap : public STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> {
 public:
-    typedef hash_map<Key, Value, Hasher> this_type;
+    typedef STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> this_type;
 
     StdHashMap() : this_type() {}
     StdHashMap(std::size_t initCapacity) : this_type() {
@@ -380,9 +397,9 @@ public:
 };
 #else
 template <typename Key, typename Value, typename Hasher>
-class StdHashMap : public hash_map<Key, Value, Hasher> {
+class StdHashMap : public STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> {
 public:
-    typedef hash_map<Key, Value, Hasher> this_type;
+    typedef STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> this_type;
     typedef Value                        mapped_type;
     typedef typename Key::key_type       ident_type;
 
