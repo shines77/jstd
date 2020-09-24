@@ -92,23 +92,21 @@
 
 #define USE_FAST_SIMPLE_HASH    0
 
-#if USE_FAST_SIMPLE_HASH
-#define HASH_MAP_FUNCTION   test::hash
-#else
-#if 1
-#define HASH_MAP_FUNCTION   stdext::hash_compare
-#else
-#define HASH_MAP_FUNCTION   std::hash
-#endif
-#endif
-
 #if defined(_MSC_VER)
 #define STDEXT_HASH_NAMESPACE stdext
-//using namespace stdext;
 #else
 #define STDEXT_HASH_NAMESPACE __gnu_cxx
-//using namespace __gnu_cxx;
 #endif
+
+#if USE_FAST_SIMPLE_HASH
+  #define HASH_MAP_FUNCTION     test::hash
+#else
+  #if 1
+    #define HASH_MAP_FUNCTION   STDEXT_HASH_NAMESPACE::hash_compare
+  #else
+    #define HASH_MAP_FUNCTION   std::hash
+  #endif
+#endif // USE_FAST_SIMPLE_HASH
 
 using namespace jstd;
 using namespace jtest;
