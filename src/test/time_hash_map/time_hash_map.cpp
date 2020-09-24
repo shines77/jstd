@@ -189,7 +189,10 @@ public:
         g_num_hashes++;
         std::uint32_t hash_val = static_cast<std::uint32_t>(this->key_);
 #if USE_FAST_SIMPLE_HASH
-        hash_val += static_cast<std::uint32_t>((this->key_ & 0xFFUL) * kHashLen);
+        //hash_val += static_cast<std::uint32_t>((this->key_ & 0xFFUL) * kHashLen);
+        for (std::size_t i = 0; i < kHashLen; ++i) {
+            hash_val += this->buffer_[i];
+        }
         return hash_val;
 #else
         for (std::size_t i = 0; i < kHashLen; ++i) {
