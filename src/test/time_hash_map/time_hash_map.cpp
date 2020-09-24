@@ -97,7 +97,7 @@
 #if USE_FAST_SIMPLE_HASH
   #define HASH_MAP_FUNCTION     test::hash
 #else
-  #if 0
+  #if 1
     #define HASH_MAP_FUNCTION   std::hash
   #else
     #if defined(_MSC_VER)
