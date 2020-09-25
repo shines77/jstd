@@ -135,6 +135,20 @@ struct remove_cv_rp_ext {
 };
 
 template <typename T>
+struct is_noexcept_move_constructible {
+    static constexpr bool value =
+        !(!std::is_nothrow_move_constructible<T>::value &&
+		   std::is_copy_constructible<T>::value);
+};
+
+template <typename T>
+struct is_noexcept_move_assignable {
+    static constexpr bool value =
+        !(!std::is_nothrow_move_assignable<T>::value &&
+		   std::is_copy_assignable<T>::value);
+};
+
+template <typename T>
 struct remove_all {
     typedef typename std::remove_all_extents<
                 typename std::remove_cv<

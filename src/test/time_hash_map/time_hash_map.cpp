@@ -134,7 +134,7 @@ static const std::size_t kDefaultIters = 10000000;
 static const std::size_t kDefaultIters = 10000;
 #endif
 
-static const std::size_t kInitCapacity = 16;
+static const std::size_t kInitCapacity = 8;
 
 // Returns the number of hashes that have been done since the last
 // call to NumHashesSinceLastCall().  This is shared across all
@@ -324,6 +324,68 @@ public:
 };
 
 #endif  // _WIN64 || __amd64__
+
+namespace std {
+
+// Let the hashtable implementations know it can use an optimized memcpy,
+// because the compiler defines both the destructor and copy constructor.
+
+// is_trivially_copyable
+
+template <>
+struct is_trivially_copyable< HashObject<std::uint32_t, 4, 4> > : true_type { };
+
+template <>
+struct is_trivially_copyable< HashObject<std::size_t, 8, 8> > : true_type { };
+
+template <>
+struct is_trivially_copyable< HashObject<std::uint32_t, 16, 16> > : true_type { };
+
+template <>
+struct is_trivially_copyable< HashObject<std::size_t, 256, 32> > : true_type { };
+
+// is_trivially_destructible
+
+template <>
+struct is_trivially_destructible< HashObject<std::uint32_t, 4, 4> > : true_type { };
+
+template <>
+struct is_trivially_destructible< HashObject<std::size_t, 8, 8> > : true_type { };
+
+template <>
+struct is_trivially_destructible< HashObject<std::uint32_t, 16, 16> > : true_type { };
+
+template <>
+struct is_trivially_destructible< HashObject<std::size_t, 256, 32> > : true_type { };
+
+} // namespace std
+
+#if 0
+
+namespace google {
+
+// Let the hashtable implementations know it can use an optimized memcpy,
+// because the compiler defines both the destructor and copy constructor.
+
+// has_trivial_copy
+
+template <std::size_t Size, std::size_t HashSize>
+struct has_trivial_copy< HashObject<std::uint32_t, Size, HashSize> > : true_type { };
+
+template <std::size_t Size, std::size_t HashSize>
+struct has_trivial_copy< HashObject<std::size_t, Size, HashSize> > : true_type { };
+
+// has_trivial_destructor
+
+template <std::size_t Size, std::size_t HashSize>
+struct has_trivial_destructor< HashObject<std::uint32_t, Size, HashSize> > : true_type { };
+
+template <std::size_t Size, std::size_t HashSize>
+struct has_trivial_destructor< HashObject<std::size_t, Size, HashSize> > : true_type { };
+
+} // namespace google
+
+#endif
 
 template <typename HashObj, typename ResultType = std::size_t>
 class HashFn {

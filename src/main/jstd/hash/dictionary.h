@@ -389,7 +389,7 @@ protected:
     std::allocator<mapped_type>                     mapped_allocator_;
     std::allocator<value_type>                      value_allocator_;
 
-    // Default initial capacity is 8.
+    // Default initial capacity is 8, must be >= kMinimumCapacity.
     static const size_type kDefaultInitialCapacity = 8;
     // Minimum capacity is 8.
     static const size_type kMinimumCapacity = 8;
@@ -1210,9 +1210,9 @@ protected:
 
     JSTD_FORCEINLINE
     void move_or_swap_value(n_value_type * old_value, n_value_type && new_value) {
-        bool has_move_assignment = std::is_nothrow_move_assignable<n_value_type>::value;
+        bool has_noexcept_move_assignment = is_noexcept_move_assignable<n_value_type>::value;
         // Is noexcept move assignment operator ?
-        if (has_move_assignment) {
+        if (has_noexcept_move_assignment) {
             *old_value = std::move(new_value);
         }
         else {
@@ -1227,9 +1227,9 @@ protected:
 
     JSTD_FORCEINLINE
     void move_or_swap_key(key_type * old_key, key_type && new_key) {
-        bool has_move_assignment = std::is_nothrow_move_assignable<key_type>::value;
+        bool has_noexcept_move_assignment = is_noexcept_move_assignable<key_type>::value;
         // Is noexcept move assignment operator ?
-        if (has_move_assignment) {   
+        if (has_noexcept_move_assignment) {   
             *old_key = std::move(new_key);
         }
         else {
@@ -1239,9 +1239,9 @@ protected:
 
     JSTD_FORCEINLINE
     void move_or_swap_mapped_value(mapped_type * old_value, mapped_type && new_value) {
-        bool has_move_assignment = std::is_nothrow_move_assignable<mapped_type>::value;
+        bool has_noexcept_move_assignment = is_noexcept_move_assignable<mapped_type>::value;
         // Is noexcept move assignment operator ?
-        if (has_move_assignment) {
+        if (has_noexcept_move_assignment) {
             *old_value = std::move(new_value);
         }
         else {
@@ -1365,7 +1365,7 @@ protected:
     template <typename ...Args>
     JSTD_FORCEINLINE
     void update_value_args_impl(entry_type * old_entry, key_type && key, Args && ... args) {
-        //key_type key_tmp = std::move(key);
+        //key_type key_tmp = std::move_if_noexcept(key);
         mapped_type second(std::forward<Args>(args)...);
         move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
     }
@@ -1402,7 +1402,7 @@ protected:
 
     JSTD_FORCEINLINE
     void update_mapped_value(entry_type * entry, n_value_type && value) {
-        //key_type key_tmp = std::move(value.first);
+        //key_type key_tmp = std::move_if_noexcept(value.first);
         move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
     }
 
@@ -1742,6 +1742,23 @@ protected:
     }
 
     JSTD_FORCEINLINE
+    entry_type * find_or_insert(const key_type & key) {
+        assert(this->buckets() != nullptr);
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            entry = this->insert_new_entry(key, mapped_type(),
+                                           hash_code, index);
+            this->update_version();
+        }
+
+        return entry;
+    }
+
+    JSTD_FORCEINLINE
     entry_type * find_or_insert(key_type && key) {
         assert(this->buckets() != nullptr);
 
@@ -1750,7 +1767,8 @@ protected:
 
         entry_type * entry = this->find_entry(key, hash_code, index);
         if (likely(entry == nullptr)) {
-            entry = this->insert_new_entry(std::forward<key_type>(key), mapped_type(), hash_code, index);
+            entry = this->insert_new_entry(std::forward<key_type>(key), mapped_type(),
+                                           hash_code, index);
             this->update_version();
         }
 
@@ -1829,8 +1847,8 @@ protected:
         else {
             if (!OnlyIfAbsent) {
                 // If key is a rvalue, we move it.
-                key_type key_tmp = std::forward<key_type>(key);
-                (void)key_tmp;
+                //key_type key_tmp = std::forward<key_type>(key);
+                //(void)key_tmp;
                 this->update_mapped_value(entry, std::forward<mapped_type>(value));
             }
             inserted = false;
@@ -1859,8 +1877,8 @@ protected:
         else {
             if (!OnlyIfAbsent) {
                 // If key is a rvalue, we move it.
-                key_type key_tmp = std::forward<key_type>(value.first);
-                (void)key_tmp;
+                //key_type key_tmp = std::forward<key_type>(value.first);
+                //(void)key_tmp;
                 this->update_mapped_value(entry, std::forward<mapped_type>(value.second));
             }
             inserted = false;
@@ -1950,7 +1968,7 @@ protected:
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_mapped_value(entry, std::move(n_value->second));
+                this->update_mapped_value(entry, std::move_if_noexcept(n_value->second));
             }
             this->destroy_prepare_entry(pre_entry);
             inserted = false;
@@ -1981,7 +1999,7 @@ protected:
         }
         else {
             if (!OnlyIfAbsent) {
-                this->update_mapped_value(entry, std::move(value_tmp.second));
+                this->update_mapped_value(entry, std::move_if_noexcept(value_tmp.second));
             }
             inserted = false;
         }
@@ -2018,8 +2036,11 @@ protected:
 
                         this->entry_size_--;
 
-                        if (this->entry_capacity_ > kDefaultInitialCapacity &&
-                            this->entry_size_ < this->entry_capacity_ / 8) {
+                        if (this->entry_size_ < this->entry_capacity_ / 8 &&
+                            this->entry_size_ >= 4 &&
+                            ((kMinimumCapacity <= (4 * 8)) ||
+                             (kMinimumCapacity >  (4 * 8) &&
+                             this->entry_capacity_ > kMinimumCapacity))) {
                             rearrange_reorder();
                         }
 
@@ -2495,27 +2516,14 @@ protected:
         n_value_type * n_old_value = reinterpret_cast<n_value_type *>(&old_entry->value);
         n_value_type * n_new_value = reinterpret_cast<n_value_type *>(&new_entry->value);
 
-        bool first_has_move_construct =
-            std::is_nothrow_move_constructible<typename n_value_type::first_type>::value;
-        bool second_has_move_construct =
-            std::is_nothrow_move_constructible<typename n_value_type::second_type>::value;
-
-        if (first_has_move_construct && second_has_move_construct) {
-            this->n_allocator_.constructor(n_new_value, std::move(n_old_value->first),
-                                                        std::move(n_old_value->second));
-        }
-        else if (!first_has_move_construct && second_has_move_construct) {
-            this->n_allocator_.constructor(n_new_value, n_old_value->first,
-                                              std::move(n_old_value->second));
-        }
-        else if (first_has_move_construct && !second_has_move_construct) {
-            this->n_allocator_.constructor(n_new_value, std::move(n_old_value->first),
-                                                                  n_old_value->second);
+        if (is_noexcept_move_constructible<n_value_type>::value) {
+            this->n_allocator_.constructor(n_new_value,
+                                           std::move_if_noexcept(*n_old_value));
         }
         else {
-            assert(!first_has_move_construct && !second_has_move_construct);
-            this->n_allocator_.constructor(n_new_value, n_old_value->first,
-                                                        n_old_value->second);
+            this->n_allocator_.constructor(n_new_value,
+                                           std::move_if_noexcept(n_old_value->first),
+                                           std::move_if_noexcept(n_old_value->second));
         }
 
         this->n_allocator_.destructor(n_old_value);
@@ -2527,20 +2535,13 @@ protected:
         n_value_type * n_old_value = reinterpret_cast<n_value_type *>(&old_entry->value);
         n_value_type * n_new_value = reinterpret_cast<n_value_type *>(&new_entry->value);
 
-        bool first_has_move_assignment =
-            std::is_nothrow_move_assignable<typename n_value_type::first_type>::value;
-        bool second_has_move_assignment =
-            std::is_nothrow_move_assignable<typename n_value_type::second_type>::value;
-
-        if (first_has_move_assignment)
-            n_new_value->first = std::move(n_old_value->first);
-        else
-            n_new_value->first = n_old_value->first;
-
-        if (second_has_move_assignment)
-            n_new_value->second = std::move(n_old_value->second);
-        else
-            n_new_value->second = n_old_value->second;
+        if (is_noexcept_move_assignable<n_value_type>::value) {
+            *n_new_value = std::move_if_noexcept(*n_old_value);
+        }
+        else {
+            n_new_value->first = std::move_if_noexcept(n_old_value->first);
+            n_new_value->second = std::move_if_noexcept(n_old_value->second);
+        }
     }
 
     JSTD_FORCEINLINE
@@ -3116,7 +3117,7 @@ public:
         }
     }
 
-    bool contains(const key_type & key) {
+    bool contains(const key_type & key) const {
         iterator iter = this->find(key);
         return (iter != this->end());
     }
@@ -3142,6 +3143,19 @@ public:
         return const_iterator(this, nullptr);   // Error: buckets data is invalid
     }
 
+    // For operator [].
+    struct DefaultValue {
+        std::pair<const key_type, mapped_type> operator()(const key_type & key) {
+            return std::make_pair(key, mapped_type());
+        }
+    };
+
+    struct RValueDefaultValue {
+        std::pair<key_type, mapped_type> operator()(key_type && key) {
+            return std::make_pair(std::forward<key_type>(key), mapped_type());
+        }
+    };
+
     //
     // operator []
     //
@@ -3151,7 +3165,7 @@ public:
     }
 
     mapped_type & operator [] (key_type && key) {
-        entry_type * entry = this->find_or_insert(std::move(key));
+        entry_type * entry = this->find_or_insert(std::move_if_noexcept(key));
         return entry->value.second;
     }
 
@@ -3176,22 +3190,16 @@ public:
     }
 
     insert_return_type insert(value_type && value) {
-#if 1
-        bool has_move_constructor = std::is_trivially_move_constructible<value_type>::value;
-        bool has_move_assignment = std::is_trivially_move_assignable<value_type>::value;
-        return this->insert_unique<false, insert_return_type>(
-            std::forward<n_value_type>(*reinterpret_cast<n_value_type *>(&value)));
-#else   
-        bool is_rvalue = std::is_rvalue_reference<decltype(std::forward<value_type>(value))>::value;
-        if (is_rvalue) {
-            n_value_type * n_value = reinterpret_cast<n_value_type *>(&value);
-            return this->insert(std::move(n_value->first), std::move(n_value->second));
-        }
-        else {
-            return this->insert(value.first, value.second);
-        }
-#endif
+        n_value_type * n_value = reinterpret_cast<n_value_type *>(&value);
+        return this->insert_unique<false, insert_return_type>(std::move_if_noexcept(n_value->first),
+                                                              std::move_if_noexcept(n_value->second));
     }
+
+    /*
+    insert_return_type insert(n_value_type && value) {
+        return this->insert_unique<false, insert_return_type>(std::forward<n_value_type>(value));
+    }
+    //*/
 
     //
     // insert_no_return(key, value)
@@ -3214,14 +3222,9 @@ public:
     }
 
     void insert_no_return(value_type && value) {
-        bool is_rvalue = std::is_rvalue_reference<decltype(std::forward<value_type>(value))>::value;
-        if (is_rvalue) {
-            n_value_type * n_value = reinterpret_cast<n_value_type *>(&value);
-            this->insert_no_return(std::move(n_value->first), std::move(n_value->second));
-        }
-        else {
-            this->insert_no_return(value.first, value.second);
-        }
+        n_value_type * n_value = reinterpret_cast<n_value_type *>(&value);
+        this->insert_no_return(std::move_if_noexcept(n_value->first),
+                               std::move_if_noexcept(n_value->second));
     }
 
     /***************************************************************************/
