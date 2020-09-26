@@ -24,6 +24,8 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "jstd/string/char_traits.h"
+
 namespace jstd {
 
 static const uint8_t HexStrs [16] = {
@@ -40,13 +42,13 @@ template <std::ssize_t delta = 0>
 inline
 std::ssize_t get_data_length(unsigned char u8) {
     if (u8 < 10) {
-        return 1 - delta;
+        return (1 - delta);
     }
     else {
         if (u8 < 100)
-            return 2 - delta;
+            return (2 - delta);
         else
-            return 3 - delta;
+            return (3 - delta);
     }
 }
 
@@ -68,37 +70,37 @@ std::ssize_t get_data_length(unsigned int u32) {
         if (u32 < 10000UL) {
             if (u32 < 100UL) {
                 if (u32 < 10UL)
-                    return 1 - delta;
+                    return (1 - delta);
                 else
-                    return 2 - delta;
+                    return (2 - delta);
             }
             else {
                 if (u32 < 1000UL)
-                    return 3 - delta;
+                    return (3 - delta);
                 else
-                    return 4 - delta;
+                    return (4 - delta);
             }
         }
         else {
             if (u32 < 1000000UL) {
                 if (u32 < 100000UL)
-                    return 5 - delta;
+                    return (5 - delta);
                 else
-                    return 6 - delta;
+                    return (6 - delta);
             }
             else {
                 if (u32 < 10000000UL)
-                    return 7 - delta;
+                    return (7 - delta);
                 else
-                    return 8 - delta;
+                    return (8 - delta);
             }
         }
     }
     else {
         if (u32 < 1000000000UL)
-            return 9 - delta;
+            return (9 - delta);
         else
-            return 10 - delta;
+            return (10 - delta);
     }
 }
 
@@ -158,9 +160,76 @@ enum sprintf_except_id {
     Sprintf_Except_Last
 };
 
-void throw_sprintf_except(std::ssize_t err_id, std::ssize_t pos, std::size_t arg1)
+template <typename CharTy>
+struct sprintf_fmt_node {
+    typedef CharTy          char_type;
+    typedef std::size_t     size_type;
+
+    enum Type {
+        isNotArg = 0,
+        isArg
+    };
+
+    const char_type * fmt_first;
+    const char_type * arg_first;
+    size_type         arg_type;
+    size_type         arg_length;
+
+    sprintf_fmt_node() noexcept
+        : fmt_first(nullptr),
+          arg_first(nullptr),
+          arg_type(isNotArg),
+          arg_length(0) noexcept {
+    }
+
+    sprintf_fmt_node(const char_type * first, const char_type * arg) noexcept
+        : fmt_first(first),
+          arg_first(arg),
+          arg_type(isNotArg),
+          arg_length(0) {
+    }
+
+    sprintf_fmt_node(const char_type * first, const char_type * arg,
+                     size_type type, size_type length) noexcept
+        : fmt_first(first),
+          arg_first(arg),
+          arg_type(type),
+          arg_length(length) {
+    }
+
+    const char_type * get_fmt_first() const {
+        return fmt_first;
+    }
+
+    const char_type * get_arg_first() const {
+        return arg_first;
+    }
+
+    size_type get_arg_type() const {
+        return arg_type;
+    }
+
+    size_type get_arg_length() const {
+        return arg_length;
+    }
+
+    void set_fmt_first(const char_type * first) {
+        fmt_first = first;
+    }
+
+    void set_arg_first(const char_type * arg) {
+        arg_first = arg;
+    }
+
+    void set_arg(size_type type, size_type length) {
+        arg_type = type;
+        arg_length = length;
+    }
+};
+
+void throw_sprintf_except(std::ssize_t err_code, std::ssize_t pos, std::size_t arg1)
 {
-    switch (err_id) {
+    switch (err_code) {
         case Sprintf_BadFormat_BrokenEscapeChar:
             throw std::runtime_error(
                 "Bad format: broken escape char, *fmt pos: "
@@ -209,12 +278,14 @@ struct basic_formatter {
 
     typedef CharTy                                      char_type;
     typedef typename make_unsigned_char<CharTy>::type   uchar_type;
+
+    typedef sprintf_fmt_node<CharTy>                    fmt_node_t;
     typedef basic_formatter<CharTy>                     this_type;
 
     size_type sprintf_calc_space_impl(const char_type * fmt) {
         assert(fmt != nullptr);
-        ssize_type delta = 0;
-        ssize_type err_id = Sprintf_Success;
+        ssize_type rest_size = 0;
+        ssize_type err_code = Sprintf_Success;
         size_type ex_arg1 = 0;
         const char_type * fmt_first = fmt;
         while (*fmt != char_type('\0')) {
@@ -228,42 +299,42 @@ struct basic_formatter {
                     // "%?": specifier
                     uchar_type sp = static_cast<uchar_type>(*fmt);
 #if 1
-                    err_id = Sprintf_InvalidArgmument_MissingParameter;
+                    err_code = Sprintf_InvalidArgmument_MissingParameter;
                     goto Sprintf_Throw_Except;
 #else
-                    delta--;
+                    rest_size--;
                     fmt++;
 #endif
                 }
                 else {
                     // "%%" = "%"
-                    delta--;
+                    rest_size--;
                     fmt++;
                 }
             }
         }
 
 Sprintf_Throw_Except:
-        if (err_id != Sprintf_Success) {
+        if (err_code != Sprintf_Success) {
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_id, pos, ex_arg1);
+            throw_sprintf_except(err_code, pos, ex_arg1);
         }
 
         ssize_type scan_len = (fmt - fmt_first);
         assert(scan_len >= 0);
-        assert(scan_len >= delta);
+        assert(scan_len >= rest_size);
 
-        size_type out_size = scan_len + delta;
-        return out_size;
+        size_type total_size = scan_len + rest_size;
+        return total_size;
     }
 
     template <typename Arg1, typename ...Args>
     size_type sprintf_calc_space_impl(const char_type * fmt,
-                                         Arg1 && arg1,
-                                         Args && ... args) {
+                                      Arg1 && arg1,
+                                      Args && ... args) {
         assert(fmt != nullptr);
-        ssize_type delta = 0;
-        ssize_type err_id = Sprintf_Success;
+        ssize_type rest_size = 0;
+        ssize_type err_code = Sprintf_Success;
         size_type ex_arg1 = 0;
         const char_type * fmt_first = fmt;
         while (*fmt != char_type('\0')) {
@@ -329,7 +400,6 @@ Sprintf_Throw_Except:
                         {
                             u8 = static_cast<unsigned char>(arg1);
                             data_len = get_data_length<2>(u8);
-                            delta += data_len;
                             fmt++;
                             break;
                         }
@@ -338,7 +408,6 @@ Sprintf_Throw_Except:
                         {
                             i32 = static_cast<int>(arg1);
                             data_len = get_data_length<2>(i32);
-                            delta += data_len;
                             fmt++;
                             break;
                         }
@@ -361,11 +430,11 @@ Sprintf_Throw_Except:
                                 ld = static_cast<long double>(arg1);
                             }
                             else {
-                                err_id = Sprintf_InvalidArgmument_ErrorFloatType;
+                                err_code = Sprintf_InvalidArgmument_ErrorFloatType;
                                 goto Sprintf_Throw_Except;
                             }
 
-                            delta += 6 - 2;
+                            data_len = 6 - 2;
                             fmt++;
                             break;
                         }
@@ -410,7 +479,6 @@ Sprintf_Throw_Except:
                         {
                             u32 = static_cast<unsigned int>(arg1);
                             data_len = get_data_length<2>(u32);
-                            delta += data_len;
                             fmt++;
                             break;
                         }
@@ -423,309 +491,46 @@ Sprintf_Throw_Except:
 
                     case uchar_type('\xff'):
                         {
-                            err_id = Sprintf_BadFormat_UnknownSpecifier_FF;
+                            err_code = Sprintf_BadFormat_UnknownSpecifier_FF;
                             goto Sprintf_Throw_Except;
                         }
 
                     default:
                         {
                             ex_arg1 = sp;
-                            err_id = Sprintf_BadFormat_UnknownSpecifier;
+                            err_code = Sprintf_BadFormat_UnknownSpecifier;
                             goto Sprintf_Throw_Except;
                         }
                     }
 
-                    size_type rest_size = sprintf_calc_space_impl(fmt, std::forward<Args>(args)...);
-                    delta += rest_size;
+                    rest_size = data_len;
+                    size_type remain_size = sprintf_calc_space_impl(
+                                                fmt, std::forward<Args>(args)...);
+                    rest_size += remain_size;
                     goto Sprintf_Exit;
                 }
                 else {
                     // "%%" = "%"
-                    delta--;
+                    rest_size--;
                     fmt++;
                 }
             }
         }
 
 Sprintf_Throw_Except:
-        if (err_id != Sprintf_Success) {
+        if (err_code != Sprintf_Success) {
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_id, pos, ex_arg1);
+            throw_sprintf_except(err_code, pos, ex_arg1);
         }
 
 Sprintf_Exit:
-        assert(delta >= 0);
+        assert(rest_size >= 0);
         ssize_type scan_len = (fmt - fmt_first);
         assert(scan_len >= 0);
-        assert(scan_len >= delta);
+        assert(scan_len >= rest_size);
 
-        size_type out_size = scan_len + delta;
-        return out_size;
-    }
-
-    template <typename ...Args>
-    size_type sprintf_calc_space(const char_type * fmt, Args && ... args) {
-        return sprintf_calc_space_impl(fmt, std::forward<Args>(args)...);
-    }
-
-    size_type sprintf_prepare_space_impl(std::basic_string<char_type> & str,
-                                         const char_type * fmt) {
-        assert(fmt != nullptr);
-        ssize_type delta = 0;
-        ssize_type err_id = Sprintf_Success;
-        size_type ex_arg1 = 0;
-        const char_type * fmt_first = fmt;
-        while (*fmt != char_type('\0')) {
-            if (likely(*fmt != char_type('%'))) {
-                // is not "%": direct output
-                fmt++;
-            }
-            else {
-                fmt++;
-                if (likely(*fmt != char_type('%'))) {
-                    // "%?": specifier
-                    uchar_type sp = static_cast<uchar_type>(*fmt);
-#if 1
-                    err_id = Sprintf_InvalidArgmument_MissingParameter;
-                    goto Sprintf_Throw_Except;
-#else
-                    delta--;
-                    fmt++;
-#endif
-                }
-                else {
-                    // "%%" = "%"
-                    delta--;
-                    fmt++;
-                }
-            }
-        }
-
-Sprintf_Throw_Except:
-        if (err_id != Sprintf_Success) {
-            ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_id, pos, ex_arg1);
-        }
-
-        ssize_type scan_len = (fmt - fmt_first);
-        assert(scan_len >= 0);
-        assert(scan_len >= delta);
-
-        size_type out_size = scan_len + delta;
-        return out_size;
-    }
-
-    template <typename Arg1, typename ...Args>
-    size_type sprintf_prepare_space_impl(std::basic_string<char_type> & str,
-                                         const char_type * fmt,
-                                         Arg1 && arg1,
-                                         Args && ... args) {
-        assert(fmt != nullptr);
-        ssize_type delta = 0;
-        ssize_type err_id = Sprintf_Success;
-        size_type ex_arg1 = 0;
-        const char_type * fmt_first = fmt;
-        while (*fmt != char_type('\0')) {
-            if (likely(*fmt != char_type('%'))) {
-                // is not "%": direct output
-                fmt++;
-            }
-            else {
-                fmt++;
-                if (likely(*fmt != char_type('%'))) {
-                    // "%?": specifier
-                    int i32;
-                    unsigned int u32;
-                    double d; float f;
-                    long double ld;
-                    unsigned char u8;
-                    size_type data_len;
-
-                    uchar_type sp = static_cast<uchar_type>(*fmt);
-                    switch (sp) {
-                    case uchar_type('\0'):
-                        {
-                            goto Sprintf_Exit;
-                        }
-
-                    case uchar_type('A'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('E'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('F'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('G'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('X'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('a'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('c'):
-                        {
-                            u8 = static_cast<unsigned char>(arg1);
-                            data_len = get_data_length<2>(u8);
-                            delta += data_len;
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('d'):
-                        {
-                            i32 = static_cast<int>(arg1);
-                            data_len = get_data_length<2>(i32);
-                            delta += data_len;
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('e'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('f'):
-                        {
-                            if (sizeof(Arg1) == sizeof(float)) {
-                                f = static_cast<float>(arg1);
-                            }
-                            else if (sizeof(Arg1) == sizeof(double)) {
-                                d = static_cast<double>(arg1);
-                            }
-                            else if (sizeof(Arg1) == sizeof(long double)) {
-                                ld = static_cast<long double>(arg1);
-                            }
-                            else {
-                                err_id = Sprintf_InvalidArgmument_ErrorFloatType;
-                                goto Sprintf_Throw_Except;
-                            }
-
-                            delta += 6 - 2;
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('g'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('i'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('n'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('o'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('p'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('s'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('u'):
-                        {
-                            u32 = static_cast<unsigned int>(arg1);
-                            data_len = get_data_length<2>(u32);
-                            delta += data_len;
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('x'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('\xff'):
-                        {
-                            err_id = Sprintf_BadFormat_UnknownSpecifier_FF;
-                            goto Sprintf_Throw_Except;
-                        }
-
-                    default:
-                        {
-                            ex_arg1 = sp;
-                            err_id = Sprintf_BadFormat_UnknownSpecifier;
-                            goto Sprintf_Throw_Except;
-                        }
-                    }
-
-                    size_type rest_size = sprintf_prepare_space_impl(str, fmt, std::forward<Args>(args)...);
-                    delta += rest_size;
-                    goto Sprintf_Exit;
-                }
-                else {
-                    // "%%" = "%"
-                    delta--;
-                    fmt++;
-                }
-            }
-        }
-
-Sprintf_Throw_Except:
-        if (err_id != Sprintf_Success) {
-            ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_id, pos, ex_arg1);
-        }
-
-Sprintf_Exit:
-        assert(delta >= 0);
-        ssize_type scan_len = (fmt - fmt_first);
-        assert(scan_len >= 0);
-        assert(scan_len >= delta);
-
-        size_type out_size = scan_len + delta;
-        return out_size;
-    }
-
-    template <typename ...Args>
-    size_type sprintf_prepare_space(std::basic_string<char_type> & str,
-                                    const char_type * fmt, Args && ... args) {
-        return sprintf_prepare_space_impl(str, fmt, std::forward<Args>(args)...);
+        size_type total_size = scan_len + rest_size;
+        return total_size;
     }
 
     template <typename Arg1, typename ...Args>
@@ -749,21 +554,345 @@ Sprintf_Exit:
     }
 
     template <typename ...Args>
+    size_type sprintf_calc_space(const char_type * fmt, Args && ... args) {
+        return sprintf_calc_space_impl(fmt, std::forward<Args>(args)...);
+    }
+
+    size_type sprintf_prepare_space_impl(std::vector<fmt_node_t> & fmt_list,
+                                         const char_type * fmt) {
+        assert(fmt != nullptr);
+        ssize_type rest_size = 0;
+        ssize_type err_code = Sprintf_Success;
+        size_type ex_arg1 = 0;
+        const char_type * fmt_first = fmt;
+        const char_type * arg_first = nullptr;
+        while (*fmt != char_type('\0')) {
+            if (likely(*fmt != char_type('%'))) {
+                // is not "%": direct output
+                fmt++;
+            }
+            else {
+                fmt++;
+                if (likely(*fmt != char_type('%'))) {
+                    // "%?": specifier
+                    uchar_type sp = static_cast<uchar_type>(*fmt);
+#if 1
+                    err_code = Sprintf_InvalidArgmument_MissingParameter;
+                    goto Sprintf_Throw_Except;
+#else
+                    rest_size--;
+                    fmt++;
+#endif
+                }
+                else {
+                    // "%%" = "%"
+                    rest_size--;
+                    fmt++;
+                }
+            }
+        }
+
+Sprintf_Throw_Except:
+        if (err_code != Sprintf_Success) {
+            ssize_type pos = (fmt - fmt_first);
+            throw_sprintf_except(err_code, pos, ex_arg1);
+        }
+
+        if (arg_first == nullptr) {
+            fmt_node_t fmt_info(fmt_first, fmt);
+            fmt_list.push_back(fmt_info);
+        }
+
+        ssize_type scan_len = (fmt - fmt_first);
+        assert(scan_len >= 0);
+        assert(scan_len >= rest_size);
+
+        size_type total_size = scan_len + rest_size;
+        return total_size;
+    }
+
+    template <typename Arg1, typename ...Args>
+    size_type sprintf_prepare_space_impl(std::vector<fmt_node_t> & fmt_list,
+                                         const char_type * fmt,
+                                         Arg1 && arg1,
+                                         Args && ... args) {
+        assert(fmt != nullptr);
+        ssize_type rest_size = 0;
+        ssize_type err_code = Sprintf_Success;
+        size_type ex_arg1 = 0;
+        const char_type * fmt_first = fmt;
+        const char_type * arg_first = nullptr;
+        while (*fmt != char_type('\0')) {
+            if (likely(*fmt != char_type('%'))) {
+                // is not "%": direct output
+                fmt++;
+            }
+            else {
+                arg_first = fmt;
+                fmt++;
+                if (likely(*fmt != char_type('%'))) {
+                    // "%?": specifier
+                    int i32;
+                    unsigned int u32;
+                    double d; float f;
+                    long double ld;
+                    unsigned char u8;
+                    size_type data_len = 0;
+
+                    uchar_type sp = static_cast<uchar_type>(*fmt);
+                    switch (sp) {
+                    case uchar_type('\0'):
+                        {
+                            goto Sprintf_Exit;
+                        }
+
+                    case uchar_type('A'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('E'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('F'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('G'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('X'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('a'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('c'):
+                        {
+                            u8 = static_cast<unsigned char>(arg1);
+                            data_len = get_data_length<2>(u8);
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('d'):
+                        {
+                            i32 = static_cast<int>(arg1);
+                            data_len = get_data_length<2>(i32);
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('e'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('f'):
+                        {
+                            if (sizeof(Arg1) == sizeof(float)) {
+                                f = static_cast<float>(arg1);
+                            }
+                            else if (sizeof(Arg1) == sizeof(double)) {
+                                d = static_cast<double>(arg1);
+                            }
+                            else if (sizeof(Arg1) == sizeof(long double)) {
+                                ld = static_cast<long double>(arg1);
+                            }
+                            else {
+                                err_code = Sprintf_InvalidArgmument_ErrorFloatType;
+                                goto Sprintf_Throw_Except;
+                            }
+
+                            data_len = 6 - 2;
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('g'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('i'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('n'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('o'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('p'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('s'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('u'):
+                        {
+                            u32 = static_cast<unsigned int>(arg1);
+                            data_len = get_data_length<2>(u32);
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('x'):
+                        {
+                            fmt++;
+                            break;
+                        }
+
+                    case uchar_type('\xff'):
+                        {
+                            err_code = Sprintf_BadFormat_UnknownSpecifier_FF;
+                            goto Sprintf_Throw_Except;
+                        }
+
+                    default:
+                        {
+                            ex_arg1 = sp;
+                            err_code = Sprintf_BadFormat_UnknownSpecifier;
+                            goto Sprintf_Throw_Except;
+                        }
+                    }
+
+                    fmt_node_t arg_info(fmt_first, arg_first, fmt_node_t::isArg, data_len);
+                    fmt_list.push_back(arg_info);
+
+                    rest_size = data_len;
+                    size_type remain_size = sprintf_prepare_space_impl(
+                                                fmt_list, fmt,
+                                                std::forward<Args>(args)...);
+                    rest_size += remain_size;
+                    goto Sprintf_Exit;
+                }
+                else {
+                    // "%%" = "%"
+                    rest_size--;
+                    fmt++;
+                }
+            }
+        }
+
+Sprintf_Throw_Except:
+        if (err_code != Sprintf_Success) {
+            ssize_type pos = (fmt - fmt_first);
+            throw_sprintf_except(err_code, pos, ex_arg1);
+        }
+
+        if (arg_first == nullptr) {
+            fmt_node_t fmt_info(fmt_first, fmt);
+            fmt_list.push_back(fmt_info);
+        }
+
+Sprintf_Exit:
+        assert(rest_size >= 0);
+        ssize_type scan_len = (fmt - fmt_first);
+        assert(scan_len >= 0);
+        assert(scan_len >= rest_size);
+
+        size_type total_size = scan_len + rest_size;
+        return total_size;
+    }
+
+    template <typename ...Args>
+    size_type sprintf_prepare_space(std::vector<fmt_node_t> & buf_list,
+                                    const char_type * fmt, Args && ... args) {
+        return sprintf_prepare_space_impl(buf_list, fmt, std::forward<Args>(args)...);
+    }
+
+    template <typename Arg1, typename ...Args>
+    size_type sprintf_output_prepare_impl(std::basic_string<char_type> & str,
+                                          std::vector<fmt_node_t> & fmt_list) {
+        return 0;
+    }
+
+    template <typename Arg1, typename ...Args>
+    size_type sprintf_output_prepare_impl(std::basic_string<char_type> & str,
+                                          std::vector<fmt_node_t> & fmt_list,
+                                          Arg1 && arg1,
+                                          Args && ... args) {
+        return 0;
+    }
+
+    template <typename ...Args>
+    size_type sprintf_output_prepare(std::basic_string<char_type> & str,
+                                     std::vector<fmt_node_t> & fmt_list,
+                                     Args && ... args) {
+        return sprintf_output_prepare_impl(str, fmt_list, std::forward<Args>(args)...);
+    }
+
+    template <typename ...Args>
     size_type sprintf(std::basic_string<char_type> & str,
                       const char_type * fmt,
                       Args && ... args) {
         if (likely(fmt != nullptr)) {
-            size_type out_size = sprintf_calc_space(fmt, std::forward<Args>(args)...);
+            size_type prepare_size = sprintf_calc_space(fmt, std::forward<Args>(args)...);
             size_type old_size = str.size();
-            size_type new_size = old_size + out_size;
-            // Expand a char for '\0'
+            size_type new_size = old_size + prepare_size;
+            // Expand to newsize and reserve a null terminator '\0'.
             str.reserve(new_size + 1);
             size_type output_size = sprintf_output(str, fmt, std::forward<Args>(args)...);
-            assert(output_size == out_size);
-            // Write null terminator '\0'
+            assert(output_size == prepare_size);
+            // Write the null terminator '\0'
             str[new_size] = char_type('\0');
-            return out_size;
+            return prepare_size;
         }
+
+        return 0;
+    }
+
+    template <typename ...Args>
+    size_type sprintf_prepare(std::basic_string<char_type> & str,
+                              const char_type * fmt,
+                              Args && ... args) {
+        if (likely(fmt != nullptr)) {
+            std::vector<fmt_node_t> fmt_list;
+            size_type prepare_size = sprintf_prepare_space(fmt_list, fmt, std::forward<Args>(args)...);
+            size_type old_size = str.size();
+            size_type new_size = old_size + prepare_size;
+            // Expand to newsize and reserve a null terminator '\0'.
+            str.reserve(new_size + 1);
+            size_type output_size = sprintf_output_prepare(str, fmt_list, std::forward<Args>(args)...);
+            assert(output_size == prepare_size);
+            // Write the null terminator '\0'.
+            str[new_size] = char_type('\0');
+            return prepare_size;
+        }
+
         return 0;
     }
 };
