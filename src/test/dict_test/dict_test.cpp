@@ -77,6 +77,9 @@
 #include <jstd/test/CPUWarmUp.h>
 #include <jstd/test/ProcessMemInfo.h>
 
+#include <jstd/hasher/fnv1a.h>
+#include <jstd/string/formatter.h>
+
 //#include <jstd/all.h>
 
 using namespace jstd;
@@ -1682,6 +1685,27 @@ void shiftable_ptr_test()
     }
 }
 
+void formatter_test()
+{
+    std::string str1;
+    int v1 = 100, v2 = 220;
+    jstd::formatter fmt;
+    fmt.sprintf(str1, "num1 = %d, num2 = %d\n\n", v1, v2);
+
+    printf("\n");
+    printf("formatter_test(): str1 = \"%s\"\n", str1.c_str());
+    printf("\n");
+}
+
+void fnv1a_hash_test()
+{
+    const char * test_str = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+        "abcdefghijklmnopqrstuvwxyz";
+    uint32_t fnv1a_1 = hasher::FNV1A_Yoshimura(test_str, libc::StrLen(test_str));
+    uint32_t fnv1a_2 = hasher::FNV1A_Yoshimitsu_TRIADii_xmm(test_str, libc::StrLen(test_str));
+    uint32_t fnv1a_3 = hasher::FNV1A_penumbra(test_str, libc::StrLen(test_str));
+}
+
 bool read_dict_file(const std::string & filename)
 {
     bool is_ok = false;
@@ -1721,8 +1745,10 @@ int main(int argc, char * argv[])
         jtest::CPU::warmup(1000);
     }
 
-    string_view_test();
+    //string_view_test();
     //shiftable_ptr_test();
+    formatter_test();
+    //fnv1a_hash_test();
 
     hashtable_uinttest();
     hashtable_benchmark();

@@ -14,15 +14,48 @@
 
 // Linux maybe need #include <sys/types.h>
 
+/////////////////////////////////////////////////////////////////////////
+// For std::ssize_t
+/////////////////////////////////////////////////////////////////////////
+
+#if defined(_MSC_VER) && (_MSC_VER < 1700)
+
+    #include "jstd/basic/msvc/stdint.h"
+    #include <stddef.h>
+
+    #ifdef __cplusplus
+    namespace std {
+        typedef ptrdiff_t   ssize_t;
+    }
+    #endif // __cplusplus
+
+#else
+
+    #include "jstd/basic/msvc/stdint.h"
+
+    #include <cstdint>
+    #include <cstddef>  // For std::ptrdiff_t
+
+    #ifdef __cplusplus
+    namespace std {
+        typedef std::ptrdiff_t   ssize_t;
+    }
+    #endif // __cplusplus
+
+#endif // _MSC_VER
+
 #if !(defined(_SSIZE_T_DEFINED) || defined(_SSIZE_T_) || defined(_SIZE_T_) || defined(_BSD_SIZE_T_) || defined(_SIZE_T))
 #if (defined(_WIN32) || defined(_WIN64)) \
     && (!(defined(__MINGW__) || defined(__MINGW32__) || defined(__MINGW64__))) \
     && (!defined(__CYGWIN__))
-#ifdef _WIN64
-typedef signed __int64      ssize_t;
-#else // !_WIN64
-typedef _W64 signed int     ssize_t;
-#endif // _WIN64
+
+typedef ptrdiff_t   ssize_t;
+
+//#ifdef _WIN64
+//typedef signed __int64      ssize_t;
+//#else // !_WIN64
+//typedef _W64 signed int     ssize_t;
+//#endif // _WIN64
 
 #else
 
@@ -44,12 +77,14 @@ typedef _W64 signed int     ssize_t;
 #ifndef _SIZET_
 #ifndef __size_t
 
-#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) \
-    || defined(_M_X64) || defined(_M_AMD64) || defined(_WIN64)
-typedef signed long long    ssize_t;
-#else  /* !_M_X64 */
-typedef signed int          ssize_t;
-#endif  /* _M_X64 */
+typedef ptrdiff_t   ssize_t;
+
+//#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) \
+//    || defined(_M_X64) || defined(_M_AMD64) || defined(_WIN64)
+//typedef signed long long    ssize_t;
+//#else  /* !_M_X64 */
+//typedef signed int          ssize_t;
+//#endif  /* _M_X64 */
 
 #endif /* __size_t */
 #endif /* _SIZET_ */
@@ -72,33 +107,5 @@ typedef signed int          ssize_t;
 #endif // defined(_WIN32) || defined(_WIN64)
 #define _SSIZE_T_DEFINED
 #endif // _SSIZE_T_DEFINED
-
-/////////////////////////////////////////////////////////////////////////
-// For std::ssize_t
-/////////////////////////////////////////////////////////////////////////
-
-#if defined(_MSC_VER) && (_MSC_VER < 1700)
-
-    #include "jstd/basic/msvc/stdint.h"
-    #include <stddef.h>
-
-    #ifdef __cplusplus
-    namespace std {
-        typedef ptrdiff_t   ssize_t;
-    }
-    #endif // __cplusplus
-
-#else
-
-    #include <cstdint>
-    #include <cstddef>  // For std::ptrdiff_t
-
-    #ifdef __cplusplus
-    namespace std {
-        typedef std::ptrdiff_t   ssize_t;
-    }
-    #endif // __cplusplus
-
-#endif // _MSC_VER
 
 #endif // JSTD_BASIC_STDSIZE_H

@@ -86,8 +86,6 @@
 #include <jstd/test/CPUWarmUp.h>
 #include <jstd/test/ProcessMemInfo.h>
 
-#include <jstd/hasher/fnv1a.h>
-
 //#include <jstd/all.h>
 
 #include "BenchmarkResult.h"
@@ -1004,12 +1002,6 @@ int main(int argc, char * argv[])
         // first arg is # of iterations
         iters = ::atoi(argv[1]);
     }
-
-    const char * test_str = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
-        "abcdefghijklmnopqrstuvwxyz";
-    uint32_t fnv1a_1 = hasher::FNV1A_Yoshimura(test_str, libc::StrLen(test_str));
-    uint32_t fnv1a_2 = hasher::FNV1A_Yoshimitsu_TRIADii_xmm(test_str, libc::StrLen(test_str));
-    uint32_t fnv1a_3 = hasher::FNV1A_penumbra(test_str, libc::StrLen(test_str));
 
     jtest::CPU::warmup(1000);
 

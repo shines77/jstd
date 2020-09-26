@@ -2883,7 +2883,6 @@ protected:
         assert(new_entry_capacity != this->entry_capacity_);
 
         size_type old_bucket_capacity = this->bucket_capacity_;
-        size_type old_bucket_mask = this->bucket_mask_;
 
         size_type new_entry_count = 0;
 
@@ -3164,10 +3163,12 @@ public:
         return entry->value.second;
     }
 
+#if 0
     mapped_type & operator [] (key_type && key) {
         entry_type * entry = this->find_or_insert(std::move_if_noexcept(key));
         return entry->value.second;
     }
+#endif
 
     //
     // insert(key, value)
