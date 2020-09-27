@@ -1691,11 +1691,11 @@ void formatter_test()
     int v1 = 100, v2 = 220;
     jstd::formatter fmt;
     fmt.sprintf(str1, "num1 = %d, num2 = %d\n\n", v1, v2);
-    fmt.sprintf_prepare(str2, "num1 = %d, num2 = %d\n\n", v1, v2);
+    fmt.sprintf_no_prepare(str2, "num1 = %d, num2 = %d\n\n", v1, v2);
 
     printf("\n");
-    printf("formatter_test(): str1 = \"%s\"\n", str1.c_str());
-    printf("formatter_test(): str2 = \"%s\"\n", str2.c_str());
+    printf("formatter_test(): fmt.sprintf(str1)            = \"%s\"\n", str1.c_str());
+    printf("formatter_test(): fmt.sprintf_no_prepare(str2) = \"%s\"\n", str2.c_str());
     printf("\n");
 }
 

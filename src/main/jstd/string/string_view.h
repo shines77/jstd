@@ -20,7 +20,9 @@
 #include <memory>
 #include <type_traits>
 #include <stdexcept>
+#include <cassert>
 
+#include "jstd/iterator.h"
 #include "jstd/string/string_traits.h"
 #include "jstd/string/string_iterator.h"
 #include "jstd/string/string_libc.h"
@@ -178,25 +180,91 @@ public:
         }
     }
 
-    reference at(size_t pos) {
+    this_type & append(const char_type * data, size_type count) {
+        while (count > 0) {
+            this->push_back(*data);
+            data++;
+            count--;
+        }
+        return *this;
+    }
+
+    this_type & append(size_type count, char_type ch) {
+        while (count > 0) {
+            this->push_back(ch);
+            count--;
+        }
+        return *this;
+    }
+
+    this_type & append(const_pointer first, const_pointer last) {
+        while (first != last) {
+            this->push_back(*first);
+            first++;
+        }
+        return *this;
+    }
+
+    this_type & append(const_iterator first, const_iterator last) {
+        while (first != last) {
+            this->push_back(*first);
+            first++;
+        }
+        return *this;
+    }
+
+    template <typename InputIter>
+    typename std::enable_if<jstd::is_iterator<InputIter>::value, this_type &>::type
+    append(InputIter first, InputIter last) {
+        bool is_iterator = jstd::is_iterator<InputIter>::value;
+        bool is_forward_iterator = std::is_base_of<forward_iterator_tag, InputIter>::value;
+        if (!is_iterator || (is_iterator && is_forward_iterator)) {
+            while (first != last) {
+                this->push_back(*first);
+                first++;
+            }
+        }
+        else {
+            static_assert(false, "basic_string_view<T>::append(): "
+                                 "InputIter type must be is a forward_iterator.");
+        }
+        return *this;
+    }
+
+    inline
+    void push_back(char_type ch) {
+        char_type * data = const_cast<char_type *>(this->data_);
+        *data = ch;
+        this->data_++;
+    }
+
+    void commit(size_type count) {
+        this->data_ += count;
+    }
+
+    void comsume(size_type count) {
+        this->data_ -= count;
+    }
+
+    reference at(size_type pos) {
         if (pos < this->size())
             return this->data_[pos];
         else
             throw std::out_of_range("basic_string_view<T>::at(pos): out of range.");
     }
 
-    const_reference at(size_t pos) const {
+    const_reference at(size_type pos) const {
         if (pos < this->size())
             return this->data_[pos];
         else
             throw std::out_of_range("basic_string_view<T>::at(pos): out of range.");
     }
 
-    reference operator [] (size_t pos) {
+    reference operator [] (size_type pos) {
         return const_cast<char_type *>(this->data_)[pos];
     }
 
-    const_reference operator [] (size_t pos) const {
+    const_reference operator [] (size_type pos) const {
         return this->data_[pos];
     }
 
