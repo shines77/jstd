@@ -51,37 +51,95 @@ enum sprintf_except_id {
     Sprintf_InvalidArgmument_ErrorFloatType,
 
     Sprintf_Success = 0,
+    Sprintf_Reach_Endof,
     Sprintf_Except_Last
 };
 
+template <typename CharTy>
+JSTD_FORCEINLINE
+static CharTy to_hex_char(CharTy hex) {
+    return ((hex >= 10) ? (hex - 10 + CharTy('A')) : (hex + CharTy('0')));
+}
+
+template <typename CharTy>
+JSTD_FORCEINLINE
+static CharTy to_lower_hex_char(CharTy hex) {
+    return ((hex >= 10) ? (hex - 10 + CharTy('a')) : (hex + CharTy('0')));
+}
+
+template <typename CharTy>
+static std::string to_hex(CharTy ch) {
+    typedef typename make_unsigned_char<CharTy>::type UCharTy;
+    UCharTy high = UCharTy(ch) / 16;
+    std::string hex(to_hex_char(high), 1);
+    UCharTy low = UCharTy(ch) % 16;
+    hex += to_hex_char(low);
+    return hex;
+}
+
+template <typename CharTy>
+static std::string to_lower_hex(CharTy ch) {
+    typedef typename make_unsigned_char<CharTy>::type UCharTy;
+    UCharTy high = UCharTy(ch) / 16;
+    std::string hex(to_lower_hex_char(high), 1);
+    UCharTy low = UCharTy(ch) % 16;
+    hex += to_lower_hex_char(low);
+    return hex;
+}
+
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(unsigned char u8) {
-    if (u8 < 10) {
+std::ssize_t get_data_length(bool bl1) {
+    return 1;
+}
+
+template <std::ssize_t delta = 0>
+inline
+std::ssize_t get_data_length(uint8_t u8) {
+    if (u8 < 10)
         return (1 - delta);
-    }
-    else {
-        if (u8 < 100)
-            return (2 - delta);
-        else
-            return (3 - delta);
-    }
-}
-
-template <std::ssize_t delta = 0>
-inline
-std::ssize_t get_data_length(char i8) {
-    unsigned char u8;
-    if (i8 < 0)
-        u8 = static_cast<unsigned char>(-i8);
+    else if (u8 < 100)
+        return (2 - delta);
     else
-        u8 = static_cast<unsigned char>(i8);
-    return get_data_length<delta>(u8);
+        return (3 - delta);
 }
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(unsigned int u32) {
+std::ssize_t get_data_length(int8_t i8) {
+    uint8_t u8;
+    if (i8 >= 0)
+        u8 = static_cast<uint8_t>(i8);
+    else
+        u8 = static_cast<uint8_t>(-i8);
+    return std::ssize_t(i8 < 0) + get_data_length<delta>(u8);
+}
+
+template <std::ssize_t delta = 0>
+inline
+std::ssize_t get_data_length(uint16_t u16) {
+    if (u16 < 10)
+        return (1 - delta);
+    else if (u16 < 100)
+        return (2 - delta);
+    else
+        return (3 - delta);
+}
+
+template <std::ssize_t delta = 0>
+inline
+std::ssize_t get_data_length(int16_t i16) {
+    uint16_t u16;
+    if (i16 >= 0)
+        u16 = static_cast<uint16_t>(i16);
+    else
+        u16 = static_cast<uint16_t>(-i16);
+    return std::ssize_t(i16 < 0) + get_data_length<delta>(u16);
+}
+
+template <std::ssize_t delta = 0>
+inline
+std::ssize_t get_data_length(uint32_t u32) {
     if (u32 < 100000000UL) {
         if (u32 < 10000UL) {
             if (u32 < 100UL) {
@@ -122,51 +180,117 @@ std::ssize_t get_data_length(unsigned int u32) {
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(int i32) {
-    unsigned int u32;
-    if (i32 < 0)
-        u32 = static_cast<unsigned int>(-i32);
-    else
-        u32 = static_cast<unsigned int>(i32);
-    return get_data_length<delta>(u32);
+std::ssize_t get_data_length(int32_t i32) {
+    uint32_t u32;
+    if (i32 >= 0) {
+        u32 = static_cast<uint32_t>(i32);
+    }
+    else {
+        u32 = static_cast<uint32_t>(-i32);
+    }
+    return std::ssize_t(i32 < 0) + get_data_length<delta>(u32);
 }
 
-template <typename CharTy>
-JSTD_FORCEINLINE
-static CharTy to_hex_char(CharTy hex) {
-    return ((hex >= 10) ? (hex - 10 + CharTy('A')) : (hex + CharTy('0')));
+template <std::ssize_t delta = 0>
+inline
+std::ssize_t get_data_length(uint64_t u64) {
+    if (u64 < 100000000UL) {
+        if (u64 < 10000UL) {
+            if (u64 < 100UL) {
+                if (u64 < 10UL)
+                    return (1 - delta);
+                else
+                    return (2 - delta);
+            }
+            else {
+                if (u64 < 1000UL)
+                    return (3 - delta);
+                else
+                    return (4 - delta);
+            }
+        }
+        else {
+            if (u64 < 1000000UL) {
+                if (u64 < 100000UL)
+                    return (5 - delta);
+                else
+                    return (6 - delta);
+            }
+            else {
+                if (u64 < 10000000UL)
+                    return (7 - delta);
+                else
+                    return (8 - delta);
+            }
+        }
+    }
+    else if (u64 < 10000000000000000ULL) {
+        if (u64 < 1000000000000ULL) {
+            if (u64 < 10000000000ULL) {
+                if (u64 < 1000000000ULL)
+                    return (9 - delta);
+                else
+                    return (10 - delta);
+            }
+            else {
+                if (u64 < 100000000000ULL)
+                    return (11 - delta);
+                else
+                    return (12 - delta);
+            }
+        }
+        else {
+            if (u64 < 100000000000000ULL) {
+                if (u64 < 10000000000000ULL)
+                    return (13 - delta);
+                else
+                    return (14 - delta);
+            }
+            else {
+                if (u64 < 1000000000000000ULL)
+                    return (15 - delta);
+                else
+                    return (16 - delta);
+            }
+        }
+    }
+    else {
+        if (u64 < 1000000000000000000ULL) {
+            if (u64 < 100000000000000000ULL)
+                return (17 - delta);
+            else
+                return (18 - delta);
+        }
+        else {
+            return (19 - delta);
+        }
+    }
 }
 
-template <typename CharTy>
-JSTD_FORCEINLINE
-static CharTy to_lower_hex_char(CharTy hex) {
-    return ((hex >= 10) ? (hex - 10 + CharTy('a')) : (hex + CharTy('0')));
+template <std::ssize_t delta = 0>
+inline
+std::ssize_t get_data_length(int64_t i64) {
+    uint64_t u64;
+    if (i64 >= 0) {
+        u64 = static_cast<uint64_t>(i32);
+    }
+    else {
+        u64 = static_cast<uint64_t>(-i32);
+    }
+    return std::ssize_t(i64 < 0) + get_data_length<delta>(u64);
 }
 
-template <typename CharTy>
-static std::string to_hex(CharTy ch) {
-    typedef typename make_unsigned_char<CharTy>::type UCharTy;
-    UCharTy high = UCharTy(ch) / 16;
-    std::string hex(to_hex_char(high), 1);
-    UCharTy low = UCharTy(ch) % 16;
-    hex += to_hex_char(low);
-    return hex;
-}
-
-template <typename CharTy>
-static std::string to_lower_hex(CharTy ch) {
-    typedef typename make_unsigned_char<CharTy>::type UCharTy;
-    UCharTy high = UCharTy(ch) / 16;
-    std::string hex(to_lower_hex_char(high), 1);
-    UCharTy low = UCharTy(ch) % 16;
-    hex += to_lower_hex_char(low);
-    return hex;
+template <std::ssize_t delta = 0>
+inline
+std::ssize_t get_data_length(void * pv) {
+    std::size_t pval = reinterpret_cast<std::size_t>(pv);
+    return (get_data_length<delta>(pval) + std::ssize_t(2));
 }
 
 template <typename CharTy, typename Arg>
 inline
 std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                Arg && arg, std::size_t size) {
+                                  Arg && arg, std::size_t size) {
     std::size_t data_len = size;
     str.append(size, CharTy('?'));
     return data_len;
@@ -175,50 +299,121 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
 template <typename CharTy>
 inline
 std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                unsigned int u32, std::size_t digits) {
-    std::size_t data_len = size;
-    const CharTy * output_last = str.c_str() + digits;
-    unsigned int num;
-    while (u32 > 100UL) {
+                                  uint32_t u32, std::size_t digits) {
+    assert(digits > 0);
+    CharTy * output_last = const_cast<CharTy *>(str.c_str() + digits - 1);
+    CharTy * output_end = output_last;
+
+    uint32_t num;
+    while (u32 >= 100UL) {
         num = u32 % 10UL;
         u32 /= 10UL;
-        *output_last = static_cast<CharTy>(num);
+        *output_last = static_cast<CharTy>(num) + CharTy('0');
         output_last--;
 
         num = u32 % 10UL;
         u32 /= 10UL;
-        *output_last = static_cast<CharTy>(num);
-        output_last--;
-    }
-
-    if (u32 > 10UL) {
-        num = u32 % 10UL;
-        u32 /= 10UL;
-        *output_last = static_cast<CharTy>(num);
+        *output_last = static_cast<CharTy>(num) + CharTy('0');
         output_last--;
     }
 
-    assert(output_last == str.c_str());
+    if (u32 >= 10UL) {
+        num = u32 % 10UL;
+        u32 /= 10UL;
+        *output_last = static_cast<CharTy>(num) + CharTy('0');
+        output_last--;
+    }
+
+    assert(u32 < 10UL);
+    *output_last = static_cast<CharTy>(u32) + CharTy('0');
+    output_last--;
+
+    assert((const CharTy *)output_last < str.c_str());
     str.commit(digits);
 
+    assert(output_end >= output_last);
+    std::size_t data_len = std::size_t(output_end - output_last);
     return data_len;
 }
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
-                                int i32, std::size_t digits) {
-    std::size_t data_len;
-    unsigned int u32;
+std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
+                                  int32_t i32, std::size_t digits) {
+    std::size_t addition;
+    uint32_t u32;
     if (likely(i32 >= 0)) {
-        u32 = static_cast<unsigned int>(i32);
-        data_len = format_and_append_arg(str, u32, digits);
+        u32 = static_cast<uint32_t>(i32);
+        addition = 0;
     }
     else {
-        str.push_back(char_type('-'));
-        u32 = static_cast<unsigned int>(-i32);
-        data_len = format_and_append_arg(str, u32, digits - 1) + 1;
+        str.push_back(CharTy('-'));
+        u32 = static_cast<uint32_t>(-i32);
+        addition = 1;
     }
+    std::size_t data_len = format_and_append_arg(
+                                str, u32, digits - addition)
+                                + addition;
+    return data_len;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
+                                  uint64_t u64, std::size_t digits) {
+    CharTy * output_last = const_cast<CharTy *>(str.c_str() + digits - 1);
+    CharTy * output_end = output_last;
+
+    uint64_t num;
+    while (u64 >= 100ULL) {
+        num = u64 % 10ULL;
+        u64 /= 10ULL;
+        *output_last = static_cast<CharTy>(num) + CharTy('0');
+        output_last--;
+
+        num = u64 % 10ULL;
+        u64 /= 10ULL;
+        *output_last = static_cast<CharTy>(num) + CharTy('0');
+        output_last--;
+    }
+
+    if (u64 >= 10ULL) {
+        num = u64 % 10ULL;
+        u64 /= 10ULL;
+        *output_last = static_cast<CharTy>(num) + CharTy('0');
+        output_last--;
+    }
+
+    assert(u64 < 10UL);
+    *output_last = static_cast<CharTy>(u64) + CharTy('0');
+    output_last--;
+
+    assert((const CharTy *)output_last < str.c_str());
+    str.commit(digits);
+
+    assert(output_end >= output_last);
+    std::size_t data_len = std::size_t(output_end - output_last);
+    return data_len;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
+                                  int64_t i64, std::size_t digits) {
+    std::size_t addition;
+    uint64_t u64;
+    if (likely(i64 >= 0)) {
+        u64 = static_cast<uint64_t>(i64);
+        addition = 0;
+    }
+    else {
+        str.push_back(CharTy('-'));
+        u64 = static_cast<uint64_t>(-i64);
+        addition = 1;
+    }
+    std::size_t data_len = format_and_append_arg(
+                                str, u64, digits - addition)
+                                + addition;
     return data_len;
 }
 
@@ -357,6 +552,176 @@ struct basic_formatter {
     typedef sprintf_fmt_node<CharTy>                    fmt_node_t;
     typedef basic_formatter<CharTy>                     this_type;
 
+    template <typename Arg>
+    ssize_type sprintf_handle_specifier(const char_type * &fmt,
+                                        Arg && arg,
+                                        size_type & data_len,
+                                        size_type & ex_arg1) {
+        ssize_type err_code = Sprintf_Success;
+
+        int i32;
+        unsigned int u32;
+        double d; float f;
+        long double ld;
+        unsigned char u8;
+        void * pvoid;
+
+        uchar_type sp = static_cast<uchar_type>(*fmt);
+        switch (sp) {
+        case uchar_type('\0'):
+            {
+                err_code = Sprintf_Reach_Endof;
+                break;
+            }
+
+        case uchar_type('A'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('E'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('F'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('G'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('X'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('a'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('c'):
+            {
+                fmt++;
+                u8 = static_cast<unsigned char>(arg);
+                data_len = get_data_length<0>(u8);
+                break;
+            }
+
+        case uchar_type('d'):
+            {
+                fmt++;
+                i32 = static_cast<int>(arg);
+                data_len = get_data_length<0>(i32);
+                break;
+            }
+
+        case uchar_type('e'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('f'):
+            {
+                fmt++;
+                if (sizeof(Arg) == sizeof(float)) {
+                    f = static_cast<float>(arg);
+                }
+                else if (sizeof(Arg) == sizeof(double)) {
+                    d = static_cast<double>(arg);
+                }
+                else if (sizeof(Arg) == sizeof(long double)) {
+                    ld = static_cast<long double>(arg);
+                }
+                else {
+                    err_code = Sprintf_InvalidArgmument_ErrorFloatType;
+                    return err_code;
+                }
+
+                data_len = 6;
+                break;
+            }
+
+        case uchar_type('g'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('i'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('n'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('o'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('p'):
+            {
+                fmt++;
+                pvoid = reinterpret_cast<void *>(static_cast<std::size_t>(arg));
+                data_len = get_data_length<0>(pvoid);
+                break;
+            }
+
+        case uchar_type('s'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('u'):
+            {
+                fmt++;
+                u32 = static_cast<unsigned int>(arg);
+                data_len = get_data_length<0>(u32);
+                break;
+            }
+
+        case uchar_type('x'):
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('\xff'):
+            {
+                err_code = Sprintf_BadFormat_UnknownSpecifier_FF;
+                break;
+            }
+
+        default:
+            {
+                ex_arg1 = sp;
+                err_code = Sprintf_BadFormat_UnknownSpecifier;
+                break;
+            }
+        }
+
+        return err_code;
+    }
+
     size_type sprintf_calc_space_impl(const char_type * fmt) {
         assert(fmt != nullptr);
         ssize_type rest_size = 0;
@@ -422,161 +787,16 @@ Sprintf_Throw_Except:
                 fmt++;
                 if (likely(*fmt != char_type('%'))) {
                     // "%?": specifier
-                    int i32;
-                    unsigned int u32;
-                    double d; float f;
-                    long double ld;
-                    unsigned char u8;
-                    size_type data_len;
+                    size_type data_len = 0;
+                    err_code = sprintf_handle_specifier<Arg1>(
+                                    fmt, std::forward<Arg1>(arg1),
+                                    data_len, ex_arg1);
 
-                    uchar_type sp = static_cast<uchar_type>(*fmt);
-                    switch (sp) {
-                    case uchar_type('\0'):
-                        {
-                            goto Sprintf_Exit;
-                        }
-
-                    case uchar_type('A'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('E'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('F'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('G'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('X'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('a'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('c'):
-                        {
-                            fmt++;
-                            u8 = static_cast<unsigned char>(arg1);
-                            data_len = get_data_length<0>(u8);
-                            break;
-                        }
-
-                    case uchar_type('d'):
-                        {
-                            fmt++;
-                            i32 = static_cast<int>(arg1);
-                            data_len = get_data_length<0>(i32);
-                            break;
-                        }
-
-                    case uchar_type('e'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('f'):
-                        {
-                            fmt++;
-                            if (sizeof(Arg1) == sizeof(float)) {
-                                f = static_cast<float>(arg1);
-                            }
-                            else if (sizeof(Arg1) == sizeof(double)) {
-                                d = static_cast<double>(arg1);
-                            }
-                            else if (sizeof(Arg1) == sizeof(long double)) {
-                                ld = static_cast<long double>(arg1);
-                            }
-                            else {
-                                err_code = Sprintf_InvalidArgmument_ErrorFloatType;
-                                goto Sprintf_Throw_Except;
-                            }
-
-                            data_len = 6;
-                            break;
-                        }
-
-                    case uchar_type('g'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('i'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('n'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('o'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('p'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('s'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('u'):
-                        {
-                            fmt++;
-                            u32 = static_cast<unsigned int>(arg1);
-                            data_len = get_data_length<0>(u32);
-                            break;
-                        }
-
-                    case uchar_type('x'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('\xff'):
-                        {
-                            err_code = Sprintf_BadFormat_UnknownSpecifier_FF;
-                            goto Sprintf_Throw_Except;
-                        }
-
-                    default:
-                        {
-                            ex_arg1 = sp;
-                            err_code = Sprintf_BadFormat_UnknownSpecifier;
-                            goto Sprintf_Throw_Except;
-                        }
+                    if (err_code < 0) {
+                        goto Sprintf_Throw_Except;
+                    }
+                    else if (err_code == Sprintf_Reach_Endof) {
+                        goto Sprintf_Exit;
                     }
 
                     rest_size += (ssize_type(data_len) - (fmt - arg_first));
@@ -707,161 +927,16 @@ Sprintf_Throw_Except:
                 fmt++;
                 if (likely(*fmt != char_type('%'))) {
                     // "%?": specifier
-                    int i32;
-                    unsigned int u32;
-                    double d; float f;
-                    long double ld;
-                    unsigned char u8;
                     size_type data_len = 0;
+                    err_code = sprintf_handle_specifier<Arg1>(
+                                    fmt, std::forward<Arg1>(arg1),
+                                    data_len, ex_arg1);
 
-                    uchar_type sp = static_cast<uchar_type>(*fmt);
-                    switch (sp) {
-                    case uchar_type('\0'):
-                        {
-                            goto Sprintf_Exit;
-                        }
-
-                    case uchar_type('A'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('E'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('F'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('G'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('X'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('a'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('c'):
-                        {
-                            fmt++;
-                            u8 = static_cast<unsigned char>(arg1);
-                            data_len = get_data_length<0>(u8);
-                            break;
-                        }
-
-                    case uchar_type('d'):
-                        {
-                            fmt++;
-                            i32 = static_cast<int>(arg1);
-                            data_len = get_data_length<0>(i32);
-                            break;
-                        }
-
-                    case uchar_type('e'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('f'):
-                        {
-                            fmt++;
-                            if (sizeof(Arg1) == sizeof(float)) {
-                                f = static_cast<float>(arg1);
-                            }
-                            else if (sizeof(Arg1) == sizeof(double)) {
-                                d = static_cast<double>(arg1);
-                            }
-                            else if (sizeof(Arg1) == sizeof(long double)) {
-                                ld = static_cast<long double>(arg1);
-                            }
-                            else {
-                                err_code = Sprintf_InvalidArgmument_ErrorFloatType;
-                                goto Sprintf_Throw_Except;
-                            }
-
-                            data_len = 6;
-                            break;
-                        }
-
-                    case uchar_type('g'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('i'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('n'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('o'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('p'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('s'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('u'):
-                        {
-                            fmt++;
-                            u32 = static_cast<unsigned int>(arg1);
-                            data_len = get_data_length<0>(u32);
-                            break;
-                        }
-
-                    case uchar_type('x'):
-                        {
-                            fmt++;
-                            break;
-                        }
-
-                    case uchar_type('\xff'):
-                        {
-                            err_code = Sprintf_BadFormat_UnknownSpecifier_FF;
-                            goto Sprintf_Throw_Except;
-                        }
-
-                    default:
-                        {
-                            ex_arg1 = sp;
-                            err_code = Sprintf_BadFormat_UnknownSpecifier;
-                            goto Sprintf_Throw_Except;
-                        }
+                    if (err_code < 0) {
+                        goto Sprintf_Throw_Except;
+                    }
+                    else if (err_code == Sprintf_Reach_Endof) {
+                        goto Sprintf_Exit;
                     }
 
                     fmt_node_t arg_info(fmt_first, arg_first, fmt_node_t::isArg, data_len);
@@ -917,6 +992,7 @@ Sprintf_Exit:
                 total_size += fmt_info.fmt_length();
                 str.append(fmt_info.fmt_first, fmt_info.arg_first);
             }
+
             bool is_arg = fmt_info.is_arg();
             if (!is_arg) {
                 fmt_list.pop_front();
@@ -967,7 +1043,7 @@ Sprintf_Exit:
     }
 
     template <typename ...Args>
-    size_type sprintf_output_prepare(std::basic_string<char_type> & str,
+    size_type sprintf_output_prepare(std::vector<char_type> & str,
                                      std::list<fmt_node_t> & fmt_list,
                                      Args && ... args) {
         jstd::basic_string_view<char_type> str_view(str);
@@ -1003,12 +1079,14 @@ Sprintf_Exit:
             size_type prepare_size = sprintf_prepare_space(fmt_list, fmt, std::forward<Args>(args)...);
             size_type old_size = str.size();
             size_type new_size = old_size + prepare_size;
+            std::vector<char_type> str_buf;
             // Expand to newsize and reserve a null terminator '\0'.
-            str.reserve(new_size + 1);
-            size_type output_size = sprintf_output_prepare(str, fmt_list, std::forward<Args>(args)...);
+            str_buf.resize(new_size + 1);
+            size_type output_size = sprintf_output_prepare(str_buf, fmt_list, std::forward<Args>(args)...);
             assert(output_size == prepare_size);
             // Write the null terminator '\0'.
-            str.push_back(char_type('\0'));
+            str_buf[new_size] = char_type('\0');
+            str.append(str_buf.begin(), str_buf.end());
             return prepare_size;
         }
 

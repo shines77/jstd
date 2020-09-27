@@ -18,11 +18,11 @@
 #include <cstring>
 #include <string>
 #include <memory>
+#include <vector>
 #include <type_traits>
 #include <stdexcept>
 #include <cassert>
 
-#include "jstd/iterator.h"
 #include "jstd/string/string_traits.h"
 #include "jstd/string/string_iterator.h"
 #include "jstd/string/string_libc.h"
@@ -78,6 +78,9 @@ public:
     }
     basic_string_view(const string_type & src) noexcept
         : data_(src.c_str()), length_(src.size()) {
+    }
+    basic_string_view(const std::vector<char_type> & vec) noexcept
+        : data_(vec.data()), length_(vec.capacity()) {
     }
     ~basic_string_view() {
         /* Do nothing! */
