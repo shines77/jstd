@@ -198,6 +198,10 @@
     #define JSTD_EXPORTED_METHOD
 #endif
 
+#ifndef JSTD_UNUSED_VARS
+#define JSTD_UNUSED_VARS(x)     (void)(x)
+#endif
+
 #define STD_IOS_RIGHT(width, var) \
     std::right << std::setw(width) << (var)
 

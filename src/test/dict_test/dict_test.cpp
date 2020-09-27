@@ -1689,13 +1689,27 @@ void formatter_test()
 {
     std::string str1, str2;
     int v1 = 100, v2 = 220;
+    int v3 = 500, v4 = 1024;
+    unsigned int v5 = 2048, v6 = 4096;
+    unsigned int v7 = 16384, v8 = 65536;
     jstd::formatter fmt;
     fmt.sprintf(str1, "num1 = %d, num2 = %d\n\n", v1, v2);
     fmt.sprintf_no_prepare(str2, "num1 = %d, num2 = %d\n\n", v1, v2);
 
     printf("\n");
-    printf("formatter_test(): fmt.sprintf(str1)            = \"%s\"\n", str1.c_str());
+    printf("formatter_test(): fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
     printf("formatter_test(): fmt.sprintf_no_prepare(str2) = \"%s\"\n", str2.c_str());
+
+    //str1.clear();
+    fmt.sprintf(str1,
+                "num1 = %d, num2 = %d\n"
+                "num3 = %u, num4 = %d\n"
+                "num4 = %u, num5 = %d\n"
+                "num7 = %u, num8 = %d\n\n",
+                v1, v2, v3, v4, v5, v6, v7, v8);
+
+    printf("\n");
+    printf("formatter_test(): fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
     printf("\n");
 }
 
@@ -1752,8 +1766,8 @@ int main(int argc, char * argv[])
     formatter_test();
     //fnv1a_hash_test();
 
-    hashtable_uinttest();
-    hashtable_benchmark();
+    //hashtable_uinttest();
+    //hashtable_benchmark();
 
     jstd::Console::ReadKey();
     return 0;

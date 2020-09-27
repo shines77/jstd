@@ -557,82 +557,131 @@ struct basic_formatter {
                                         Arg && arg,
                                         size_type & data_len,
                                         size_type & ex_arg1) {
+        typedef typename std::decay<Arg>::type  ArgT;
+
         ssize_type err_code = Sprintf_Success;
 
-        int i32;
-        unsigned int u32;
-        double d; float f;
+        int8_t  i8;
+        int16_t i16;
+        int32_t i32;
+        int64_t i64;
+        uint8_t  u8;
+        uint16_t u16;        
+        uint32_t u32;
+        uint64_t u64;
+        float f;
+        double d;
         long double ld;
-        unsigned char u8;
         void * pvoid;
 
         uchar_type sp = static_cast<uchar_type>(*fmt);
         switch (sp) {
         case uchar_type('\0'):
             {
+                JSTD_UNUSED_VARS(i8);
+                JSTD_UNUSED_VARS(u8);
+                JSTD_UNUSED_VARS(i16);
+                JSTD_UNUSED_VARS(u16);
+                JSTD_UNUSED_VARS(i32);
+                JSTD_UNUSED_VARS(u32);
+                JSTD_UNUSED_VARS(i64);
+                JSTD_UNUSED_VARS(u64);
+                JSTD_UNUSED_VARS(f);
+                JSTD_UNUSED_VARS(d);
+                JSTD_UNUSED_VARS(ld);
+                JSTD_UNUSED_VARS(pvoid);
                 err_code = Sprintf_Reach_Endof;
                 break;
             }
 
         case uchar_type('A'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('E'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('F'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('G'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('X'):
+            if (std::is_integral<ArgT>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('a'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('c'):
+            if (std::is_integral<ArgT>::value &&
+               (std::is_same<ArgT, char>::value ||
+                std::is_same<ArgT, unsigned char>::value ||
+                std::is_same<ArgT, short>::value ||
+                std::is_same<ArgT, unsigned short>::value ||
+                std::is_same<ArgT, wchar_t>::value))
             {
                 fmt++;
                 u8 = static_cast<unsigned char>(arg);
                 data_len = get_data_length<0>(u8);
-                break;
             }
+            break;
 
         case uchar_type('d'):
+            if (std::is_integral<ArgT>::value)
             {
                 fmt++;
                 i32 = static_cast<int>(arg);
                 data_len = get_data_length<0>(i32);
-                break;
             }
+            break;
 
         case uchar_type('e'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('f'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
                 if (sizeof(Arg) == sizeof(float)) {
@@ -649,68 +698,87 @@ struct basic_formatter {
                     return err_code;
                 }
 
-                data_len = 6;
-                break;
+                data_len = 6;                
             }
+            break;
 
         case uchar_type('g'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('i'):
+            if (std::is_integral<ArgT>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('n'):
+            if (std::is_pointer<ArgT>::value &&
+               (std::is_same<ArgT, int *>::value ||
+                std::is_same<ArgT, unsigned int *>::value))
             {
                 fmt++;
                 break;
             }
 
         case uchar_type('o'):
+            if (std::is_integral<ArgT>::value)
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('p'):
+            if (std::is_pointer<ArgT>::value &&
+               (std::is_same<ArgT, void *>::value ||
+                std::is_convertible<ArgT, void *>::value))
             {
                 fmt++;
                 pvoid = reinterpret_cast<void *>(static_cast<std::size_t>(arg));
                 data_len = get_data_length<0>(pvoid);
-                break;
             }
+            break;
 
         case uchar_type('s'):
+            if (std::is_pointer<ArgT>::value &&
+               (std::is_same<ArgT, char *>::value ||
+                std::is_same<ArgT, unsigned char *>::value ||
+                std::is_same<ArgT, short *>::value ||
+                std::is_same<ArgT, unsigned short *>::value ||
+                std::is_same<ArgT, wchar_t *>::value))
             {
                 fmt++;
-                break;
             }
+            break;
 
         case uchar_type('u'):
+            if (std::is_integral<ArgT>::value)
             {
                 fmt++;
                 u32 = static_cast<unsigned int>(arg);
                 data_len = get_data_length<0>(u32);
-                break;
             }
+            break;
 
         case uchar_type('x'):
+            if (std::is_integral<ArgT>::value)
             {
                 fmt++;
-                break;
             }
-
+            break;
+#if 0
         case uchar_type('\xff'):
             {
                 err_code = Sprintf_BadFormat_UnknownSpecifier_FF;
                 break;
             }
-
+#endif
         default:
             {
                 ex_arg1 = sp;
@@ -1081,11 +1149,11 @@ Sprintf_Exit:
             size_type new_size = old_size + prepare_size;
             std::vector<char_type> str_buf;
             // Expand to newsize and reserve a null terminator '\0'.
-            str_buf.resize(new_size + 1);
+            str_buf.resize(new_size);
             size_type output_size = sprintf_output_prepare(str_buf, fmt_list, std::forward<Args>(args)...);
             assert(output_size == prepare_size);
             // Write the null terminator '\0'.
-            str_buf[new_size] = char_type('\0');
+            //str_buf[new_size] = char_type('\0');
             str.append(str_buf.begin(), str_buf.end());
             return prepare_size;
         }
