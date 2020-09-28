@@ -53,7 +53,7 @@ enum sprintf_except_id {
     Sprintf_InvalidArgmument_ErrorFloatType,
 
     Sprintf_Success = 0,
-    Sprintf_Reach_Endof,
+    Sprintf_Reached_Endof,
     Sprintf_Except_Last
 };
 
@@ -1055,35 +1055,43 @@ struct sprintf_fmt_node {
         isArg
     };
 
-    const char_type * fmt_first;
-    const char_type * arg_first;
+    const char_type * first;
+    const char_type * last;
     size_type         arg_type;
     size_type         arg_size;
 
     sprintf_fmt_node() noexcept
-        : fmt_first(nullptr),
-          arg_first(nullptr),
-          arg_type(isNotArg),
-          arg_size(0) noexcept {
-    }
-
-    sprintf_fmt_node(const char_type * first, const char_type * arg) noexcept
-        : fmt_first(first),
-          arg_first(arg),
+        : first(nullptr),
+          last(nullptr),
           arg_type(isNotArg),
           arg_size(0) {
     }
 
-    sprintf_fmt_node(const char_type * first, const char_type * arg,
+    sprintf_fmt_node(const char_type * _first, const char_type * _last) noexcept
+        : first(_first),
+          last(_last),
+          arg_type(isNotArg),
+          arg_size(0) {
+    }
+
+    sprintf_fmt_node(const char_type * _first, const char_type * _last,
                      size_type type, size_type size) noexcept
-        : fmt_first(first),
-          arg_first(arg),
+        : first(_first),
+          last(_last),
           arg_type(type),
           arg_size(size) {
     }
 
+    void init(const char_type * first, const char_type * last,
+              size_type type, size_type size) {
+        this->first = first;
+        this->last = last;
+        this->arg_type = type;
+        this->arg_size = size;
+    }
+
     bool is_arg() const {
-        return (arg_type != isNotArg);
+        return (this->arg_type != isNotArg);
     }
 
     bool not_is_arg() const {
@@ -1091,36 +1099,41 @@ struct sprintf_fmt_node {
     }
 
     ssize_type fmt_length() const {
-        return (arg_first - fmt_first);
+        return (this->last - this->first);
     }
 
     const char_type * get_fmt_first() const {
-        return fmt_first;
+        return this->first;
     }
 
     const char_type * get_arg_first() const {
-        return arg_first;
+        return this->last;
     }
 
     size_type get_arg_type() const {
-        return arg_type;
+        return this->arg_type;
     }
 
     size_type get_arg_size() const {
-        return arg_size;
+        return this->arg_size;
     }
 
     void set_fmt_first(const char_type * first) {
-        fmt_first = first;
+        this->first = first;
     }
 
-    void set_arg_first(const char_type * arg) {
-        arg_first = arg;
+    void set_fmt_last(const char_type * last) {
+        this->last = last;
+    }
+
+    void set_fmt(const char_type * first, const char_type * last) {
+        this->first = first;
+        this->last = last;
     }
 
     void set_arg(size_type type, size_type size) {
-        arg_type = type;
-        arg_size = size;
+        this->arg_type = type;
+        this->arg_size = size;
     }
 };
 
@@ -1217,7 +1230,7 @@ struct basic_formatter {
                 JSTD_UNUSED_VARS(d);
                 JSTD_UNUSED_VARS(ld);
                 JSTD_UNUSED_VARS(pvoid);
-                err_code = Sprintf_Reach_Endof;
+                err_code = Sprintf_Reached_Endof;
                 break;
             }
 
@@ -1456,7 +1469,7 @@ struct basic_formatter {
                 JSTD_UNUSED_VARS(d);
                 JSTD_UNUSED_VARS(ld);
                 JSTD_UNUSED_VARS(pvoid);
-                err_code = Sprintf_Reach_Endof;
+                err_code = Sprintf_Reached_Endof;
                 break;
             }
 
@@ -1717,7 +1730,7 @@ Sprintf_Throw_Except:
                     if (err_code < 0) {
                         goto Sprintf_Throw_Except;
                     }
-                    else if (err_code == Sprintf_Reach_Endof) {
+                    else if (err_code == Sprintf_Reached_Endof) {
                         goto Sprintf_Exit;
                     }
 
@@ -1750,26 +1763,6 @@ Sprintf_Exit:
         return total_size;
     }
 
-    template <typename Arg1, typename ...Args>
-    size_type sprintf_output_impl(std::basic_string<char_type> & str,
-                                  const char_type * fmt) {
-        return 0;
-    }
-
-    template <typename Arg1, typename ...Args>
-    size_type sprintf_output_impl(std::basic_string<char_type> & str,
-                                  const char_type * fmt,
-                                  Arg1 && arg1,
-                                  Args && ... args) {
-        return 0;
-    }
-
-    template <typename ...Args>
-    size_type sprintf_output(std::basic_string<char_type> & str,
-                             const char_type * fmt, Args && ... args) {
-        return sprintf_output_impl(str, fmt, std::forward<Args>(args)...);
-    }
-
     template <typename ...Args>
     size_type sprintf_calc_space(const char_type * fmt, Args && ... args) {
         return sprintf_calc_space_impl(fmt, std::forward<Args>(args)...);
@@ -1782,6 +1775,7 @@ Sprintf_Exit:
         ssize_type err_code = Sprintf_Success;
         size_type ex_arg1 = 0;
         const char_type * fmt_first = fmt;
+        fmt_node_t fmt_info;
         while (*fmt != char_type('\0')) {
             if (likely(*fmt != char_type('%'))) {
                 // is not "%": direct output
@@ -1796,7 +1790,7 @@ Sprintf_Exit:
                 }
                 else {
                     // "%%" = "%"
-                    fmt_node_t fmt_info(fmt_first, fmt);
+                    fmt_info.init(fmt_first, fmt, 0, 0);
                     fmt_list.push_back(fmt_info);
 
                     rest_size--;
@@ -1813,7 +1807,7 @@ Sprintf_Throw_Except:
         }
 
         if (fmt > fmt_first) {
-            fmt_node_t fmt_info(fmt_first, fmt);
+            fmt_info.init(fmt_first, fmt, 0, 0);
             fmt_list.push_back(fmt_info);
         }
 
@@ -1836,6 +1830,7 @@ Sprintf_Throw_Except:
         size_type ex_arg1 = 0;
         const char_type * fmt_first = fmt;
         const char_type * arg_first = nullptr;
+        fmt_node_t fmt_info;
         while (*fmt != char_type('\0')) {
             if (likely(*fmt != char_type('%'))) {
                 // is not "%": direct output
@@ -1854,7 +1849,7 @@ Sprintf_Throw_Except:
                     if (err_code < 0) {
                         goto Sprintf_Throw_Except;
                     }
-                    else if (err_code == Sprintf_Reach_Endof) {
+                    else if (err_code == Sprintf_Reached_Endof) {
                         goto Sprintf_Endof_Exit;
                     }
 
@@ -1870,7 +1865,7 @@ Sprintf_Throw_Except:
                 }
                 else {
                     // "%%" = "%"
-                    fmt_node_t fmt_info(fmt_first, fmt);
+                    fmt_info.init(fmt_first, fmt, 0, 0);
                     fmt_list.push_back(fmt_info);
 
                     arg_first = nullptr;
@@ -1888,12 +1883,10 @@ Sprintf_Throw_Except:
         }
 
 Sprintf_Endof_Exit:
-        {
-            const char_type * fmt_start = (arg_first != nullptr) ? arg_first : fmt_first;
-            if (fmt > fmt_start) {
-                fmt_node_t fmt_info(fmt_start, fmt);
-                fmt_list.push_back(fmt_info);
-            }
+        arg_first = (arg_first != nullptr) ? arg_first : fmt_first;
+        if (fmt > arg_first) {
+            fmt_info.init(arg_first, fmt, 0, 0);
+            fmt_list.push_back(fmt_info);
         }
 
 Sprintf_Exit:
@@ -1974,7 +1967,7 @@ Sprintf_Throw_Except:
                     if (err_code < 0) {
                         goto Sprintf_Throw_Except;
                     }
-                    else if (err_code == Sprintf_Reach_Endof) {
+                    else if (err_code == Sprintf_Reached_Endof) {
                         goto Sprintf_Endof_Exit;
                     }
 
@@ -1999,10 +1992,8 @@ Sprintf_Throw_Except:
         }
 
 Sprintf_Endof_Exit:
-        {
-            const char_type * fmt_start = (arg_first != nullptr) ? arg_first : fmt_first;
-            str.append(fmt_start, fmt);
-        }
+        arg_first = (arg_first != nullptr) ? arg_first : fmt_first;
+        str.append(arg_first, fmt);
 
 Sprintf_Exit:
         ssize_type scan_len = (fmt - fmt_first);
@@ -2016,7 +2007,7 @@ Sprintf_Exit:
             fmt_node_t & fmt_info = fmt_list.front();
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
-                str.append(fmt_info.fmt_first, fmt_info.arg_first);
+                str.append(fmt_info.first, fmt_info.last);
             }
 
             bool is_arg = fmt_info.is_arg();
@@ -2041,7 +2032,7 @@ Sprintf_Exit:
             fmt_node_t & fmt_info = fmt_list.front();
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
-                str.append(fmt_info.fmt_first, fmt_info.arg_first);
+                str.append(fmt_info.first, fmt_info.last);
             }
             bool is_arg = fmt_info.is_arg();
             if (is_arg) {
@@ -2075,7 +2066,7 @@ Sprintf_Exit:
             fmt_node_t & fmt_info = fmt_list.front();
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
-                str.append(fmt_info.fmt_first, fmt_info.arg_first);
+                str.append(fmt_info.first, fmt_info.last);
             }
 
             bool is_arg = fmt_info.is_arg();
@@ -2100,7 +2091,7 @@ Sprintf_Exit:
             fmt_node_t & fmt_info = fmt_list.front();
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
-                str.append(fmt_info.fmt_first, fmt_info.arg_first);
+                str.append(fmt_info.first, fmt_info.last);
             }
             bool is_arg = fmt_info.is_arg();
             if (is_arg) {
