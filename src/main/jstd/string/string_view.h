@@ -228,8 +228,7 @@ public:
             }
         }
         else {
-            static_assert(false, "basic_string_view<T>::append(): "
-                                 "InputIter type must be is a forward_iterator.");
+            static_assert(false, "basic_string_view<T>::append(): InputIter type must be is a forward_iterator.");
         }
         return *this;
     }
