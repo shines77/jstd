@@ -289,6 +289,133 @@ std::ssize_t get_data_length(void * pv) {
 
 template <typename CharTy, typename Arg>
 inline
+std::size_t format_and_append(std::basic_string<CharTy> & str,
+                              Arg && arg) {
+    std::size_t data_len = 8;
+    str.append(data_len, CharTy('?'));
+    return data_len;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append(std::basic_string<CharTy> & str,
+                              uint32_t u32) {
+    CharTy buf[16]; // Maximum usage is 10
+    CharTy * buf_end  = &buf[sizeof(buf) - 5];
+    CharTy * buf_last = &buf[sizeof(buf) - 6];  // 16 - 10 = 6
+
+    uint32_t num;
+    while (u32 >= 100UL) {
+        num = u32 % 10UL;
+        u32 /= 10UL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+
+        num = u32 % 10UL;
+        u32 /= 10UL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+    }
+
+    if (u32 >= 10UL) {
+        num = u32 % 10UL;
+        u32 /= 10UL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+    }
+
+    assert(u32 < 10UL);
+    *buf_last = static_cast<CharTy>(u32) + CharTy('0');
+
+    assert(buf_last >= &buf[0]);
+    assert(buf_end > buf_last);
+
+    str.append(buf_last, buf_end);
+
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    return data_len;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append(std::basic_string<CharTy> & str,
+                              int32_t i32) {
+    uint32_t u32;
+    std::size_t addition;
+    if (likely(i32 >= 0)) {
+        u32 = static_cast<uint32_t>(i32);
+        addition = 0;
+    }
+    else {
+        str.push_back(CharTy('-'));
+        u32 = static_cast<uint32_t>(-i32);
+        addition = 1;
+    }
+    std::size_t data_len = format_and_append(str, u32);
+    return (data_len + addition);
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append(std::basic_string<CharTy> & str,
+                              uint64_t u64) {
+    CharTy buf[32]; // Maximum usage is 19
+    CharTy * buf_end  = &buf[sizeof(buf) - 14];
+    CharTy * buf_last = &buf[sizeof(buf) - 13]; // 32 - 19 = 13
+
+    uint64_t num;
+    while (u64 >= 100ULL) {
+        num = u64 % 10ULL;
+        u64 /= 10ULL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+
+        num = u64 % 10ULL;
+        u64 /= 10ULL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+    }
+
+    if (u64 >= 10ULL) {
+        num = u64 % 10ULL;
+        u64 /= 10ULL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+    }
+
+    assert(u64 < 10UL);
+    *buf_last = static_cast<CharTy>(u64) + CharTy('0');
+
+    assert(buf_last >= &buf[0]);
+    assert(buf_end > buf_last);
+
+    str.append(buf_last, buf_end);
+
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    return data_len;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append(std::basic_string<CharTy> & str,
+                              int64_t i64) {
+    uint64_t u64;
+    std::size_t addition;
+    if (likely(i64 >= 0)) {
+        u64 = static_cast<uint64_t>(i64);
+        addition = 0;
+    }
+    else {
+        str.push_back(CharTy('-'));
+        u64 = static_cast<uint64_t>(-i64);
+        addition = 1;
+    }
+    std::size_t data_len = format_and_append(str, u64);
+    return (data_len + addition);
+}
+
+template <typename CharTy, typename Arg>
+inline
 std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
                                   Arg && arg, std::size_t size) {
     std::size_t data_len = size;
@@ -298,50 +425,145 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                  uint32_t u32, std::size_t digits) {
+std::size_t format_and_append_arg_slow(jstd::basic_string_view<CharTy> & str,
+                                       uint32_t u32, std::size_t digits) {
     assert(digits > 0);
-    CharTy * output_last = const_cast<CharTy *>(str.c_str() + digits - 1);
-    CharTy * output_end = output_last;
+    CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
+    CharTy * buf_end = buf_last;
 
     uint32_t num;
     while (u32 >= 100UL) {
         num = u32 % 10UL;
         u32 /= 10UL;
-        *output_last = static_cast<CharTy>(num) + CharTy('0');
-        output_last--;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
 
         num = u32 % 10UL;
         u32 /= 10UL;
-        *output_last = static_cast<CharTy>(num) + CharTy('0');
-        output_last--;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
     }
 
     if (u32 >= 10UL) {
         num = u32 % 10UL;
         u32 /= 10UL;
-        *output_last = static_cast<CharTy>(num) + CharTy('0');
-        output_last--;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
     }
 
     assert(u32 < 10UL);
-    *output_last = static_cast<CharTy>(u32) + CharTy('0');
-    output_last--;
+    *buf_last = static_cast<CharTy>(u32) + CharTy('0');
+    buf_last--;
 
-    assert((const CharTy *)output_last < str.c_str());
+    assert(buf_end > buf_last);
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(buf_end);
+    JSTD_UNUSED_VARS(data_len);
+
+    assert((const CharTy *)buf_last < str.c_str());
     str.commit(digits);
 
-    assert(output_end >= output_last);
-    std::size_t data_len = std::size_t(output_end - output_last);
-    return data_len;
+    return digits;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
+                                  uint32_t u32, std::size_t digits) {
+    assert(digits > 0);
+    CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
+    CharTy * buf_end = buf_last;
+
+    uint32_t num;
+    switch (digits) {
+        case 10:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 9:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 8:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 7:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 6:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 5:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 4:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 3:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 2:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 1:
+            assert(u32 < 10UL);
+            *buf_last = static_cast<CharTy>(u32) + CharTy('0');
+            buf_last--;
+            break;
+
+        case 0:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = 0.\n\n");
+            break;
+
+        default:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = \n\n" +
+                                     std::to_string(digits));
+            break;
+    }
+
+    assert((const CharTy *)buf_last < str.c_str());
+    str.commit(digits);
+
+    assert(buf_end > buf_last);
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(buf_end);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
 }
 
 template <typename CharTy>
 inline
 std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
                                   int32_t i32, std::size_t digits) {
-    std::size_t addition;
     uint32_t u32;
+    std::size_t addition;
     if (likely(i32 >= 0)) {
         u32 = static_cast<uint32_t>(i32);
         addition = 0;
@@ -354,54 +576,162 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
     std::size_t data_len = format_and_append_arg(
                                 str, u32, digits - addition)
                                 + addition;
-    return data_len;
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
 }
 
 template <typename CharTy>
 inline
 std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
                                   uint64_t u64, std::size_t digits) {
-    CharTy * output_last = const_cast<CharTy *>(str.c_str() + digits - 1);
-    CharTy * output_end = output_last;
+    CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
+    CharTy * buf_end = buf_last;
 
     uint64_t num;
-    while (u64 >= 100ULL) {
-        num = u64 % 10ULL;
-        u64 /= 10ULL;
-        *output_last = static_cast<CharTy>(num) + CharTy('0');
-        output_last--;
+    switch (digits) {
+        case 19:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
 
-        num = u64 % 10ULL;
-        u64 /= 10ULL;
-        *output_last = static_cast<CharTy>(num) + CharTy('0');
-        output_last--;
+        case 18:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 17:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 16:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 15:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 14:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 13:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 12:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 11:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 10:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 9:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 8:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 7:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 6:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 5:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 4:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 3:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 2:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 1:
+            assert(u64 < 10ULL);
+            *buf_last = static_cast<CharTy>(u64) + CharTy('0');
+            buf_last--;
+            break;
+
+        case 0:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = 0.\n\n");
+            break;
+
+        default:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = \n\n" +
+                                     std::to_string(digits));
+            break;
     }
 
-    if (u64 >= 10ULL) {
-        num = u64 % 10ULL;
-        u64 /= 10ULL;
-        *output_last = static_cast<CharTy>(num) + CharTy('0');
-        output_last--;
-    }
+    assert(buf_end > buf_last);
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(buf_end);
+    JSTD_UNUSED_VARS(data_len);
 
-    assert(u64 < 10UL);
-    *output_last = static_cast<CharTy>(u64) + CharTy('0');
-    output_last--;
-
-    assert((const CharTy *)output_last < str.c_str());
+    assert((const CharTy *)buf_last < str.c_str());
     str.commit(digits);
 
-    assert(output_end >= output_last);
-    std::size_t data_len = std::size_t(output_end - output_last);
-    return data_len;
+    return digits;
 }
 
 template <typename CharTy>
 inline
 std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
                                   int64_t i64, std::size_t digits) {
-    std::size_t addition;
     uint64_t u64;
+    std::size_t addition;
     if (likely(i64 >= 0)) {
         u64 = static_cast<uint64_t>(i64);
         addition = 0;
@@ -414,7 +744,9 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
     std::size_t data_len = format_and_append_arg(
                                 str, u64, digits - addition)
                                 + addition;
-    return data_len;
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
 }
 
 template <typename CharTy>
@@ -698,7 +1030,7 @@ struct basic_formatter {
                     return err_code;
                 }
 
-                data_len = 6;                
+                data_len = 6;
             }
             break;
 
@@ -790,6 +1122,239 @@ struct basic_formatter {
         return err_code;
     }
 
+    template <typename Arg>
+    ssize_type sprintf_handle_specifier(std::basic_string<char_type> & str,
+                                        const char_type * &fmt,
+                                        Arg && arg,
+                                        size_type & ex_arg1) {
+        typedef typename std::decay<Arg>::type  ArgT;
+
+        ssize_type err_code = Sprintf_Success;
+        size_type data_len = 0;
+
+        int8_t  i8;
+        int16_t i16;
+        int32_t i32;
+        int64_t i64;
+        uint8_t  u8;
+        uint16_t u16;        
+        uint32_t u32;
+        uint64_t u64;
+        float f;
+        double d;
+        long double ld;
+        void * pvoid;
+
+        uchar_type sp = static_cast<uchar_type>(*fmt);
+        switch (sp) {
+        case uchar_type('\0'):
+            {
+                JSTD_UNUSED_VARS(i8);
+                JSTD_UNUSED_VARS(u8);
+                JSTD_UNUSED_VARS(i16);
+                JSTD_UNUSED_VARS(u16);
+                JSTD_UNUSED_VARS(i32);
+                JSTD_UNUSED_VARS(u32);
+                JSTD_UNUSED_VARS(i64);
+                JSTD_UNUSED_VARS(u64);
+                JSTD_UNUSED_VARS(f);
+                JSTD_UNUSED_VARS(d);
+                JSTD_UNUSED_VARS(ld);
+                JSTD_UNUSED_VARS(pvoid);
+                err_code = Sprintf_Reach_Endof;
+                break;
+            }
+
+        case uchar_type('A'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('E'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('F'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('G'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('X'):
+            if (std::is_integral<ArgT>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('a'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('c'):
+            if (std::is_integral<ArgT>::value &&
+               (std::is_same<ArgT, char>::value ||
+                std::is_same<ArgT, unsigned char>::value ||
+                std::is_same<ArgT, short>::value ||
+                std::is_same<ArgT, unsigned short>::value ||
+                std::is_same<ArgT, wchar_t>::value))
+            {
+                fmt++;
+                u8 = static_cast<unsigned char>(arg);
+                data_len = format_and_append(str, static_cast<uint32_t>(u8));
+            }
+            break;
+
+        case uchar_type('d'):
+            if (std::is_integral<ArgT>::value)
+            {
+                fmt++;
+                i32 = static_cast<int>(arg);
+                data_len = format_and_append(str, i32);
+            }
+            break;
+
+        case uchar_type('e'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('f'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+                if (sizeof(Arg) == sizeof(float)) {
+                    f = static_cast<float>(arg);
+                }
+                else if (sizeof(Arg) == sizeof(double)) {
+                    d = static_cast<double>(arg);
+                }
+                else if (sizeof(Arg) == sizeof(long double)) {
+                    ld = static_cast<long double>(arg);
+                }
+                else {
+                    err_code = Sprintf_InvalidArgmument_ErrorFloatType;
+                    return err_code;
+                }
+
+                data_len = 6;
+            }
+            break;
+
+        case uchar_type('g'):
+            if (std::is_same<ArgT, float>::value ||
+                std::is_same<ArgT, double>::value ||
+                std::is_same<ArgT, long double>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('i'):
+            if (std::is_integral<ArgT>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('n'):
+            if (std::is_pointer<ArgT>::value &&
+               (std::is_same<ArgT, int *>::value ||
+                std::is_same<ArgT, unsigned int *>::value))
+            {
+                fmt++;
+                break;
+            }
+
+        case uchar_type('o'):
+            if (std::is_integral<ArgT>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('p'):
+            if (std::is_pointer<ArgT>::value &&
+               (std::is_same<ArgT, void *>::value ||
+                std::is_convertible<ArgT, void *>::value))
+            {
+                fmt++;
+                pvoid = reinterpret_cast<void *>(static_cast<std::size_t>(arg));
+                data_len = format_and_append(str, reinterpret_cast<std::size_t>(pvoid));
+            }
+            break;
+
+        case uchar_type('s'):
+            if (std::is_pointer<ArgT>::value &&
+               (std::is_same<ArgT, char *>::value ||
+                std::is_same<ArgT, unsigned char *>::value ||
+                std::is_same<ArgT, short *>::value ||
+                std::is_same<ArgT, unsigned short *>::value ||
+                std::is_same<ArgT, wchar_t *>::value))
+            {
+                fmt++;
+            }
+            break;
+
+        case uchar_type('u'):
+            if (std::is_integral<ArgT>::value)
+            {
+                fmt++;
+                u32 = static_cast<uint32_t>(arg);
+                data_len = format_and_append(str, u32);
+            }
+            break;
+
+        case uchar_type('x'):
+            if (std::is_integral<ArgT>::value)
+            {
+                fmt++;
+            }
+            break;
+
+        default:
+            {
+                ex_arg1 = sp;
+                err_code = Sprintf_BadFormat_UnknownSpecifier;
+                break;
+            }
+        }
+
+        return err_code;
+    }
+
     size_type sprintf_calc_space_impl(const char_type * fmt) {
         assert(fmt != nullptr);
         ssize_type rest_size = 0;
@@ -805,14 +1370,8 @@ struct basic_formatter {
                 fmt++;
                 if (likely(*fmt != char_type('%'))) {
                     // "%?": specifier
-                    uchar_type sp = static_cast<uchar_type>(*fmt);
-#if 1
                     err_code = Sprintf_InvalidArgmument_MissingParameter;
                     goto Sprintf_Throw_Except;
-#else
-                    rest_size--;
-                    fmt++;
-#endif
                 }
                 else {
                     // "%%" = "%"
@@ -868,8 +1427,8 @@ Sprintf_Throw_Except:
                     }
 
                     rest_size += (ssize_type(data_len) - (fmt - arg_first));
-                    size_type remain_size = sprintf_calc_space_impl(
-                                                fmt, std::forward<Args>(args)...);
+                    size_type remain_size = sprintf_calc_space_impl(fmt,
+                                                std::forward<Args>(args)...);
                     rest_size += remain_size;
                     goto Sprintf_Exit;
                 }
@@ -881,8 +1440,8 @@ Sprintf_Throw_Except:
             }
         }
 
-Sprintf_Throw_Except:
         if (err_code != Sprintf_Success) {
+Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
             throw_sprintf_except(err_code, pos, ex_arg1);
         }
@@ -928,7 +1487,6 @@ Sprintf_Exit:
         ssize_type err_code = Sprintf_Success;
         size_type ex_arg1 = 0;
         const char_type * fmt_first = fmt;
-        const char_type * arg_first = nullptr;
         while (*fmt != char_type('\0')) {
             if (likely(*fmt != char_type('%'))) {
                 // is not "%": direct output
@@ -938,30 +1496,28 @@ Sprintf_Exit:
                 fmt++;
                 if (likely(*fmt != char_type('%'))) {
                     // "%?": specifier
-                    uchar_type sp = static_cast<uchar_type>(*fmt);
-#if 1
                     err_code = Sprintf_InvalidArgmument_MissingParameter;
                     goto Sprintf_Throw_Except;
-#else
-                    rest_size--;
-                    fmt++;
-#endif
                 }
                 else {
                     // "%%" = "%"
+                    fmt_node_t fmt_info(fmt_first, fmt);
+                    fmt_list.push_back(fmt_info);
+
                     rest_size--;
                     fmt++;
+                    fmt_first = fmt;
                 }
             }
         }
 
-Sprintf_Throw_Except:
         if (err_code != Sprintf_Success) {
+Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
             throw_sprintf_except(err_code, pos, ex_arg1);
         }
 
-        if (arg_first == nullptr) {
+        if (fmt > fmt_first) {
             fmt_node_t fmt_info(fmt_first, fmt);
             fmt_list.push_back(fmt_info);
         }
@@ -1004,7 +1560,7 @@ Sprintf_Throw_Except:
                         goto Sprintf_Throw_Except;
                     }
                     else if (err_code == Sprintf_Reach_Endof) {
-                        goto Sprintf_Exit;
+                        goto Sprintf_Endof_Exit;
                     }
 
                     fmt_node_t arg_info(fmt_first, arg_first, fmt_node_t::isArg, data_len);
@@ -1019,21 +1575,30 @@ Sprintf_Throw_Except:
                 }
                 else {
                     // "%%" = "%"
+                    fmt_node_t fmt_info(fmt_first, fmt);
+                    fmt_list.push_back(fmt_info);
+
+                    arg_first = nullptr;
                     rest_size--;
                     fmt++;
+                    fmt_first = fmt;
                 }
             }
         }
 
-Sprintf_Throw_Except:
         if (err_code != Sprintf_Success) {
+Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
             throw_sprintf_except(err_code, pos, ex_arg1);
         }
 
-        if (arg_first == nullptr) {
-            fmt_node_t fmt_info(fmt_first, fmt);
-            fmt_list.push_back(fmt_info);
+Sprintf_Endof_Exit:
+        {
+            const char_type * fmt_start = (arg_first != nullptr) ? arg_first : fmt_first;
+            if (fmt > fmt_start) {
+                fmt_node_t fmt_info(fmt_start, fmt);
+                fmt_list.push_back(fmt_info);
+            }
         }
 
 Sprintf_Exit:
@@ -1045,13 +1610,168 @@ Sprintf_Exit:
         return total_size;
     }
 
-    template <typename ...Args>
-    size_type sprintf_prepare_space(std::list<fmt_node_t> & buf_list,
-                                    const char_type * fmt, Args && ... args) {
-        return sprintf_prepare_space_impl(buf_list, fmt, std::forward<Args>(args)...);
+    void sprintf_no_prepare_output_impl(std::basic_string<char_type> & str,
+                                        const char_type * fmt) {
+        assert(fmt != nullptr);
+
+        ssize_type err_code = Sprintf_Success;
+        size_type ex_arg1 = 0;
+        const char_type * fmt_first = fmt;
+        while (*fmt != char_type('\0')) {
+            if (likely(*fmt != char_type('%'))) {
+                // is not "%": direct output
+                fmt++;
+            }
+            else {
+                fmt++;
+                if (likely(*fmt != char_type('%'))) {
+                    // "%?": specifier
+                    err_code = Sprintf_InvalidArgmument_MissingParameter;
+                    goto Sprintf_Throw_Except;
+                }
+                else {
+                    // "%%" = "%"
+                    str.append(fmt_first, fmt);
+                    fmt++;
+                    fmt_first = fmt;
+                }
+            }
+        }
+
+        if (err_code != Sprintf_Success) {
+Sprintf_Throw_Except:
+            ssize_type pos = (fmt - fmt_first);
+            throw_sprintf_except(err_code, pos, ex_arg1);
+        }
+
+        str.append(fmt_first, fmt);
+
+        ssize_type scan_len = (fmt - fmt_first);
+        assert(scan_len >= 0);
     }
 
-    size_type sprintf_output_prepare_impl(jstd::basic_string_view<char_type> & str,
+    template <typename Arg1, typename ...Args>
+    void sprintf_no_prepare_output_impl(std::basic_string<char_type> & str,
+                                        const char_type * fmt,
+                                        Arg1 && arg1,
+                                        Args && ... args) {
+        assert(fmt != nullptr);
+        ssize_type err_code = Sprintf_Success;
+        size_type ex_arg1 = 0;
+        const char_type * fmt_first = fmt;
+        const char_type * arg_first = nullptr;
+        while (*fmt != char_type('\0')) {
+            if (likely(*fmt != char_type('%'))) {
+                // is not "%": direct output
+                fmt++;
+            }
+            else {
+                arg_first = fmt;
+                fmt++;
+                if (likely(*fmt != char_type('%'))) {
+                    // "%?": specifier
+                    size_type data_len = 0;
+                    str.append(fmt_first, arg_first);
+                    err_code = sprintf_handle_specifier<Arg1>(
+                                    str, fmt, std::forward<Arg1>(arg1),
+                                    ex_arg1);
+
+                    if (err_code < 0) {
+                        goto Sprintf_Throw_Except;
+                    }
+                    else if (err_code == Sprintf_Reach_Endof) {
+                        goto Sprintf_Endof_Exit;
+                    }
+
+                    sprintf_no_prepare_output_impl(str, fmt,
+                                                   std::forward<Args>(args)...);
+                    goto Sprintf_Exit;
+                }
+                else {
+                    // "%%" = "%"
+                    str.append(fmt_first, fmt);
+                    arg_first = nullptr;
+                    fmt++;
+                    fmt_first = fmt;
+                }
+            }
+        }
+
+        if (err_code != Sprintf_Success) {
+Sprintf_Throw_Except:
+            ssize_type pos = (fmt - fmt_first);
+            throw_sprintf_except(err_code, pos, ex_arg1);
+        }
+
+Sprintf_Endof_Exit:
+        const char_type * fmt_start = (arg_first != nullptr) ? arg_first : fmt_first;
+        str.append(fmt_start, fmt);
+
+Sprintf_Exit:
+        ssize_type scan_len = (fmt - fmt_first);
+        assert(scan_len >= 0);
+    }
+
+    size_type sprintf_direct_output_impl(std::basic_string<char_type> & str,
+                                         std::list<fmt_node_t> & fmt_list) {
+        size_type total_size = 0;
+        if (!fmt_list.empty()) {
+            fmt_node_t & fmt_info = fmt_list.front();
+            if (fmt_info.fmt_length() > 0) {
+                total_size += fmt_info.fmt_length();
+                str.append(fmt_info.fmt_first, fmt_info.arg_first);
+            }
+
+            bool is_arg = fmt_info.is_arg();
+            if (!is_arg) {
+                fmt_list.pop_front();
+            }
+            else {
+                throw std::runtime_error("Error: Wrong fmt_list!");
+            }
+        }
+
+        return total_size;
+    }
+
+    template <typename Arg1, typename ...Args>
+    size_type sprintf_direct_output_impl(std::basic_string<char_type> & str,
+                                         std::list<fmt_node_t> & fmt_list,
+                                         Arg1 && arg1,
+                                         Args && ... args) {
+        size_type total_size = 0;
+        if (!fmt_list.empty()) {
+            fmt_node_t & fmt_info = fmt_list.front();
+            if (fmt_info.fmt_length() > 0) {
+                total_size += fmt_info.fmt_length();
+                str.append(fmt_info.fmt_first, fmt_info.arg_first);
+            }
+            bool is_arg = fmt_info.is_arg();
+            if (is_arg) {
+                size_type arg_size = fmt_info.arg_size;
+                size_type data_len = format_and_append_arg(str,
+                                            std::forward<Arg1>(arg1),
+                                            arg_size);
+                fmt_list.pop_front();
+
+                total_size += data_len;
+                size_type remain_size = sprintf_prepare_output_impl(
+                                            str, fmt_list,
+                                            std::forward<Args>(args)...);
+                total_size += remain_size;
+            }
+            else {
+                size_type rest_args = sizeof...(args);
+                if (rest_args > 0) {
+                    throw std::runtime_error("Error: Missing argument!");
+                }
+            }
+        }
+
+        return total_size;
+    }
+
+    size_type sprintf_prepare_output_impl(jstd::basic_string_view<char_type> & str,
                                           std::list<fmt_node_t> & fmt_list) {
         size_type total_size = 0;
         if (!fmt_list.empty()) {
@@ -1074,7 +1794,7 @@ Sprintf_Exit:
     }
 
     template <typename Arg1, typename ...Args>
-    size_type sprintf_output_prepare_impl(jstd::basic_string_view<char_type> & str,
+    size_type sprintf_prepare_output_impl(jstd::basic_string_view<char_type> & str,
                                           std::list<fmt_node_t> & fmt_list,
                                           Arg1 && arg1,
                                           Args && ... args) {
@@ -1094,7 +1814,7 @@ Sprintf_Exit:
                 fmt_list.pop_front();
 
                 total_size += data_len;
-                size_type remain_size = sprintf_output_prepare_impl(
+                size_type remain_size = sprintf_prepare_output_impl(
                                             str, fmt_list,
                                             std::forward<Args>(args)...);
                 total_size += remain_size;
@@ -1111,11 +1831,31 @@ Sprintf_Exit:
     }
 
     template <typename ...Args>
-    size_type sprintf_output_prepare(std::vector<char_type> & str,
+    size_type sprintf_prepare_space(std::list<fmt_node_t> & fmt_list,
+                                    const char_type * fmt,
+                                    Args && ... args) {
+        return sprintf_prepare_space_impl(fmt_list, fmt, std::forward<Args>(args)...);
+    }
+
+    template <typename ...Args>
+    void sprintf_no_prepare_output(std::basic_string<char_type> & str,
+                                   const char_type * fmt,
+                                   Args && ... args) {
+        return sprintf_no_prepare_output_impl(str, fmt, std::forward<Args>(args)...);
+    }
+
+    template <typename ...Args>
+    size_type sprintf_direct_output(std::basic_string<char_type> & str,
+                                    std::list<fmt_node_t> & fmt_list,
+                                    Args && ... args) {
+        return sprintf_direct_output_impl(str, fmt_list, std::forward<Args>(args)...);
+    }
+
+    template <typename ...Args>
+    size_type sprintf_prepare_output(jstd::basic_string_view<char_type> & str,
                                      std::list<fmt_node_t> & fmt_list,
                                      Args && ... args) {
-        jstd::basic_string_view<char_type> str_view(str);
-        return sprintf_output_prepare_impl(str_view, fmt_list, std::forward<Args>(args)...);
+        return sprintf_prepare_output_impl(str, fmt_list, std::forward<Args>(args)...);
     }
 
     template <typename ...Args>
@@ -1123,15 +1863,27 @@ Sprintf_Exit:
                                  const char_type * fmt,
                                  Args && ... args) {
         if (likely(fmt != nullptr)) {
-            size_type prepare_size = sprintf_calc_space(fmt, std::forward<Args>(args)...);
             size_type old_size = str.size();
-            size_type new_size = old_size + prepare_size;
-            // Expand to newsize and reserve a null terminator '\0'.
-            str.reserve(new_size + 1);
-            size_type output_size = sprintf_output(str, fmt, std::forward<Args>(args)...);
-            //assert(output_size == prepare_size);
-            // Write the null terminator '\0'.
-            str.push_back(char_type('\0'));
+            sprintf_no_prepare_output(str, fmt, std::forward<Args>(args)...);
+            size_type new_size = str.size();
+            return (new_size - old_size);
+        }
+
+        return 0;
+    }
+
+    template <typename ...Args>
+    size_type sprintf_direct(std::basic_string<char_type> & str,
+                             const char_type * fmt,
+                             Args && ... args) {
+        if (likely(fmt != nullptr)) {
+            std::list<fmt_node_t> fmt_list;
+            size_type prepare_size = sprintf_prepare_space(fmt_list, fmt, std::forward<Args>(args)...);
+            size_type old_size = str.size();
+            size_type output_size = sprintf_direct_output(str, fmt_list, std::forward<Args>(args)...);
+            assert(output_size == prepare_size);
+            size_type new_size = str.size();
+            assert(new_size == old_size + output_size);
             return prepare_size;
         }
 
@@ -1145,20 +1897,52 @@ Sprintf_Exit:
         if (likely(fmt != nullptr)) {
             std::list<fmt_node_t> fmt_list;
             size_type prepare_size = sprintf_prepare_space(fmt_list, fmt, std::forward<Args>(args)...);
+#if 1
             size_type old_size = str.size();
-            size_type new_size = old_size + prepare_size;
-            std::vector<char_type> str_buf;
-            // Expand to newsize and reserve a null terminator '\0'.
-            str_buf.resize(new_size);
-            size_type output_size = sprintf_output_prepare(str_buf, fmt_list, std::forward<Args>(args)...);
+            // Allocate the prepare buffer space.
+            str.resize(old_size + prepare_size);
+            jstd::basic_string_view<char_type> str_view(str);
+            size_type output_size = sprintf_prepare_output(str_view, fmt_list, std::forward<Args>(args)...);
             assert(output_size == prepare_size);
-            // Write the null terminator '\0'.
-            //str_buf[new_size] = char_type('\0');
+#else
+#ifdef NDEBUG
+            std::vector<char_type> str_buf;
+            // Reserve prepare buffer space.
+            str_buf.reserve(prepare_size);
+            jstd::basic_string_view<char_type> str_view(str_buf);
+            size_type output_size = sprintf_prepare_output(str_view, fmt_list, std::forward<Args>(args)...);
+            assert(output_size == prepare_size);
+            str.append(str_buf.begin(), str_buf.begin() + output_size);
+#else
+            std::vector<char_type> str_buf(prepare_size);
+            jstd::basic_string_view<char_type> str_view(str_buf);
+            size_type output_size = sprintf_prepare_output(str_view, fmt_list, std::forward<Args>(args)...);
+            assert(output_size == prepare_size);
             str.append(str_buf.begin(), str_buf.end());
+#endif
+#endif
             return prepare_size;
         }
 
         return 0;
+    }
+
+    template <typename ...Args>
+    size_type output(const char_type * &buf, const char_type * fmt, Args && ... args) {
+        int fmt_size = ::snprintf(nullptr, 0, fmt, std::forward<Args>(args)...);
+        if (fmt_size > 0) {
+            const char_type * fmt_buf = (const char_type *)::malloc(fmt_size + 1);
+            if (fmt_buf != nullptr) {
+                int out_size = ::snprintf(const_cast<char_type *>(fmt_buf),
+                                          fmt_size + 1, fmt, std::forward<Args>(args)...);
+                assert(fmt_size == out_size);
+                buf = fmt_buf;
+                return out_size;
+            }
+            else return 0;
+        }
+
+        return fmt_size;
     }
 };
 

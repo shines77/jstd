@@ -77,7 +77,7 @@ public:
         //}
     }
     basic_string_view(const string_type & src) noexcept
-        : data_(src.c_str()), length_(src.size()) {
+        : data_(src.data()), length_(src.size()) {
     }
     basic_string_view(const std::vector<char_type> & vec) noexcept
         : data_(vec.data()), length_(vec.capacity()) {
