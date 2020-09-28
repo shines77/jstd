@@ -124,6 +124,10 @@ public:
     ~StopWatchBase() {}
 
     void reset() {
+        this->restart();
+    }
+
+    void restart() {
         start_time_ = impl_type::now();
         stop_time_ = start_time_;
         __COMPILER_BARRIER();

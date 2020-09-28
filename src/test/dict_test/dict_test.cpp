@@ -1598,6 +1598,243 @@ void hashtable_uinttest()
     //hashtable_iterator_uinttest<jstd::Dictionary<std::string, std::string>>();
 }
 
+void formatter_benchmark_sprintf_Integer_1()
+{
+#ifdef NDEBUG
+    static const std::size_t iters = 999999;
+#else
+    static const std::size_t iters = 9999;
+#endif
+
+    std::size_t i;
+    double time, time_base;
+    jtest::StopWatch sw;
+
+    char fmtbuf1[512] = { 0 };
+    char fmtbuf2[512] = { 0 };
+    std::string str1;
+    std::size_t fmt_len;
+
+    printf("==========================================================================\n\n");
+    printf("  formatter_benchmark_sprintf_Integer_1()\n\n");
+
+    printf("==========================================================================\n\n");
+    printf("  for (i = 0; i < %" PRIuPTR "; ++i) {\n", iters);
+    printf("      len = snprintf(buf, bufsize, count,\n"
+           "                     \"%%d, %%d, %%d, %%d, %%d,\\n\"\n"
+           "                     \"%%d, %%d, %%d, %%d, %%d.\",\n"
+           "                      12,  1234,  123456,  12345678,  123456789,\n"
+           "                     -12, -1234, -123456, -12345678, -123456789);\n");
+    printf("  }\n\n");
+    //printf("==========================================================================\n\n");
+
+    {
+        sw.start();
+        for (i = 0; i < iters; ++i) {
+            int fmt_size;
+#ifdef _MSC_VER
+            fmt_size = sprintf_s(fmtbuf1, sizeof(fmtbuf1),
+#else
+            fmt_size =   sprintf(fmtbuf1,
+#endif
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+        time_base = time;
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "sprintf()");
+        printf("result =\n%s\n\n", fmtbuf1);
+        printf("strlen       = %" PRIuPTR " bytes\n", ::strlen(fmtbuf1));
+        printf("elapsed time = %0.3f ms\n", time);
+        printf("\n");
+    }
+
+    {
+        sw.start();
+        for (i = 0; i < iters; ++i) {
+            int fmt_size;
+#ifdef _MSC_VER
+            fmt_size = _snprintf_s(fmtbuf2, sizeof(fmtbuf2),
+#else
+            fmt_size =    snprintf(fmtbuf2,
+#endif
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+        time_base = time;
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "snprintf()");
+        printf("result =\n%s\n\n", fmtbuf2);
+        printf("strlen       = %" PRIuPTR " bytes\n", ::strlen(fmtbuf2));
+        printf("elapsed time = %0.3f ms\n", time);
+        printf("\n");
+    }
+
+    jstd::formatter fmt;
+
+    {
+        sw.start();
+        for (i = 0; i < iters; ++i) {
+            const char * fmt_buf = nullptr;
+            fmt_len = fmt.output(fmt_buf,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+            if (fmt_buf != nullptr) {
+                ::free((void *)fmt_buf);
+            }
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        const char * fmt_buf = nullptr;
+        fmt_len = fmt.output(fmt_buf,
+                             "%d, %d, %d, %d, %d,\n"
+                             "%d, %d, %d, %d, %d.",
+                              12,  1234,  123456,  12345678,  123456789,
+                             -12, -1234, -123456, -12345678, -123456789);
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "fmt.output()");
+        printf("result =\n%s\n\n", fmt_buf);
+        printf("strlen       = %" PRIuPTR " bytes\n", ::strlen(fmt_buf));
+        printf("elapsed time = %0.3f ms\n", time);
+        printf("\n");
+
+        if (fmt_buf != nullptr) {
+            ::free((void *)fmt_buf);
+        }
+    }
+
+    {  
+        sw.restart();
+        for (i = 0; i < iters; ++i) {
+            std::string str;
+            fmt_len = fmt.sprintf(str,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        str1.clear();
+        fmt_len = fmt.sprintf(str1,
+                              "%d, %d, %d, %d, %d,\n"
+                              "%d, %d, %d, %d, %d.",
+                               12,  1234,  123456,  12345678,  123456789,
+                              -12, -1234, -123456, -12345678, -123456789);
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "fmt.sprintf() *");
+        printf("result = \n%s\n\n", str1.c_str());
+        printf("strlen       = %" PRIuPTR " bytes\n", str1.size());
+
+        printf("elapsed time = %0.3f ms\n\n", time);
+        printf("fmt.sprintf() * vs snprintf(): %0.3f x times.\n", time_base / time);
+        printf("\n");
+    }
+
+    {
+        std::string str;
+  
+        sw.restart();
+        for (i = 0; i < iters; ++i) {
+            str.clear();
+            fmt_len = fmt.sprintf(str,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "fmt.sprintf()");
+        printf("result = \n%s\n\n", str.c_str());
+        printf("strlen       = %" PRIuPTR " bytes\n", str.size());
+
+        printf("elapsed time = %0.3f ms\n\n", time);
+        printf("fmt.sprintf() vs snprintf(): %0.3f x times.\n", time_base / time);
+        printf("\n");
+    }
+
+    {
+        sw.restart();
+        for (i = 0; i < iters; ++i) {
+            std::string str;
+            fmt_len = fmt.sprintf_no_prepare(str,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        str1.clear();
+        fmt_len = fmt.sprintf_no_prepare(str1,
+                                "%d, %d, %d, %d, %d,\n"
+                                "%d, %d, %d, %d, %d.",
+                                12,  1234,  123456,  12345678,  123456789,
+                                -12, -1234, -123456, -12345678, -123456789);
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "fmt.sprintf_no_prepare()*");
+        printf("result = \n%s\n\n", str1.c_str());
+        printf("strlen       = %" PRIuPTR " bytes\n", str1.size());
+
+        printf("elapsed time = %0.3f ms\n\n", time);
+        printf("fmt.sprintf_no_prepare() * vs snprintf(): %0.3f x times.\n", time_base / time);
+        printf("\n");
+    }
+
+    {
+        std::string str;
+  
+        sw.restart();
+        for (i = 0; i < iters; ++i) {
+            str.clear();
+            fmt_len = fmt.sprintf_no_prepare(str,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "fmt.sprintf_no_prepare()");
+        printf("result = \n%s\n\n", str.c_str());
+        printf("strlen       = %" PRIuPTR " bytes\n", str.size());
+
+        printf("elapsed time = %0.3f ms\n\n", time);
+        printf("fmt.sprintf_no_prepare() vs snprintf(): %0.3f x times.\n", time_base / time);
+        printf("\n");
+    }
+
+    printf("\n");
+}
+
+void formatter_benchmark()
+{
+    formatter_benchmark_sprintf_Integer_1();
+}
+
 void string_view_test()
 {
     string_view sv1(header_fields[4]);
@@ -1697,8 +1934,8 @@ void formatter_test()
     fmt.sprintf_no_prepare(str2, "num1 = %d, num2 = %d\n\n", v1, v2);
 
     printf("\n");
-    printf("formatter_test(): fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
-    printf("formatter_test(): fmt.sprintf_no_prepare(str2) = \"%s\"\n", str2.c_str());
+    printf("fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
+    printf("fmt.sprintf_no_prepare(str2) = \"%s\"\n", str2.c_str());
 
     //str1.clear();
     fmt.sprintf(str1,
@@ -1708,8 +1945,16 @@ void formatter_test()
                 "num7 = %u, num8 = %d\n\n",
                 v1, v2, v3, v4, v5, v6, v7, v8);
 
+    fmt.sprintf(str2,
+                "num1 = %d, num2 = %d\n"
+                "num3 = %u, num4 = %d\n"
+                "num4 = %u, num5 = %d\n"
+                "num7 = %u, num8 = %d\n\n",
+                v1, v2, v3, v4, v5, v6, v7, v8);
+
     printf("\n");
-    printf("formatter_test(): fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
+    printf("fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
+    printf("fmt.sprintf_no_prepare(str2) = \"%s\"\n", str2.c_str());
     printf("\n");
 }
 
@@ -1766,6 +2011,7 @@ int main(int argc, char * argv[])
     formatter_test();
     //fnv1a_hash_test();
 
+    formatter_benchmark();
     //hashtable_uinttest();
     //hashtable_benchmark();
 
