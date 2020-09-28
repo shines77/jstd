@@ -328,7 +328,7 @@ std::size_t format_and_append(std::basic_string<CharTy> & str,
     *buf_last = static_cast<CharTy>(u32) + CharTy('0');
 
     assert(buf_last >= &buf[0]);
-    assert(buf_end > buf_last);
+    assert(buf_last < buf_end);
 
     str.append(buf_last, buf_end);
 
@@ -387,7 +387,7 @@ std::size_t format_and_append(std::basic_string<CharTy> & str,
     *buf_last = static_cast<CharTy>(u64) + CharTy('0');
 
     assert(buf_last >= &buf[0]);
-    assert(buf_end > buf_last);
+    assert(buf_last < buf_end);
 
     str.append(buf_last, buf_end);
 
@@ -421,50 +421,6 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
     std::size_t data_len = size;
     str.append(size, CharTy('?'));
     return data_len;
-}
-
-template <typename CharTy>
-inline
-std::size_t format_and_append_arg_slow(jstd::basic_string_view<CharTy> & str,
-                                       uint32_t u32, std::size_t digits) {
-    assert(digits > 0);
-    CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
-    CharTy * buf_end = buf_last;
-
-    uint32_t num;
-    while (u32 >= 100UL) {
-        num = u32 % 10UL;
-        u32 /= 10UL;
-        *buf_last = static_cast<CharTy>(num) + CharTy('0');
-        buf_last--;
-
-        num = u32 % 10UL;
-        u32 /= 10UL;
-        *buf_last = static_cast<CharTy>(num) + CharTy('0');
-        buf_last--;
-    }
-
-    if (u32 >= 10UL) {
-        num = u32 % 10UL;
-        u32 /= 10UL;
-        *buf_last = static_cast<CharTy>(num) + CharTy('0');
-        buf_last--;
-    }
-
-    assert(u32 < 10UL);
-    *buf_last = static_cast<CharTy>(u32) + CharTy('0');
-    buf_last--;
-
-    assert(buf_end > buf_last);
-    std::size_t data_len = std::size_t(buf_end - buf_last);
-    assert(data_len == digits);
-    JSTD_UNUSED_VARS(buf_end);
-    JSTD_UNUSED_VARS(data_len);
-
-    assert((const CharTy *)buf_last < str.c_str());
-    str.commit(digits);
-
-    return digits;
 }
 
 template <typename CharTy>
@@ -548,9 +504,54 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
     }
 
     assert((const CharTy *)buf_last < str.c_str());
+    assert(buf_end > buf_last);
+
+    str.commit(digits);
+    
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(buf_end);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg_slow(jstd::basic_string_view<CharTy> & str,
+                                       uint32_t u32, std::size_t digits) {
+    assert(digits > 0);
+    CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
+    CharTy * buf_end = buf_last;
+
+    uint32_t num;
+    while (u32 >= 100UL) {
+        num = u32 % 10UL;
+        u32 /= 10UL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+
+        num = u32 % 10UL;
+        u32 /= 10UL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+    }
+
+    if (u32 >= 10UL) {
+        num = u32 % 10UL;
+        u32 /= 10UL;
+        *buf_last = static_cast<CharTy>(num) + CharTy('0');
+        buf_last--;
+    }
+
+    assert(u32 < 10UL);
+    *buf_last = static_cast<CharTy>(u32) + CharTy('0');
+    buf_last--;
+
+    assert((const CharTy *)buf_last < str.c_str());
+    assert(buf_last < buf_end);
+
     str.commit(digits);
 
-    assert(buf_end > buf_last);
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
     JSTD_UNUSED_VARS(buf_end);
@@ -714,21 +715,313 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
             break;
     }
 
-    assert(buf_end > buf_last);
+    assert((const CharTy *)buf_last < str.c_str());
+    assert(buf_last < buf_end);
+
+    str.commit(digits);
+
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
     JSTD_UNUSED_VARS(buf_end);
     JSTD_UNUSED_VARS(data_len);
-
-    assert((const CharTy *)buf_last < str.c_str());
-    str.commit(digits);
-
     return digits;
 }
 
 template <typename CharTy>
 inline
 std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
+                                  int64_t i64, std::size_t digits) {
+    uint64_t u64;
+    std::size_t addition;
+    if (likely(i64 >= 0)) {
+        u64 = static_cast<uint64_t>(i64);
+        addition = 0;
+    }
+    else {
+        str.push_back(CharTy('-'));
+        u64 = static_cast<uint64_t>(-i64);
+        addition = 1;
+    }
+    std::size_t data_len = format_and_append_arg(
+                                str, u64, digits - addition)
+                                + addition;
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
+}
+
+template <typename CharTy, typename Arg>
+inline
+std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
+                                  Arg && arg, std::size_t size) {
+    std::size_t data_len = size;
+    str.append(size, CharTy('?'));
+    return data_len;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
+                                  uint32_t u32, std::size_t digits) {
+    assert(digits > 0);
+    CharTy buf[16]; // Maximum usage is 10
+    CharTy * buf_end  = &buf[sizeof(buf) - 5];
+    CharTy * buf_last = &buf[sizeof(buf) - 6];  // 16 - 10 = 6
+
+    uint32_t num;
+    switch (digits) {
+        case 10:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 9:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 8:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 7:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 6:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 5:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 4:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 3:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 2:
+            num = u32 % 10UL;
+            u32 /= 10UL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 1:
+            assert(u32 < 10UL);
+            *buf_last = static_cast<CharTy>(u32) + CharTy('0');
+            break;
+
+        case 0:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = 0.\n\n");
+            break;
+
+        default:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = \n\n" +
+                                     std::to_string(digits));
+            break;
+    }
+
+    assert(buf_last >= &buf[0]);
+    assert(buf_last < buf_end);
+
+    str.append(buf_last, buf_end);
+    
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(buf_end);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
+                                  int32_t i32, std::size_t digits) {
+    uint32_t u32;
+    std::size_t addition;
+    if (likely(i32 >= 0)) {
+        u32 = static_cast<uint32_t>(i32);
+        addition = 0;
+    }
+    else {
+        str.push_back(CharTy('-'));
+        u32 = static_cast<uint32_t>(-i32);
+        addition = 1;
+    }
+    std::size_t data_len = format_and_append_arg(
+                                str, u32, digits - addition)
+                                + addition;
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
+                                  uint64_t u64, std::size_t digits) {
+    CharTy buf[32]; // Maximum usage is 19
+    CharTy * buf_end  = &buf[sizeof(buf) - 14];
+    CharTy * buf_last = &buf[sizeof(buf) - 13]; // 32 - 19 = 13
+
+    uint64_t num;
+    switch (digits) {
+        case 19:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 18:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 17:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 16:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 15:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 14:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 13:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 12:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 11:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 10:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 9:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 8:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 7:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 6:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 5:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 4:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 3:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 2:
+            num = u64 % 10ULL;
+            u64 /= 10ULL;
+            *buf_last = static_cast<CharTy>(num) + CharTy('0');
+            buf_last--;
+
+        case 1:
+            assert(u64 < 10ULL);
+            *buf_last = static_cast<CharTy>(u64) + CharTy('0');
+            break;
+
+        case 0:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = 0.\n\n");
+            break;
+
+        default:
+            throw std::runtime_error("Error: format_and_append_arg(): digits = \n\n" +
+                                     std::to_string(digits));
+            break;
+    }
+
+    assert(buf_last >= &buf[0]);
+    assert(buf_last < buf_end);
+
+    str.append(buf_last, buf_end);
+    
+    std::size_t data_len = std::size_t(buf_end - buf_last);
+    assert(data_len == digits);
+    JSTD_UNUSED_VARS(buf_end);
+    JSTD_UNUSED_VARS(data_len);
+    return digits;
+}
+
+template <typename CharTy>
+inline
+std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
                                   int64_t i64, std::size_t digits) {
     uint64_t u64;
     std::size_t addition;
@@ -1755,7 +2048,7 @@ Sprintf_Exit:
                 fmt_list.pop_front();
 
                 total_size += data_len;
-                size_type remain_size = sprintf_prepare_output_impl(
+                size_type remain_size = sprintf_direct_output_impl(
                                             str, fmt_list,
                                             std::forward<Args>(args)...);
                 total_size += remain_size;

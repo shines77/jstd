@@ -1772,6 +1772,61 @@ void formatter_benchmark_sprintf_Integer_1()
         printf("\n");
     }
 
+    {  
+        sw.restart();
+        for (i = 0; i < iters; ++i) {
+            std::string str;
+            fmt_len = fmt.sprintf_direct(str,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        str1.clear();
+        fmt_len = fmt.sprintf_direct(str1,
+                              "%d, %d, %d, %d, %d,\n"
+                              "%d, %d, %d, %d, %d.",
+                               12,  1234,  123456,  12345678,  123456789,
+                              -12, -1234, -123456, -12345678, -123456789);
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "fmt.sprintf_direct() *");
+        printf("result = \n%s\n\n", str1.c_str());
+        printf("strlen       = %" PRIuPTR " bytes\n", str1.size());
+
+        printf("elapsed time = %0.3f ms\n\n", time);
+        printf("fmt.sprintf_direct() * vs snprintf(): %0.3f x times.\n", time_base / time);
+        printf("\n");
+    }
+
+    {
+        std::string str;
+  
+        sw.restart();
+        for (i = 0; i < iters; ++i) {
+            str.clear();
+            fmt_len = fmt.sprintf_direct(str,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "fmt.sprintf_direct()");
+        printf("result = \n%s\n\n", str.c_str());
+        printf("strlen       = %" PRIuPTR " bytes\n", str.size());
+
+        printf("elapsed time = %0.3f ms\n\n", time);
+        printf("fmt.sprintf_direct() vs snprintf(): %0.3f x times.\n", time_base / time);
+        printf("\n");
+    }
+
     {
         sw.restart();
         for (i = 0; i < iters; ++i) {
@@ -1924,7 +1979,7 @@ void shiftable_ptr_test()
 
 void formatter_test()
 {
-    std::string str1, str2;
+    std::string str1, str2, str3;
     int v1 = 100, v2 = 220;
     int v3 = 500, v4 = 1024;
     unsigned int v5 = 2048, v6 = 4096;
@@ -1932,12 +1987,14 @@ void formatter_test()
     jstd::formatter fmt;
     fmt.sprintf(str1, "num1 = %d, num2 = %d\n\n", v1, v2);
     fmt.sprintf_no_prepare(str2, "num1 = %d, num2 = %d\n\n", v1, v2);
+    fmt.sprintf_direct(str3, "num1 = %d, num2 = %d\n\n", v1, v2);
 
     printf("\n");
     printf("fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
     printf("fmt.sprintf_no_prepare(str2) = \"%s\"\n", str2.c_str());
+    printf("fmt.sprintf_direct(str3) = \"%s\"\n", str3.c_str());
 
-    //str1.clear();
+    str1.clear();
     fmt.sprintf(str1,
                 "num1 = %d, num2 = %d\n"
                 "num3 = %u, num4 = %d\n"
@@ -1945,7 +2002,16 @@ void formatter_test()
                 "num7 = %u, num8 = %d\n\n",
                 v1, v2, v3, v4, v5, v6, v7, v8);
 
-    fmt.sprintf(str2,
+    str2.clear();
+    fmt.sprintf_no_prepare(str2,
+                "num1 = %d, num2 = %d\n"
+                "num3 = %u, num4 = %d\n"
+                "num4 = %u, num5 = %d\n"
+                "num7 = %u, num8 = %d\n\n",
+                v1, v2, v3, v4, v5, v6, v7, v8);
+
+    str3.clear();
+    fmt.sprintf_direct(str3,
                 "num1 = %d, num2 = %d\n"
                 "num3 = %u, num4 = %d\n"
                 "num4 = %u, num5 = %d\n"
@@ -1955,6 +2021,7 @@ void formatter_test()
     printf("\n");
     printf("fmt.sprintf(str1) = \"%s\"\n", str1.c_str());
     printf("fmt.sprintf_no_prepare(str2) = \"%s\"\n", str2.c_str());
+    printf("fmt.sprintf_direct(str3) = \"%s\"\n", str3.c_str());
     printf("\n");
 }
 
