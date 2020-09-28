@@ -221,14 +221,16 @@ public:
     append(InputIter first, InputIter last) {
         bool is_iterator = jstd::is_iterator<InputIter>::value;
         bool is_forward_iterator = std::is_base_of<forward_iterator_tag, InputIter>::value;
-        if (!is_iterator || (is_iterator && is_forward_iterator)) {
+        bool is_std_forward_iterator = std::is_base_of<std::forward_iterator_tag, InputIter>::value;
+        if (!is_iterator || (is_iterator && (is_forward_iterator || is_std_forward_iterator))) {
             while (first != last) {
                 this->push_back(*first);
                 first++;
             }
         }
         else {
-            static_assert(false, "basic_string_view<T>::append(): InputIter type must be is a forward_iterator.");
+            static_assert(false,
+                "basic_string_view<T>::append(): InputIter type must be is a forward_iterator.");
         }
         return *this;
     }
