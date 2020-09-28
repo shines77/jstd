@@ -12,7 +12,9 @@
 
 #include <memory.h>
 #include <string.h>
+#ifdef _MSC_VER
 #include <tchar.h>
+#endif
 #include <assert.h>
 
 #include <cstdint>

@@ -31,7 +31,8 @@
 
 #else
 
-    #include "jstd/basic/msvc/stdint.h"
+    #include <stdint.h>
+    #include <stddef.h>
 
     #include <cstdint>
     #include <cstddef>  // For std::ptrdiff_t
@@ -51,11 +52,13 @@
 
 typedef ptrdiff_t   ssize_t;
 
-//#ifdef _WIN64
-//typedef signed __int64      ssize_t;
-//#else // !_WIN64
-//typedef _W64 signed int     ssize_t;
-//#endif // _WIN64
+#if 0
+#ifdef _WIN64
+typedef signed __int64      ssize_t;
+#else // !_WIN64
+typedef _W64 signed int     ssize_t;
+#endif // _WIN64
+#endif
 
 #else
 
@@ -79,12 +82,14 @@ typedef ptrdiff_t   ssize_t;
 
 typedef ptrdiff_t   ssize_t;
 
-//#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) \
-//    || defined(_M_X64) || defined(_M_AMD64) || defined(_WIN64)
-//typedef signed long long    ssize_t;
-//#else  /* !_M_X64 */
-//typedef signed int          ssize_t;
-//#endif  /* _M_X64 */
+#if 0
+#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) \
+    || defined(_M_X64) || defined(_M_AMD64) || defined(_WIN64)
+typedef signed long long    ssize_t;
+#else  /* !_M_X64 */
+typedef signed int          ssize_t;
+#endif  /* _M_X64 */
+#endif
 
 #endif /* __size_t */
 #endif /* _SIZET_ */
