@@ -1999,8 +1999,10 @@ Sprintf_Throw_Except:
         }
 
 Sprintf_Endof_Exit:
-        const char_type * fmt_start = (arg_first != nullptr) ? arg_first : fmt_first;
-        str.append(fmt_start, fmt);
+        {
+            const char_type * fmt_start = (arg_first != nullptr) ? arg_first : fmt_first;
+            str.append(fmt_start, fmt);
+        }
 
 Sprintf_Exit:
         ssize_type scan_len = (fmt - fmt_first);
