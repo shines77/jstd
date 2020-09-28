@@ -186,7 +186,7 @@ public:
     this_type & append(const char_type * data, size_type count) {
         while (count > 0) {
             this->push_back(*data);
-            data++;
+            ++data;
             count--;
         }
         return *this;
@@ -203,7 +203,7 @@ public:
     this_type & append(const_pointer first, const_pointer last) {
         while (first != last) {
             this->push_back(*first);
-            first++;
+            ++first;
         }
         return *this;
     }
@@ -211,7 +211,7 @@ public:
     this_type & append(const_iterator first, const_iterator last) {
         while (first != last) {
             this->push_back(*first);
-            first++;
+            ++first;
         }
         return *this;
     }
@@ -219,19 +219,26 @@ public:
     template <typename InputIter>
     typename std::enable_if<jstd::is_iterator<InputIter>::value, this_type &>::type
     append(InputIter first, InputIter last) {
+#if 1
+        while (first != last) {
+            this->push_back(*first);
+            ++first;
+        }
+#else
         bool is_iterator = jstd::is_iterator<InputIter>::value;
         bool is_forward_iterator = std::is_base_of<forward_iterator_tag, InputIter>::value;
         bool is_std_forward_iterator = std::is_base_of<std::forward_iterator_tag, InputIter>::value;
         if (!is_iterator || (is_iterator && (is_forward_iterator || is_std_forward_iterator))) {
             while (first != last) {
                 this->push_back(*first);
-                first++;
+                ++first;
             }
         }
         else {
             static_assert(false,
                 "basic_string_view<T>::append(): InputIter type must be is a forward_iterator.");
         }
+#endif
         return *this;
     }
 
@@ -239,7 +246,7 @@ public:
     void push_back(char_type ch) {
         char_type * data = const_cast<char_type *>(this->data_);
         *data = ch;
-        this->data_++;
+        ++(this->data_);
     }
 
     void commit(size_type count) {
