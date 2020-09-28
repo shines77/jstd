@@ -274,10 +274,10 @@ inline
 std::ssize_t get_data_length(int64_t i64) {
     uint64_t u64;
     if (i64 >= 0) {
-        u64 = static_cast<uint64_t>(i32);
+        u64 = static_cast<uint64_t>(i64);
     }
     else {
-        u64 = static_cast<uint64_t>(-i32);
+        u64 = static_cast<uint64_t>(-i64);
     }
     return std::ssize_t(i64 < 0) + get_data_length<delta>(u64);
 }
