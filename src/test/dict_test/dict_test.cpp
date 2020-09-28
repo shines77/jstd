@@ -1641,6 +1641,7 @@ void formatter_benchmark_sprintf_Integer_1()
                                  "%d, %d, %d, %d, %d.",
                                   12,  1234,  123456,  12345678,  123456789,
                                  -12, -1234, -123456, -12345678, -123456789);
+            JSTD_UNUSED_VARS(fmt_size);
         }
         sw.stop();
         time = sw.getElapsedMillisec();
@@ -1667,6 +1668,7 @@ void formatter_benchmark_sprintf_Integer_1()
                                  "%d, %d, %d, %d, %d.",
                                   12,  1234,  123456,  12345678,  123456789,
                                  -12, -1234, -123456, -12345678, -123456789);
+            JSTD_UNUSED_VARS(fmt_size);
         }
         sw.stop();
         time = sw.getElapsedMillisec();
@@ -1882,6 +1884,8 @@ void formatter_benchmark_sprintf_Integer_1()
         printf("\n");
     }
 
+    JSTD_UNUSED_VARS(fmt_len);
+    printf("==========================================================================\n");
     printf("\n");
 }
 

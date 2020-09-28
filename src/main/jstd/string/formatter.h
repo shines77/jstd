@@ -1469,6 +1469,7 @@ struct basic_formatter {
                 JSTD_UNUSED_VARS(d);
                 JSTD_UNUSED_VARS(ld);
                 JSTD_UNUSED_VARS(pvoid);
+                JSTD_UNUSED_VARS(data_len);
                 err_code = Sprintf_Reached_Endof;
                 break;
             }
