@@ -1661,7 +1661,7 @@ void formatter_benchmark_sprintf_Integer_1()
 #ifdef _MSC_VER
             fmt_size = _snprintf_s(fmtbuf2, sizeof(fmtbuf2),
 #else
-            fmt_size =    snprintf(fmtbuf2,
+            fmt_size =    snprintf(fmtbuf2, sizeof(fmtbuf2),
 #endif
                                  "%d, %d, %d, %d, %d,\n"
                                  "%d, %d, %d, %d, %d.",
