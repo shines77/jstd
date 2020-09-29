@@ -160,11 +160,17 @@ void enforce_argument(const char * fmt)
         {
             // check specifiers's length
             case 'h':
-                if (state == length_t::h) state = length_t::hh;
-                else state = length_t::h; break;
+                if (state == length_t::h)
+                    state = length_t::hh;
+                else
+                    state = length_t::h;
+                break;
             case 'l':
-                if (state == length_t::l) state = length_t::ll;
-                else state = length_t::l; break;
+                if (state == length_t::l)
+                    state = length_t::ll;
+                else
+                    state = length_t::l;
+                break;
             case 'j': state = length_t::j; break;
             case 'z': state = length_t::z; break;
             case 't': state = length_t::t; break;
@@ -323,6 +329,7 @@ int impl_(F && out, const char * fmt, A &&... args)
 /// Print formatted data to output stream
 ////////////////////////////////////////////////////////////////
 
+#if 0
 namespace use
 {
     auto strout(std::string & buf)
@@ -333,6 +340,7 @@ namespace use
         };
     }
 }
+#endif
 
 template <typename F, typename... A, typename std::enable_if<OutputPred<F>::value, bool>::type = true>
 int printf(F && out, const char * fmt, A &&... args)
