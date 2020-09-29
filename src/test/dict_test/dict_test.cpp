@@ -79,6 +79,7 @@
 
 #include <jstd/hasher/fnv1a.h>
 #include <jstd/string/formatter.h>
+#include <jstd/string/snprintf.hpp>
 
 //#include <jstd/all.h>
 
@@ -1881,6 +1882,31 @@ void formatter_benchmark_sprintf_Integer_1()
 
         printf("elapsed time = %0.3f ms\n\n", time);
         printf("fmt.sprintf_no_prepare() vs snprintf(): %0.3f x times.\n", time_base / time);
+        printf("\n");
+    }
+
+    {
+        std::string str;
+  
+        sw.restart();
+        for (i = 0; i < iters; ++i) {
+            str.clear();
+            fmt_len = format::snprintf(str,
+                                 "%d, %d, %d, %d, %d,\n"
+                                 "%d, %d, %d, %d, %d.",
+                                  12,  1234,  123456,  12345678,  123456789,
+                                 -12, -1234, -123456, -12345678, -123456789);
+        }
+        sw.stop();
+        time = sw.getElapsedMillisec();
+
+        printf("==========================================================================\n\n");
+        printf(">>> %-20s <<<\n\n", "format::snprintf");
+        printf("result = \n%s\n\n", str.c_str());
+        printf("strlen       = %" PRIuPTR " bytes\n", str.size());
+
+        printf("elapsed time = %0.3f ms\n\n", time);
+        printf("format::snprintf vs snprintf(): %0.3f x times.\n", time_base / time);
         printf("\n");
     }
 

@@ -30,6 +30,7 @@
 
 #include "jstd/string/char_traits.h"
 #include "jstd/string/string_view.h"
+#include "jstd/math/log10_int.h"
 
 namespace jstd {
 
@@ -142,6 +143,9 @@ std::ssize_t get_data_length(int16_t i16) {
 template <std::ssize_t delta = 0>
 inline
 std::ssize_t get_data_length(uint32_t u32) {
+#if 1
+    return (std::ssize_t(jmc_log10_u32(u32) + 1) - delta);
+#else
     if (u32 < 100000000UL) {
         if (u32 < 10000UL) {
             if (u32 < 100UL) {
@@ -178,6 +182,7 @@ std::ssize_t get_data_length(uint32_t u32) {
         else
             return (10 - delta);
     }
+#endif
 }
 
 template <std::ssize_t delta = 0>
@@ -196,6 +201,10 @@ std::ssize_t get_data_length(int32_t i32) {
 template <std::ssize_t delta = 0>
 inline
 std::ssize_t get_data_length(uint64_t u64) {
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+    return (std::ssize_t(jmc_log10_u64(u64) + 1) - delta);
+#else
     if (u64 < 100000000UL) {
         if (u64 < 10000UL) {
             if (u64 < 100UL) {
@@ -264,9 +273,13 @@ std::ssize_t get_data_length(uint64_t u64) {
                 return (18 - delta);
         }
         else {
-            return (19 - delta);
+            if (u64 < 10000000000000000000ULL)
+                return (19 - delta);
+            else
+                return (20 - delta);
         }
     }
+#endif // __amd64__
 }
 
 template <std::ssize_t delta = 0>
@@ -1769,7 +1782,7 @@ Sprintf_Exit:
         return sprintf_calc_space_impl(fmt, std::forward<Args>(args)...);
     }
 
-    size_type sprintf_prepare_space_impl(std::list<fmt_node_t> & fmt_list,
+    size_type sprintf_prepare_space_impl(std::vector<fmt_node_t> & fmt_list,
                                          const char_type * fmt) {
         assert(fmt != nullptr);
         ssize_type rest_size = 0;
@@ -1821,7 +1834,7 @@ Sprintf_Throw_Except:
     }
 
     template <typename Arg1, typename ...Args>
-    size_type sprintf_prepare_space_impl(std::list<fmt_node_t> & fmt_list,
+    size_type sprintf_prepare_space_impl(std::vector<fmt_node_t> & fmt_list,
                                          const char_type * fmt,
                                          Arg1 && arg1,
                                          Args && ... args) {
@@ -2002,10 +2015,11 @@ Sprintf_Exit:
     }
 
     size_type sprintf_direct_output_impl(std::basic_string<char_type> & str,
-                                         std::list<fmt_node_t> & fmt_list) {
+                                         std::vector<fmt_node_t> & fmt_list,
+                                         size_type index) {
         size_type total_size = 0;
-        if (!fmt_list.empty()) {
-            fmt_node_t & fmt_info = fmt_list.front();
+        if (index < fmt_list.size()) {
+            fmt_node_t & fmt_info = fmt_list[index];
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
                 str.append(fmt_info.first, fmt_info.last);
@@ -2013,7 +2027,7 @@ Sprintf_Exit:
 
             bool is_arg = fmt_info.is_arg();
             if (!is_arg) {
-                fmt_list.pop_front();
+                //index++;
             }
             else {
                 throw std::runtime_error("Error: Wrong fmt_list!");
@@ -2025,12 +2039,13 @@ Sprintf_Exit:
 
     template <typename Arg1, typename ...Args>
     size_type sprintf_direct_output_impl(std::basic_string<char_type> & str,
-                                         std::list<fmt_node_t> & fmt_list,
+                                         std::vector<fmt_node_t> & fmt_list,
+                                         size_type index,
                                          Arg1 && arg1,
                                          Args && ... args) {
         size_type total_size = 0;
-        if (!fmt_list.empty()) {
-            fmt_node_t & fmt_info = fmt_list.front();
+        if (index < fmt_list.size()) {
+            fmt_node_t & fmt_info = fmt_list[index];
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
                 str.append(fmt_info.first, fmt_info.last);
@@ -2041,11 +2056,10 @@ Sprintf_Exit:
                 size_type data_len = format_and_append_arg(str,
                                             std::forward<Arg1>(arg1),
                                             arg_size);
-                fmt_list.pop_front();
 
                 total_size += data_len;
                 size_type remain_size = sprintf_direct_output_impl(
-                                            str, fmt_list,
+                                            str, fmt_list, index + 1,
                                             std::forward<Args>(args)...);
                 total_size += remain_size;
             }
@@ -2061,10 +2075,11 @@ Sprintf_Exit:
     }
 
     size_type sprintf_prepare_output_impl(jstd::basic_string_view<char_type> & str,
-                                          std::list<fmt_node_t> & fmt_list) {
+                                          std::vector<fmt_node_t> & fmt_list,
+                                          size_type index) {
         size_type total_size = 0;
-        if (!fmt_list.empty()) {
-            fmt_node_t & fmt_info = fmt_list.front();
+        if (index < fmt_list.size()) {
+            fmt_node_t & fmt_info = fmt_list[index];
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
                 str.append(fmt_info.first, fmt_info.last);
@@ -2072,11 +2087,14 @@ Sprintf_Exit:
 
             bool is_arg = fmt_info.is_arg();
             if (!is_arg) {
-                fmt_list.pop_front();
+                //index++;
             }
             else {
                 throw std::runtime_error("Error: Wrong fmt_list!");
             }
+        }
+        else {
+            throw std::runtime_error("Error: fmt_list out of bound!");
         }
 
         return total_size;
@@ -2084,12 +2102,13 @@ Sprintf_Exit:
 
     template <typename Arg1, typename ...Args>
     size_type sprintf_prepare_output_impl(jstd::basic_string_view<char_type> & str,
-                                          std::list<fmt_node_t> & fmt_list,
+                                          std::vector<fmt_node_t> & fmt_list,
+                                          size_type index,
                                           Arg1 && arg1,
                                           Args && ... args) {
         size_type total_size = 0;
-        if (!fmt_list.empty()) {
-            fmt_node_t & fmt_info = fmt_list.front();
+        if (index < fmt_list.size()) {
+            fmt_node_t & fmt_info = fmt_list[index];
             if (fmt_info.fmt_length() > 0) {
                 total_size += fmt_info.fmt_length();
                 str.append(fmt_info.first, fmt_info.last);
@@ -2100,11 +2119,10 @@ Sprintf_Exit:
                 size_type data_len = format_and_append_arg(str,
                                             std::forward<Arg1>(arg1),
                                             arg_size);
-                fmt_list.pop_front();
 
                 total_size += data_len;
                 size_type remain_size = sprintf_prepare_output_impl(
-                                            str, fmt_list,
+                                            str, fmt_list, index + 1,
                                             std::forward<Args>(args)...);
                 total_size += remain_size;
             }
@@ -2115,12 +2133,15 @@ Sprintf_Exit:
                 }
             }
         }
+        else {
+            throw std::runtime_error("Error: fmt_list out of bound!");
+        }
 
         return total_size;
     }
 
     template <typename ...Args>
-    size_type sprintf_prepare_space(std::list<fmt_node_t> & fmt_list,
+    size_type sprintf_prepare_space(std::vector<fmt_node_t> & fmt_list,
                                     const char_type * fmt,
                                     Args && ... args) {
         return sprintf_prepare_space_impl(fmt_list, fmt, std::forward<Args>(args)...);
@@ -2135,16 +2156,16 @@ Sprintf_Exit:
 
     template <typename ...Args>
     size_type sprintf_direct_output(std::basic_string<char_type> & str,
-                                    std::list<fmt_node_t> & fmt_list,
+                                    std::vector<fmt_node_t> & fmt_list,
                                     Args && ... args) {
-        return sprintf_direct_output_impl(str, fmt_list, std::forward<Args>(args)...);
+        return sprintf_direct_output_impl(str, fmt_list, 0, std::forward<Args>(args)...);
     }
 
     template <typename ...Args>
     size_type sprintf_prepare_output(jstd::basic_string_view<char_type> & str,
-                                     std::list<fmt_node_t> & fmt_list,
+                                     std::vector<fmt_node_t> & fmt_list,
                                      Args && ... args) {
-        return sprintf_prepare_output_impl(str, fmt_list, std::forward<Args>(args)...);
+        return sprintf_prepare_output_impl(str, fmt_list, 0, std::forward<Args>(args)...);
     }
 
     template <typename ...Args>
@@ -2166,7 +2187,9 @@ Sprintf_Exit:
                              const char_type * fmt,
                              Args && ... args) {
         if (likely(fmt != nullptr)) {
-            std::list<fmt_node_t> fmt_list;
+            std::vector<fmt_node_t> fmt_list;
+            size_type sz = sizeof...(args);
+            fmt_list.reserve(sz * 2);
             size_type prepare_size = sprintf_prepare_space(fmt_list, fmt, std::forward<Args>(args)...);
             size_type old_size = str.size();
             size_type output_size = sprintf_direct_output(str, fmt_list, std::forward<Args>(args)...);
@@ -2184,7 +2207,9 @@ Sprintf_Exit:
                       const char_type * fmt,
                       Args && ... args) {
         if (likely(fmt != nullptr)) {
-            std::list<fmt_node_t> fmt_list;
+            std::vector<fmt_node_t> fmt_list;
+            size_type sz = sizeof...(args);
+            fmt_list.reserve(sz * 2);
             size_type prepare_size = sprintf_prepare_space(fmt_list, fmt, std::forward<Args>(args)...);
 #if 1
             size_type old_size = str.size();

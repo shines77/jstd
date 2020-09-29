@@ -53,6 +53,9 @@
     <Filter Include="src\hasher">
       <UniqueIdentifier>{5c925ff2-7b6e-4fd8-82f4-dd3387eb1f96}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\math">
+      <UniqueIdentifier>{8923e1fb-8977-4853-a9dd-920bad282318}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\compiler.h">
@@ -294,6 +297,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\string\formatter.h">
       <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\printf.hpp">
+      <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\snprintf.hpp">
+      <Filter>src\string</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\math\log10_int.h">
+      <Filter>src\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

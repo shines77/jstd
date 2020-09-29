@@ -192,6 +192,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\internal\NonCopyable.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\iterator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\lib.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\math\log10_int.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\defines.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\shiftable_ptr.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\smart_ptr.h" />
@@ -199,6 +200,8 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\nothrow_new.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\char_traits.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\formatter.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\printf.hpp" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\string\snprintf.hpp" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_def.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_helper.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_iterator.h" />

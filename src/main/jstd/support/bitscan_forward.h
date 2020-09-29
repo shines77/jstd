@@ -59,7 +59,7 @@
 #define __IS_X86_64      1
 #endif // _WIN64
 
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) || (defined(WIN32) && (defined(__INTEL_COMPILER) || defined(__ICL)))
 #include <intrin.h>     // For _BitScanForward(), _BitScanForward64()
 #pragma intrinsic(_BitScanForward)
 #if __IS_X86_64
@@ -91,7 +91,7 @@
 #endif // __has_builtin
 
 // Get the index of the first bit on set to 1.
-#if defined(_MSC_VER) || defined(__ICL) || defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) || (defined(WIN32) && (defined(__INTEL_COMPILER) || defined(__ICL)))
 // _MSC_VER
 
 #define __BitScanForward(index, mask) \
