@@ -44,8 +44,8 @@ static const uint8_t LowerHexStrs [16] = {
     '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
 
-enum sprintf_except_id {
-    Sprintf_Except_First = -16384,
+enum sprintf_error_code {
+    Sprintf_Error_First = -16384,
     Sprintf_BadFormat_BrokenEscapeChar,
     Sprintf_BadFormat_UnknownSpecifier_FF,
     Sprintf_BadFormat_UnknownSpecifier,
@@ -55,7 +55,7 @@ enum sprintf_except_id {
 
     Sprintf_Success = 0,
     Sprintf_Reached_Endof,
-    Sprintf_Except_Last
+    Sprintf_Error_Last
 };
 
 template <typename CharTy>
@@ -92,13 +92,13 @@ static std::string to_lower_hex(CharTy ch) {
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(bool bl1) {
+std::ssize_t count_digits(bool bl1) {
     return 1;
 }
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(uint8_t u8) {
+std::ssize_t count_digits(uint8_t u8) {
     if (u8 < 10)
         return (1 - delta);
     else if (u8 < 100)
@@ -109,18 +109,18 @@ std::ssize_t get_data_length(uint8_t u8) {
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(int8_t i8) {
+std::ssize_t count_digits(int8_t i8) {
     uint8_t u8;
     if (i8 >= 0)
         u8 = static_cast<uint8_t>(i8);
     else
         u8 = static_cast<uint8_t>(-i8);
-    return std::ssize_t(i8 < 0) + get_data_length<delta>(u8);
+    return std::ssize_t(i8 < 0) + count_digits<delta>(u8);
 }
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(uint16_t u16) {
+std::ssize_t count_digits(uint16_t u16) {
     if (u16 < 10)
         return (1 - delta);
     else if (u16 < 100)
@@ -131,20 +131,20 @@ std::ssize_t get_data_length(uint16_t u16) {
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(int16_t i16) {
+std::ssize_t count_digits(int16_t i16) {
     uint16_t u16;
     if (i16 >= 0)
         u16 = static_cast<uint16_t>(i16);
     else
         u16 = static_cast<uint16_t>(-i16);
-    return std::ssize_t(i16 < 0) + get_data_length<delta>(u16);
+    return std::ssize_t(i16 < 0) + count_digits<delta>(u16);
 }
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(uint32_t u32) {
+std::ssize_t count_digits(uint32_t u32) {
 #if 1
-    return (std::ssize_t(jmc_log10_u32(u32) + 1) - delta);
+    return (std::ssize_t(jm_log10_u32(u32) + 1) - delta);
 #else
     if (u32 < 100000000UL) {
         if (u32 < 10000UL) {
@@ -187,7 +187,7 @@ std::ssize_t get_data_length(uint32_t u32) {
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(int32_t i32) {
+std::ssize_t count_digits(int32_t i32) {
     uint32_t u32;
     if (i32 >= 0) {
         u32 = static_cast<uint32_t>(i32);
@@ -195,15 +195,15 @@ std::ssize_t get_data_length(int32_t i32) {
     else {
         u32 = static_cast<uint32_t>(-i32);
     }
-    return std::ssize_t(i32 < 0) + get_data_length<delta>(u32);
+    return std::ssize_t(i32 < 0) + count_digits<delta>(u32);
 }
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(uint64_t u64) {
+std::ssize_t count_digits(uint64_t u64) {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-    return (std::ssize_t(jmc_log10_u64(u64) + 1) - delta);
+    return (std::ssize_t(jm_log10_u64(u64) + 1) - delta);
 #else
     if (u64 < 100000000UL) {
         if (u64 < 10000UL) {
@@ -284,7 +284,7 @@ std::ssize_t get_data_length(uint64_t u64) {
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(int64_t i64) {
+std::ssize_t count_digits(int64_t i64) {
     uint64_t u64;
     if (i64 >= 0) {
         u64 = static_cast<uint64_t>(i64);
@@ -292,20 +292,19 @@ std::ssize_t get_data_length(int64_t i64) {
     else {
         u64 = static_cast<uint64_t>(-i64);
     }
-    return std::ssize_t(i64 < 0) + get_data_length<delta>(u64);
+    return std::ssize_t(i64 < 0) + count_digits<delta>(u64);
 }
 
 template <std::ssize_t delta = 0>
 inline
-std::ssize_t get_data_length(void * pv) {
+std::ssize_t count_digits(void * pv) {
     std::size_t pval = reinterpret_cast<std::size_t>(pv);
-    return (get_data_length<delta>(pval) + std::ssize_t(2));
+    return (count_digits<delta>(pval) + std::ssize_t(2));
 }
 
 template <typename CharTy, typename Arg>
 inline
-std::size_t format_and_append(std::basic_string<CharTy> & str,
-                              Arg && arg) {
+std::size_t itoa(std::basic_string<CharTy> & str, Arg && arg) {
     std::size_t data_len = 8;
     str.append(data_len, CharTy('?'));
     return data_len;
@@ -313,8 +312,7 @@ std::size_t format_and_append(std::basic_string<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append(std::basic_string<CharTy> & str,
-                              uint32_t u32) {
+std::size_t itoa(std::basic_string<CharTy> & str, uint32_t u32) {
     CharTy buf[16]; // Maximum usage is 10
     CharTy * buf_end  = &buf[sizeof(buf) - 5];
     CharTy * buf_last = &buf[sizeof(buf) - 6];  // 16 - 10 = 6
@@ -353,27 +351,25 @@ std::size_t format_and_append(std::basic_string<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append(std::basic_string<CharTy> & str,
-                              int32_t i32) {
+std::size_t itoa(std::basic_string<CharTy> & str, int32_t i32) {
     uint32_t u32;
-    std::size_t addition;
+    std::size_t sign;
     if (likely(i32 >= 0)) {
         u32 = static_cast<uint32_t>(i32);
-        addition = 0;
+        sign = 0;
     }
     else {
         str.push_back(CharTy('-'));
         u32 = static_cast<uint32_t>(-i32);
-        addition = 1;
+        sign = 1;
     }
-    std::size_t data_len = format_and_append(str, u32);
-    return (data_len + addition);
+    std::size_t data_len = itoa(str, u32);
+    return (data_len + sign);
 }
 
 template <typename CharTy>
 inline
-std::size_t format_and_append(std::basic_string<CharTy> & str,
-                              uint64_t u64) {
+std::size_t itoa(std::basic_string<CharTy> & str, uint64_t u64) {
     CharTy buf[32]; // Maximum usage is 19
     CharTy * buf_end  = &buf[sizeof(buf) - 14];
     CharTy * buf_last = &buf[sizeof(buf) - 13]; // 32 - 19 = 13
@@ -412,27 +408,26 @@ std::size_t format_and_append(std::basic_string<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append(std::basic_string<CharTy> & str,
-                              int64_t i64) {
+std::size_t itoa(std::basic_string<CharTy> & str, int64_t i64) {
     uint64_t u64;
-    std::size_t addition;
+    std::size_t sign;
     if (likely(i64 >= 0)) {
         u64 = static_cast<uint64_t>(i64);
-        addition = 0;
+        sign = 0;
     }
     else {
         str.push_back(CharTy('-'));
         u64 = static_cast<uint64_t>(-i64);
-        addition = 1;
+        sign = 1;
     }
-    std::size_t data_len = format_and_append(str, u64);
-    return (data_len + addition);
+    std::size_t data_len = itoa(str, u64);
+    return (data_len + sign);
 }
 
 template <typename CharTy, typename Arg>
 inline
-std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                  Arg && arg, std::size_t size) {
+std::size_t itoa(jstd::basic_string_view<CharTy> & str,
+                 Arg && arg, std::size_t size) {
     std::size_t data_len = size;
     str.append(size, CharTy('?'));
     return data_len;
@@ -440,8 +435,8 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                  uint32_t u32, std::size_t digits) {
+std::size_t itoa(jstd::basic_string_view<CharTy> & str,
+                 uint32_t u32, std::size_t digits) {
     assert(digits > 0);
     CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
     CharTy * buf_end = buf_last;
@@ -532,8 +527,8 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg_slow(jstd::basic_string_view<CharTy> & str,
-                                       uint32_t u32, std::size_t digits) {
+std::size_t itoa_slow(jstd::basic_string_view<CharTy> & str,
+                      uint32_t u32, std::size_t digits) {
     assert(digits > 0);
     CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
     CharTy * buf_end = buf_last;
@@ -576,22 +571,20 @@ std::size_t format_and_append_arg_slow(jstd::basic_string_view<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                  int32_t i32, std::size_t digits) {
+std::size_t itoa(jstd::basic_string_view<CharTy> & str,
+                 int32_t i32, std::size_t digits) {
     uint32_t u32;
-    std::size_t addition;
+    std::size_t sign;
     if (likely(i32 >= 0)) {
         u32 = static_cast<uint32_t>(i32);
-        addition = 0;
+        sign = 0;
     }
     else {
         str.push_back(CharTy('-'));
         u32 = static_cast<uint32_t>(-i32);
-        addition = 1;
+        sign = 1;
     }
-    std::size_t data_len = format_and_append_arg(
-                                str, u32, digits - addition)
-                                + addition;
+    std::size_t data_len = itoa(str, u32, digits - sign) + sign;
     assert(data_len == digits);
     JSTD_UNUSED_VARS(data_len);
     return digits;
@@ -599,8 +592,8 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                  uint64_t u64, std::size_t digits) {
+std::size_t itoa(jstd::basic_string_view<CharTy> & str,
+                 uint64_t u64, std::size_t digits) {
     CharTy * buf_last = const_cast<CharTy *>(str.c_str() + digits - 1);
     CharTy * buf_end = buf_last;
 
@@ -744,22 +737,20 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
-                                  int64_t i64, std::size_t digits) {
+std::size_t itoa(jstd::basic_string_view<CharTy> & str,
+                 int64_t i64, std::size_t digits) {
     uint64_t u64;
-    std::size_t addition;
+    std::size_t sign;
     if (likely(i64 >= 0)) {
         u64 = static_cast<uint64_t>(i64);
-        addition = 0;
+        sign = 0;
     }
     else {
         str.push_back(CharTy('-'));
         u64 = static_cast<uint64_t>(-i64);
-        addition = 1;
+        sign = 1;
     }
-    std::size_t data_len = format_and_append_arg(
-                                str, u64, digits - addition)
-                                + addition;
+    std::size_t data_len = itoa(str, u64, digits - sign) + sign;
     assert(data_len == digits);
     JSTD_UNUSED_VARS(data_len);
     return digits;
@@ -767,8 +758,8 @@ std::size_t format_and_append_arg(jstd::basic_string_view<CharTy> & str,
 
 template <typename CharTy, typename Arg>
 inline
-std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
-                                  Arg && arg, std::size_t size) {
+std::size_t itoa(std::basic_string<CharTy> & str,
+                 Arg && arg, std::size_t size) {
     std::size_t data_len = size;
     str.append(size, CharTy('?'));
     return data_len;
@@ -776,8 +767,8 @@ std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
-                                  uint32_t u32, std::size_t digits) {
+std::size_t itoa(std::basic_string<CharTy> & str,
+                 uint32_t u32, std::size_t digits) {
     assert(digits > 0);
     CharTy buf[16]; // Maximum usage is 10
     CharTy * buf_end  = &buf[sizeof(buf) - 5];
@@ -868,22 +859,20 @@ std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
-                                  int32_t i32, std::size_t digits) {
+std::size_t itoa(std::basic_string<CharTy> & str,
+                 int32_t i32, std::size_t digits) {
     uint32_t u32;
-    std::size_t addition;
+    std::size_t sign;
     if (likely(i32 >= 0)) {
         u32 = static_cast<uint32_t>(i32);
-        addition = 0;
+        sign = 0;
     }
     else {
         str.push_back(CharTy('-'));
         u32 = static_cast<uint32_t>(-i32);
-        addition = 1;
+        sign = 1;
     }
-    std::size_t data_len = format_and_append_arg(
-                                str, u32, digits - addition)
-                                + addition;
+    std::size_t data_len = itoa(str, u32, digits - sign) + sign;
     assert(data_len == digits);
     JSTD_UNUSED_VARS(data_len);
     return digits;
@@ -891,8 +880,8 @@ std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
-                                  uint64_t u64, std::size_t digits) {
+std::size_t itoa(std::basic_string<CharTy> & str,
+                 uint64_t u64, std::size_t digits) {
     CharTy buf[32]; // Maximum usage is 19
     CharTy * buf_end  = &buf[sizeof(buf) - 14];
     CharTy * buf_last = &buf[sizeof(buf) - 13]; // 32 - 19 = 13
@@ -1036,22 +1025,20 @@ std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
 
 template <typename CharTy>
 inline
-std::size_t format_and_append_arg(std::basic_string<CharTy> & str,
-                                  int64_t i64, std::size_t digits) {
+std::size_t itoa(std::basic_string<CharTy> & str,
+                 int64_t i64, std::size_t digits) {
     uint64_t u64;
-    std::size_t addition;
+    std::size_t sign;
     if (likely(i64 >= 0)) {
         u64 = static_cast<uint64_t>(i64);
-        addition = 0;
+        sign = 0;
     }
     else {
         str.push_back(CharTy('-'));
         u64 = static_cast<uint64_t>(-i64);
-        addition = 1;
+        sign = 1;
     }
-    std::size_t data_len = format_and_append_arg(
-                                str, u64, digits - addition)
-                                + addition;
+    std::size_t data_len = itoa(str, u64, digits - sign) + sign;
     assert(data_len == digits);
     JSTD_UNUSED_VARS(data_len);
     return digits;
@@ -1150,7 +1137,7 @@ struct sprintf_fmt_node {
     }
 };
 
-void throw_sprintf_except(std::ssize_t err_code, std::ssize_t pos, std::size_t arg1)
+void throw_sprintf_exception(std::ssize_t err_code, std::ssize_t pos, std::size_t arg1)
 {
     switch (err_code) {
         case Sprintf_BadFormat_BrokenEscapeChar:
@@ -1309,7 +1296,7 @@ struct basic_formatter {
             {
                 fmt++;
                 u8 = static_cast<unsigned char>(arg);
-                data_len = get_data_length<0>(u8);
+                data_len = count_digits<0>(u8);
             }
             break;
 
@@ -1318,7 +1305,7 @@ struct basic_formatter {
             {
                 fmt++;
                 i32 = static_cast<int>(arg);
-                data_len = get_data_length<0>(i32);
+                data_len = count_digits<0>(i32);
             }
             break;
 
@@ -1394,7 +1381,7 @@ struct basic_formatter {
             {
                 fmt++;
                 pvoid = reinterpret_cast<void *>(static_cast<std::size_t>(arg));
-                data_len = get_data_length<0>(pvoid);
+                data_len = count_digits<0>(pvoid);
             }
             break;
 
@@ -1415,7 +1402,7 @@ struct basic_formatter {
             {
                 fmt++;
                 u32 = static_cast<unsigned int>(arg);
-                data_len = get_data_length<0>(u32);
+                data_len = count_digits<0>(u32);
             }
             break;
 
@@ -1549,7 +1536,7 @@ struct basic_formatter {
             {
                 fmt++;
                 u8 = static_cast<unsigned char>(arg);
-                data_len = format_and_append(str, static_cast<uint32_t>(u8));
+                data_len = itoa(str, static_cast<uint32_t>(u8));
             }
             break;
 
@@ -1558,7 +1545,7 @@ struct basic_formatter {
             {
                 fmt++;
                 i32 = static_cast<int>(arg);
-                data_len = format_and_append(str, i32);
+                data_len = itoa(str, i32);
             }
             break;
 
@@ -1634,7 +1621,7 @@ struct basic_formatter {
             {
                 fmt++;
                 pvoid = reinterpret_cast<void *>(static_cast<std::size_t>(arg));
-                data_len = format_and_append(str, reinterpret_cast<std::size_t>(pvoid));
+                data_len = itoa(str, reinterpret_cast<std::size_t>(pvoid));
             }
             break;
 
@@ -1655,7 +1642,7 @@ struct basic_formatter {
             {
                 fmt++;
                 u32 = static_cast<uint32_t>(arg);
-                data_len = format_and_append(str, u32);
+                data_len = itoa(str, u32);
             }
             break;
 
@@ -1706,7 +1693,7 @@ struct basic_formatter {
 Sprintf_Throw_Except:
         if (err_code != Sprintf_Success) {
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_code, pos, ex_arg1);
+            throw_sprintf_exception(err_code, pos, ex_arg1);
         }
 
         ssize_type scan_len = (fmt - fmt_first);
@@ -1765,7 +1752,7 @@ Sprintf_Throw_Except:
         if (err_code != Sprintf_Success) {
 Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_code, pos, ex_arg1);
+            throw_sprintf_exception(err_code, pos, ex_arg1);
         }
 
 Sprintf_Exit:
@@ -1817,7 +1804,7 @@ Sprintf_Exit:
         if (err_code != Sprintf_Success) {
 Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_code, pos, ex_arg1);
+            throw_sprintf_exception(err_code, pos, ex_arg1);
         }
 
         if (fmt > fmt_first) {
@@ -1893,7 +1880,7 @@ Sprintf_Throw_Except:
         if (err_code != Sprintf_Success) {
 Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_code, pos, ex_arg1);
+            throw_sprintf_exception(err_code, pos, ex_arg1);
         }
 
 Sprintf_Endof_Exit:
@@ -1943,7 +1930,7 @@ Sprintf_Exit:
         if (err_code != Sprintf_Success) {
 Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_code, pos, ex_arg1);
+            throw_sprintf_exception(err_code, pos, ex_arg1);
         }
 
         str.append(fmt_first, fmt);
@@ -2002,7 +1989,7 @@ Sprintf_Throw_Except:
         if (err_code != Sprintf_Success) {
 Sprintf_Throw_Except:
             ssize_type pos = (fmt - fmt_first);
-            throw_sprintf_except(err_code, pos, ex_arg1);
+            throw_sprintf_exception(err_code, pos, ex_arg1);
         }
 
 Sprintf_Endof_Exit:
@@ -2053,7 +2040,7 @@ Sprintf_Exit:
             bool is_arg = fmt_info.is_arg();
             if (is_arg) {
                 size_type arg_size = fmt_info.arg_size;
-                size_type data_len = format_and_append_arg(str,
+                size_type data_len = itoa(str,
                                             std::forward<Arg1>(arg1),
                                             arg_size);
 
@@ -2116,7 +2103,7 @@ Sprintf_Exit:
             bool is_arg = fmt_info.is_arg();
             if (is_arg) {
                 size_type arg_size = fmt_info.arg_size;
-                size_type data_len = format_and_append_arg(str,
+                size_type data_len = itoa(str,
                                             std::forward<Arg1>(arg1),
                                             arg_size);
 

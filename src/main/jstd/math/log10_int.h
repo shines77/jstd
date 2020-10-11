@@ -29,6 +29,7 @@
 
 #if defined(_MSC_VER) || (defined(WIN32) && (defined(__INTEL_COMPILER) || defined(__ICL)))
 #include <intrin.h>     // For _BitScanReverse(), _BitScanReverse64()
+
 #pragma intrinsic(_BitScanReverse)
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
@@ -57,32 +58,32 @@ static const uint32_t s_power10[16] = {
 };
 
 static const uint64_t s_power10_64[24] = {
-    9ULL,                   // 1
-    99ULL,                  // 2
-    999ULL,                 // 3
-    9999ULL,                // 4
-    99999ULL,               // 5
-    999999ULL,              // 6
-    9999999ULL,             // 7
-    99999999ULL,            // 8
-    999999999ULL,           // 9
-    9999999999ULL,          // 10
-    99999999999ULL,         // 11
-    999999999999ULL,        // 12
-    9999999999999ULL,       // 13
-    99999999999999ULL,      // 14
-    999999999999999ULL,     // 15
-    9999999999999999ULL,    // 16
-    99999999999999999ULL,   // 17
-    999999999999999999ULL,  // 18
-    9999999999999999999ULL, // 19
-    18446744073709551615ULL,// 20
+    9ULL,                    // 1
+    99ULL,                   // 2
+    999ULL,                  // 3
+    9999ULL,                 // 4
+    99999ULL,                // 5
+    999999ULL,               // 6
+    9999999ULL,              // 7
+    99999999ULL,             // 8
+    999999999ULL,            // 9
+    9999999999ULL,           // 10
+    99999999999ULL,          // 11
+    999999999999ULL,         // 12
+    9999999999999ULL,        // 13
+    99999999999999ULL,       // 14
+    999999999999999ULL,      // 15
+    9999999999999999ULL,     // 16
+    99999999999999999ULL,    // 17
+    999999999999999999ULL,   // 18
+    9999999999999999999ULL,  // 19
+    18446744073709551615ULL, // 20
 
     // only fill for aligned to 64 bytes
     0, 0, 0, 0
 };
 
-uint32_t jmc_log10_u32(uint32_t val)
+uint32_t jm_log10_u32(uint32_t val)
 {
     uint32_t exponent;
     uint32_t exp10;
@@ -124,7 +125,7 @@ uint32_t jmc_log10_u32(uint32_t val)
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
 
-uint32_t jmc_log10_u64(uint64_t val)
+uint32_t jm_log10_u64(uint64_t val)
 {
     uint32_t exponent;
     uint32_t exp10;
