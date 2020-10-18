@@ -1,0 +1,12 @@
+
+不需要将文件以后的更改更新到git，但是需要保留目前git中文件的状态：
+
+	git update-index --assume-unchanged ./src/main/jstd/basic/vld_def.h
+
+如果需要恢复对该文件的版本控制：
+
+	git update-index --no-assume-unchanged ./src/main/jstd/basic/vld_def.h
+
+删除本地缓存：
+
+	git rm --cached ./src/main/jstd/basic/vld_def.h
