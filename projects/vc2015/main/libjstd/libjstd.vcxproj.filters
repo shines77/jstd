@@ -307,6 +307,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\math\log10_int.h">
       <Filter>src\math</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld_def.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c">

@@ -195,7 +195,7 @@ _ReSharper*/
 /Device-Release/
 
 # Ignore VLD local switch define
-vld_def.h
+*/vld_def.h
 
 # Ignore jstd exe filename
 jstd.exe

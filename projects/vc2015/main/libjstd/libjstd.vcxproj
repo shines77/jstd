@@ -164,6 +164,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\stdsize.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\unistd.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld_def.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\config\config.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\config\config_arch.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\config\config_post.h" />
