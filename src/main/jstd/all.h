@@ -19,7 +19,7 @@
 #include "jstd/string/string_utils.h"
 #include "jstd/string/string_view.h"
 #include "jstd/string/string_helper.h"
-#include "jstd/memory/onetime_ptr.h"
+#include "jstd/memory/shiftable_ptr.h"
 #include "jstd/hash/hash_table.h"
 #include "jstd/hash/dictionary.h"
 #include "jstd/system/Console.h"
