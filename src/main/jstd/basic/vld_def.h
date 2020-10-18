@@ -16,6 +16,6 @@
 // Enable os disable the Visual Leak Detector (For Visual Studio Only).
 // Note: 0 is disable VLD and 1 is enable VLD, default value is 0.
 //
-#define JSTD_ENABLE_VLD     1
+#define JSTD_ENABLE_VLD     0
 
 #endif // JSTD_BASIC_VLD_DEF_H
