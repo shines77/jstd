@@ -18,4 +18,16 @@
 //
 #define JSTD_ENABLE_VLD     0
 
+//
+// If you want to modify the file on local machine and don't update/upload to remote repsotory.
+//
+// You can use below command:
+//
+//    git update-index --assume-unchanged ./src/main/jstd/basic/vld_def.h
+//
+// If you want to cancel the effect, you can use:
+//
+//    git update-index --no-assume-unchanged ./src/main/jstd/basic/vld_def.h
+//
+
 #endif // JSTD_BASIC_VLD_DEF_H
