@@ -13,4 +13,4 @@ See: https://www.cnblogs.com/cu-later/p/13802011.html
 
 删除本地缓存文件：
 
-	git rm -r --cached ./src/main/jstd/basic/vld_def.h
+	git rm --cached ./src/main/jstd/basic/vld_def.h

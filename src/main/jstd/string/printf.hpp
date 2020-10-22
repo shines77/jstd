@@ -188,7 +188,7 @@ void enforce_argument(const char * fmt)
                     case length_t::ll:   enforce<t_t, long long>(); break;
                     case length_t::j:    enforce<t_t, intmax_t>();  break;
                     case length_t::z:    enforce<t_t, size_t>();    break;
-                    case length_t::t:    enforce<t_t, ptrdiff_t>(); break;
+                    case length_t::t:    enforce<t_t, uintptr_t>(); break;
                 }
                 return;
             case 'u': case 'o': case 'x': case 'X':
@@ -202,7 +202,7 @@ void enforce_argument(const char * fmt)
                     case length_t::ll:   enforce<t_t, unsigned long long>(); break;
                     case length_t::j:    enforce<t_t, uintmax_t>();          break;
                     case length_t::z:    enforce<t_t, size_t>();             break;
-                    case length_t::t:    enforce<t_t, ptrdiff_t>();          break;
+                    case length_t::t:    enforce<t_t, uintptr_t>();          break;
                 }
                 return;
             case 'f': case 'F': case 'e': case 'E': case 'g': case 'G': case 'a': case 'A':
@@ -243,7 +243,7 @@ void enforce_argument(const char * fmt)
                     case length_t::ll:   enforce<t_t, long long*>(); break;
                     case length_t::j:    enforce<t_t, intmax_t*>();  break;
                     case length_t::z:    enforce<t_t, size_t*>();    break;
-                    case length_t::t:    enforce<t_t, ptrdiff_t*>(); break;
+                    case length_t::t:    enforce<t_t, uintptr_t*>(); break;
                 }
                 return;
         }

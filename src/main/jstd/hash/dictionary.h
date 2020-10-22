@@ -34,7 +34,11 @@
 #include "jstd/hash/key_extractor.h"
 #include "jstd/support/PowerOf2.h"
 
+#include "jstd/memory/c_aligned_malloc.h"
+
 #define ENABLE_JSTD_DICTIONARY          1
+
+#undef  DICTIONARY_SUPPORT_VERSION
 #define DICTIONARY_SUPPORT_VERSION      0
 
 #undef  USE_FAST_FIND_ENTRY

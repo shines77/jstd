@@ -109,7 +109,7 @@ std::size_t aligned_to(std::size_t size, std::size_t alignment)
 
 template <typename T>
 struct align_of {
-#if 0
+#if 1
     static const std::size_t value = (alignof(T) >= alignof(std::max_align_t))
                                     ? alignof(T) :  alignof(std::max_align_t);
 #else
@@ -194,17 +194,17 @@ struct allocator_base {
     }
 
     template <typename U>
-    pointer re_create(U * ptr) {
-        return this->re_create_array(ptr, 1);
+    pointer respawn(U * ptr) {
+        return this->respawn_array(ptr, 1);
     }
 
     template <typename U, typename ...Args>
-    pointer re_create(U * ptr, Args && ... args) {
-        return this->re_create_array(ptr, 1, std::forward<Args>(args)...);
+    pointer respawn(U * ptr, Args && ... args) {
+        return this->respawn_array(ptr, 1, std::forward<Args>(args)...);
     }
 
     template <typename U>
-    pointer re_create_array(U * ptr, size_type count) {
+    pointer respawn_array(U * ptr, size_type count) {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -216,7 +216,7 @@ struct allocator_base {
     }
 
     template <typename U, typename ...Args>
-    pointer re_create_array(U * ptr, size_type count, Args && ... args) {
+    pointer respawn_array(U * ptr, size_type count, Args && ... args) {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -325,9 +325,9 @@ struct allocator : public allocator_base<
     static const size_type kAlignOf = base_type::kAlignOf;
     static const size_type kAlignment = base_type::kAlignment;
 #if defined(MALLOC_ALIGNMENT)
-    static const size_type kMallocAlignment = MALLOC_ALIGNMENT;
+    static const size_type kMallocDefaultAlignment = MALLOC_ALIGNMENT;
 #else
-    static const size_type kMallocAlignment = 0;
+    static const size_type kMallocDefaultAlignment = 0;
 #endif
 
     allocator() noexcept {}
@@ -351,7 +351,7 @@ struct allocator : public allocator_base<
     };
 
     bool needAlignedAllocaote() const {
-        return ((kAlignment != 0) && (kAlignment != kMallocAlignment));
+        return ((kAlignment != 0) && (kAlignment != kMallocDefaultAlignment));
     }
 
     pointer allocate(size_type count = 1) {

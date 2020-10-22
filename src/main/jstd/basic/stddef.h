@@ -198,6 +198,12 @@
     #define JSTD_EXPORTED_METHOD
 #endif
 
+#ifndef __cplusplus
+#ifndef nullptr
+#define nullptr     ((void *)NULL)
+#endif
+#endif // __cplusplus
+
 #ifndef JSTD_UNUSED_VARS
 #define JSTD_UNUSED_VARS(x)     (void)(x)
 #endif

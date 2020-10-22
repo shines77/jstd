@@ -25,7 +25,7 @@
 
     #ifdef __cplusplus
     namespace std {
-        typedef ptrdiff_t   ssize_t;
+        typedef uintptr_t   ssize_t;
     }
     #endif // __cplusplus
 
@@ -50,7 +50,7 @@
     && (!(defined(__MINGW__) || defined(__MINGW32__) || defined(__MINGW64__))) \
     && (!defined(__CYGWIN__))
 
-typedef ptrdiff_t   ssize_t;
+typedef uintptr_t   ssize_t;
 
 #if 0
 #ifdef _WIN64
@@ -80,7 +80,7 @@ typedef _W64 signed int     ssize_t;
 #ifndef _SIZET_
 #ifndef __size_t
 
-typedef ptrdiff_t   ssize_t;
+typedef uintptr_t   ssize_t;
 
 #if 0
 #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) \
