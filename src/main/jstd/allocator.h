@@ -27,7 +27,9 @@
 
 #include <new>          // ::operator new, ::operator new[], ::operator delete
 
-#define JSTD_DEFAULT_ALIGNMENT   alignof(std::max_align_t)
+#define USE_JM_ALIGNED_MALLOC   1
+
+#define JSTD_DEFAULT_ALIGNMENT  alignof(std::max_align_t)
 
 namespace jstd {
 
@@ -56,10 +58,29 @@ void _Deallocate(void * p, std::size_t size = 0) {
     std::free(p);
 }
 
-// TODO: _AlignedAllocate()
+#if USE_JM_ALIGNED_MALLOC
 
 static inline
-void * _AlignedAllocate(std::size_t size, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
+void * _AlignedAllocate(std::size_t size, std::size_t alignment) {
+    void * ptr = ::jm_aligned_malloc(size, alignment);
+    return ptr;
+}
+
+static inline
+void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment) {
+    void * new_ptr = ::jm_aligned_realloc(ptr, size, alignment);
+    return new_ptr;
+}
+
+static inline
+void _AlignedDeallocate(void * p, std::size_t size = 0, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
+    ::jm_aligned_free(p, alignment);
+}
+
+#else // !USE_JM_ALIGNED_MALLOC
+
+static inline
+void * _AlignedAllocate(std::size_t size, std::size_t alignment) {
     assert(size != 0);
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
     void * ptr = ::_aligned_malloc(size, alignment);
@@ -69,10 +90,8 @@ void * _AlignedAllocate(std::size_t size, std::size_t alignment = JSTD_DEFAULT_A
     return ptr;
 }
 
-// TODO: _AlignedReallocate()
-
 static inline
-void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
+void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment) {
     assert(size != 0);
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
     void * new_ptr = ::_aligned_realloc(ptr, size, alignment);
@@ -85,8 +104,6 @@ void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment = 
     return new_ptr;
 }
 
-// TODO: _AlignedDeallocate()
-
 static inline
 void _AlignedDeallocate(void * p, std::size_t size = 0, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
@@ -95,6 +112,8 @@ void _AlignedDeallocate(void * p, std::size_t size = 0, std::size_t alignment = 
     ::free(p);
 #endif
 }
+
+#endif // USE_JM_ALIGNED_MALLOC
 
 static inline
 std::size_t aligned_to(std::size_t size, std::size_t alignment)
@@ -358,7 +377,7 @@ struct allocator : public allocator_base<
     pointer allocate(size_type count = 1) {
         pointer ptr;
         if (needAlignedAllocaote())
-            ptr = static_cast<pointer>(::jm_aligned_malloc(count * sizeof(value_type), kAlignment));
+            ptr = static_cast<pointer>(_AlignedAllocate(count * sizeof(value_type), kAlignment));
         else
             ptr = static_cast<pointer>(_Allocate(count * sizeof(value_type)));
         if (ThrowEx && (ptr == nullptr)) {
@@ -371,7 +390,7 @@ struct allocator : public allocator_base<
     pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr;
         if (needAlignedAllocaote())
-            new_ptr = static_cast<pointer>(::jm_aligned_realloc((void *)ptr, count * sizeof(value_type), kAlignment));
+            new_ptr = static_cast<pointer>(_AlignedReallocate((void *)ptr, count * sizeof(value_type), kAlignment));
         else
             new_ptr = static_cast<pointer>(_Reallocate((void *)ptr, count * sizeof(value_type)));
         if (ThrowEx && (new_ptr == nullptr)) {
@@ -384,7 +403,7 @@ struct allocator : public allocator_base<
     void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
         if (needAlignedAllocaote())
-            ::jm_aligned_free((void *)ptr, kAlignment);
+            _AlignedDeallocate((void *)ptr, kAlignment);
         else
             _Deallocate((void *)ptr, count * sizeof(value_type));
     }
