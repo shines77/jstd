@@ -488,7 +488,7 @@ jm_aligned_malloc(size_t size, size_t alignment)
 //  1. If ptr is not NULL, it must be returned by a previous memory allocation function,
 //     such as malloc(), calloc(), or realloc();
 //  2. if ptr is NULL, it is equivalent to calling malloc(new_size);
-//  3. if new_size is 0, it is equivalent to calling free(ptr);
+//  3. if ptr is not NULL and new_size is 0, it is equivalent to calling free(ptr);
 //  4. If new_ptr is not equal to ptr (the memory block has been moved),
 //     free(ptr) is called;
 //
@@ -540,16 +540,18 @@ jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
             }
         }
         else {
+            // If ptr is not null and new_size is zero, call free(ptr) and return null.
             jm_aligned_free(ptr, alignment);
-            new_ptr = ptr;
+            new_ptr = nullptr;
         }
     }
     else {
         if (likely(new_size != 0)) {
+            // If ptr is null and new_size is not zero, return malloc(new_size).
             new_ptr = jm_aligned_malloc(new_size, alignment);
         }
         else {
-            jm_aligned_free(ptr, alignment);
+            // If ptr is null and new_size is zero, return null.
             new_ptr = ptr;
         }
     }
