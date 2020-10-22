@@ -16,6 +16,9 @@
 #include <errno.h>
 #include <assert.h>
 
+#include <stdlib.h>
+#include <inttypes.h>
+
 /////////////////////////////////////////////////////////////////////////////
 
 #define JM_SUPPORT_ALIGNED_OFFSET_MALLOC    0
@@ -139,6 +142,7 @@ void * JM_X86_CDECL jm_adjust_aligned_pointer(void * ptr);
 
 void * JM_X86_CDECL jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment);
 
+size_t JM_X86_CDECL jm_usable_size(void * ptr);
 size_t JM_X86_CDECL jm_aligned_usable_size(void * ptr, size_t alignment);
 
 void * JM_X86_CDECL jm_aligned_malloc(size_t size, size_t alignment);
@@ -248,7 +252,7 @@ jm_adjust_aligned_pointer(void * ptr)
     // The ptr value aligned to sizeof(uintptr_t) bytes
     pvData = (void *)((uintptr_t)ptr & ~(sizeof(uintptr_t) - 1));
 #else
-    assert(((uintptr_t)ptr & ~(sizeof(uintptr_t) - 1)) == 0);
+    assert(((uintptr_t)ptr & (sizeof(uintptr_t) - 1)) == 0);
     pvData = ptr;
 #endif
     return pvData;
@@ -272,7 +276,7 @@ jm_aligned_check_param(void * ptr, size_t alignment)
     // The ptr value aligned to sizeof(uintptr_t) bytes
     pvData = (uintptr_t)ptr & ~(sizeof(uintptr_t) - 1);
 #else
-    assert(((uintptr_t)ptr & ~(sizeof(uintptr_t) - 1)) == 0);
+    assert(((uintptr_t)ptr & (sizeof(uintptr_t) - 1)) == 0);
     pvData = (uintptr_t)ptr;
 #endif
 
@@ -284,7 +288,7 @@ jm_aligned_check_param(void * ptr, size_t alignment)
 
     // Points to the beginning of the allocated block
     pBlockHdr = (aligned_block_header_t *)pvData - 1;
-    assert(((uintptr_t)pBlockHdr & ~(sizeof(uintptr_t) - 1)) == 0);
+    assert(((uintptr_t)pBlockHdr & (sizeof(uintptr_t) - 1)) == 0);
 
     pvAlloc = (uintptr_t)pBlockHdr->pvAlloc;
 
@@ -336,7 +340,7 @@ jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
     pvData = (uintptr_t)((pvAlloc + sizeof(aligned_block_header_t) + (alignment - 1))
                         & (~(alignment - 1)));
 
-    assert(((uintptr_t)pvData & ~(sizeof(uintptr_t) - 1)) == 0);
+    assert(((uintptr_t)pvData & (sizeof(uintptr_t) - 1)) == 0);
 
     pBlockHdr = (aligned_block_header_t *)(pvData) - 1;
     assert((uintptr_t)pBlockHdr >= pvAlloc);
@@ -357,6 +361,18 @@ jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
 #endif
 
     return (void *)pvData;
+}
+
+static JMC_INLINE
+size_t JM_X86_CDECL
+jm_usable_size(void * ptr)
+{
+#ifdef _MSC_VER
+    size_t alloc_size = _msize(ptr);
+#else
+    size_t alloc_size = malloc_usable_size(ptr);
+#endif
+    return alloc_size;
 }
 
 static JMC_INLINE
@@ -390,13 +406,13 @@ jm_aligned_usable_size(void * ptr, size_t alignment)
     // The ptr value aligned to sizeof(uintptr_t) bytes
     pvData = (uintptr_t)ptr & ~(sizeof(uintptr_t) - 1);
 #else
-    assert(((uintptr_t)ptr & ~(sizeof(uintptr_t) - 1)) == 0);
+    assert(((uintptr_t)ptr & (sizeof(uintptr_t) - 1)) == 0);
     pvData = (uintptr_t)ptr;
 #endif
 
     // Points to the beginning of the allocated block
     aligned_block_header_t * pBlockHdr = (aligned_block_header_t *)pvData - 1;
-    assert(((uintptr_t)pBlockHdr & ~(sizeof(uintptr_t) - 1)) == 0);
+    assert(((uintptr_t)pBlockHdr & (sizeof(uintptr_t) - 1)) == 0);
 
 #ifdef _MSC_VER
     alloc_size = _msize(pBlockHdr->pvAlloc);
@@ -445,6 +461,14 @@ jm_aligned_malloc(size_t size, size_t alignment)
     if (pvAlloc != (uintptr_t)nullptr) {
         // The output data pointer aligned to alignment bytes
         pvData = (uintptr_t)jm_aligned_to_addr((void *)pvAlloc, size, alloc_size, alignment);
+#if 0
+        printf("pvAlloc = 0x%p, AllocSize = %" PRIuPTR "\n", (void *)pvAlloc, alloc_size);
+        printf("pvData  = 0x%p, Size      = %" PRIuPTR ", alignment = %" PRIuPTR "\n",
+                (void *)pvData, size, alignment);
+        printf("usable_size() = %" PRIuPTR ", jm_usable_size() = %" PRIuPTR "\n",
+               jm_usable_size((void *)pvAlloc),
+               jm_aligned_usable_size((void *)pvData, alignment));
+#endif
         return (void *)pvData;
     }
     else {
@@ -496,7 +520,7 @@ jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
 
             // Points to the beginning of the allocated block
             pBlockHdr = (aligned_block_header_t *)pvData - 1;
-            assert(((uintptr_t)pBlockHdr & ~(sizeof(uintptr_t) - 1)) == 0);
+            assert(((uintptr_t)pBlockHdr & (sizeof(uintptr_t) - 1)) == 0);
 
             pvAlloc = pBlockHdr->pvAlloc;
 
@@ -573,7 +597,7 @@ jm_aligned_free(void * ptr, size_t alignment)
 
     // Points to the beginning of the allocated block
     pBlockHdr = (aligned_block_header_t *)pvData - 1;
-    assert(((uintptr_t)pBlockHdr & ~(sizeof(uintptr_t) - 1)) == 0);
+    assert(((uintptr_t)pBlockHdr & (sizeof(uintptr_t) - 1)) == 0);
 
     pvAlloc = pBlockHdr->pvAlloc;
 

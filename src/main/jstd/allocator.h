@@ -11,6 +11,7 @@
 #include "jstd/basic/stdsize.h"
 
 #include "jstd/support/PowerOf2.h"
+#include "jstd/memory/c_aligned_malloc.h"
 
 #include <stddef.h>
 #include <malloc.h>
@@ -357,7 +358,7 @@ struct allocator : public allocator_base<
     pointer allocate(size_type count = 1) {
         pointer ptr;
         if (needAlignedAllocaote())
-            ptr = static_cast<pointer>(_AlignedAllocate(count * sizeof(value_type), kAlignment));
+            ptr = static_cast<pointer>(::jm_aligned_malloc(count * sizeof(value_type), kAlignment));
         else
             ptr = static_cast<pointer>(_Allocate(count * sizeof(value_type)));
         if (ThrowEx && (ptr == nullptr)) {
@@ -370,7 +371,7 @@ struct allocator : public allocator_base<
     pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr;
         if (needAlignedAllocaote())
-            new_ptr = static_cast<pointer>(_AlignedReallocate((void *)ptr, count * sizeof(value_type), kAlignment));
+            new_ptr = static_cast<pointer>(::jm_aligned_realloc((void *)ptr, count * sizeof(value_type), kAlignment));
         else
             new_ptr = static_cast<pointer>(_Reallocate((void *)ptr, count * sizeof(value_type)));
         if (ThrowEx && (new_ptr == nullptr)) {
@@ -383,7 +384,7 @@ struct allocator : public allocator_base<
     void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
         if (needAlignedAllocaote())
-            _AlignedDeallocate((void *)ptr, count * sizeof(value_type), kAlignment);
+            ::jm_aligned_free((void *)ptr, kAlignment);
         else
             _Deallocate((void *)ptr, count * sizeof(value_type));
     }

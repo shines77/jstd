@@ -2133,12 +2133,12 @@ int main(int argc, char * argv[])
 
     //string_view_test();
     //shiftable_ptr_test();
-    formatter_test();
+    //formatter_test();
     //fnv1a_hash_test();
 
-    formatter_benchmark();
-    //hashtable_uinttest();
-    //hashtable_benchmark();
+    //formatter_benchmark();
+    hashtable_uinttest();
+    hashtable_benchmark();
 
     jstd::Console::ReadKey();
     return 0;
