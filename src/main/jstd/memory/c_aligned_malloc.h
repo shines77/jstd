@@ -492,6 +492,21 @@ jm_aligned_malloc(size_t size, size_t alignment)
 //  4. If new_ptr is not equal to ptr (the memory block has been moved),
 //     free(ptr) is called;
 //
+
+/*****************************************************************************************
+
+    MSDN realloc()
+
+    realloc() returns a void pointer to the reallocated (and possibly moved) memory block.
+    The return value is NULL if the size is zero and the buffer argument is not NULL,
+    or if there is not enough available memory to expand the block to the given size.
+    In the first case, the original block is freed. In the second, the original block
+    is unchanged. The return value points to a storage space that is guaranteed to be
+    suitably aligned for storage of any type of object. To get a pointer to a type
+    other than void, use a type cast on the return value.
+
+/*****************************************************************************************/
+
 JMC_INLINE
 void * JM_X86_CDECL
 jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
