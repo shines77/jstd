@@ -232,7 +232,7 @@ struct has_size_cxx11 {
 
     template <typename U>
     static constexpr auto check(void *)
-        -> decltype(size_type{ std::declval<const U>().size() }, std::true_type) {
+        -> decltype(size_type{ std::declval<U>().size() }, std::true_type) {
         return std::true_type();
     }
 
@@ -257,7 +257,7 @@ struct has_entry_count {
 
     template <typename U>
     static auto check(void *)
-        -> decltype(size_type{ std::declval<const U>().entry_count() }, True{ });
+        -> decltype(size_type{ std::declval<U>().entry_count() }, True{ });
 
     template <typename>
     static False & check(...);
@@ -278,7 +278,7 @@ struct call_entry_count {
 
     template <typename U>
     static auto entry_count_impl(const U * t, size_type * count, void *)
-        -> decltype(size_type{ std::declval<const U>().entry_count() }, True{ }) {
+        -> decltype(size_type{ std::declval<U>().entry_count() }, True{ }) {
         *count = t->entry_count();
         return True{ };
     }
@@ -309,7 +309,7 @@ struct has_name {
 
     template <typename U>
     static auto check(void *)
-        -> decltype(std::string{ std::declval<const U>().name() }, True{ });
+        -> decltype(std::string{ std::declval<U>().name() }, True{ });
 
     template <typename>
     static False & check(...);
@@ -328,7 +328,7 @@ struct call_name {
 
     template <typename U>
     static auto name_impl(const U * t, std::string * sname, void *)
-        -> decltype(std::string{ std::declval<const U>().name() }, True{ }) {
+        -> decltype(std::string{ std::declval<U>().name() }, True{ }) {
         *sname = t->name();
         return True{ };
     };
@@ -360,7 +360,7 @@ struct has_static_name {
 
     template <typename U>
     static auto check(void *)
-        -> decltype(std::string{ std::declval<const U>::name() }, True{ });
+        -> decltype(std::string{ std::declval<U>::name() }, True{ });
 
     template <typename>
     static False & check(...);
@@ -379,7 +379,7 @@ struct call_static_name {
 
     template <typename U>
     static auto static_name_impl(const U * t, std::string * sname, void *)
-        -> decltype(std::string{ std::declval<const U>::name() }, True{ }) {
+        -> decltype(std::string{ std::declval<U>::name() }, True{ }) {
         *sname = U::name();
         return True{ };
     };
