@@ -234,13 +234,13 @@ struct has_size_cxx11 {
 
     template <typename U>
     static constexpr auto check(void *)
-        -> decltype(std::declval<U>().size(), std::true_type{ }) {
+        -> decltype(std::declval<U>().size(), std::true_type()) {
         return std::true_type();
     }
 
     template <typename>
     static constexpr std::false_type check(...) {
-        return std::false_type{ };
+        return std::false_type();
     }
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
@@ -277,6 +277,7 @@ struct call_entry_count {
     static auto entry_count_impl(const U * t, size_type * count)
         -> decltype(std::declval<U>().entry_count(), int(0)) {
         *count = t->entry_count();
+        return 0;
     }
 
     template <typename>
@@ -361,6 +362,7 @@ struct call_static_name {
     static auto static_name_impl(const U * t, std::string * sname)
         -> decltype(U::name(), int(0)) {
         *sname = U::name();
+        return 0;
     };
 
     template <typename>
