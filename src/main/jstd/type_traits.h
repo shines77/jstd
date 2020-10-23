@@ -8,10 +8,13 @@
 
 #include "jstd/basic/stddef.h"
 #include "jstd/basic/stdint.h"
+#include "jstd/basic/stdsize.h"
 
 #include <string>
 #include <type_traits>
 #include <utility>      // For std::pair<T1, T2>
+
+#include "jstd/type_traits/has_member.h"
 
 namespace jstd {
 
@@ -97,14 +100,14 @@ struct is_relocatable<const T> : is_relocatable<T> {};
 struct void_warpper {
     void_warpper() {}
 
-    template <typename... Args>
+    template <typename ... Args>
     void operator () (Args && ... args) const {
         return void();
     }
 };
 
 // test if parameters are valid
-template <class ...>
+template <typename ... Args>
 struct param_tester
 {
     typedef void type;

@@ -316,6 +316,9 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\c_aligned_malloc.h">
       <Filter>src\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\type_traits\has_member.h">
+      <Filter>src\type_traits</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c">
