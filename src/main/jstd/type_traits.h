@@ -59,12 +59,12 @@ struct integral_traits {
 };
 
 template <typename T>
-constexpr T Max(const T & a, const T & b) {
+constexpr T cmax(const T & a, const T & b) {
   return ((a > b) ? a : b);
 }
 
 template <typename T>
-constexpr T Min(const T & a, const T & b) {
+constexpr T cmin(const T & a, const T & b) {
   return ((a < b) ? a : b);
 }
 
@@ -177,22 +177,22 @@ struct is_call_possible<Caller, ReturnType(Args...),
 // See: https://stackoverflow.com/questions/17201329/c11-ways-of-finding-if-a-type-has-member-function-or-supports-operator
 //
 
-#define TYPE_SUPPORTS(ClassName, Expr)                          \
-template <typename U>                                           \
-struct ClassName {                                              \
-private:                                                        \
-    template <typename>                                         \
-    static constexpr std::false_type test(...);                 \
-                                                                \
-    template <typename T = U>                                   \
-    static decltype((Expr), std::true_type{}) test(int);        \
-                                                                \
-public:                                                         \
-    static constexpr bool value = decltype(test<U>(0))::value;  \
+#define CLASS_IS_SUPPORT(ClassName, Expr)                           \
+template <typename U>                                               \
+struct ClassName {                                                  \
+private:                                                            \
+    template <typename>                                             \
+    static constexpr std::false_type check(...);                    \
+                                                                    \
+    template <typename T = U>                                       \
+    static constexpr decltype((Expr), std::true_type{}) check(int); \
+                                                                    \
+public:                                                             \
+    static constexpr bool value = decltype(check<U>(0))::value;     \
 };
 
 namespace detail {
-    TYPE_SUPPORTS(SupportsBegin, std::begin(std::declval<T>()));
+    CLASS_IS_SUPPORT(IsSupportBegin, std::begin(std::declval<T>()));
 }
 
 //
@@ -215,17 +215,17 @@ private:
     struct really_has;
 
     template <typename C>
-    static Yes & Check(really_has<size_type (C::*)() const, &C::size> *);
+    static Yes & check(really_has<size_type (C::*)() const, &C::size> *);
 
     // EDIT: and you can detect one of several overloads... by overloading :)
     template <typename C>
-    static Yes & Check(really_has<size_type (C::*)(), &C::size> *);
+    static Yes & check(really_has<size_type (C::*)(), &C::size> *);
 
     template <typename>
-    static No & Check(...);
+    static No & check(...);
 
 public:
-    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(check<T>(0)) == sizeof(Yes));
 };
 
 template <typename T>
@@ -238,14 +238,14 @@ private:
     typedef char No[2];
 
     template <typename C>
-    static auto Check(void *)
+    static auto check(void *)
         -> decltype(size_type{ std::declval<C const>().size() }, Yes{ });
 
     template <typename>
-    static No & Check(...);
+    static No & check(...);
 
 public:
-    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(check<T>(0)) == sizeof(Yes));
 };
 
 //
@@ -261,14 +261,14 @@ private:
     typedef char No[2];
 
     template <typename C>
-    static auto Check(void *)
+    static auto check(void *)
         -> decltype(size_type{ std::declval<C const>().entry_count() }, Yes{ });
 
     template <typename>
-    static No & Check(...);
+    static No & check(...);
 
 public:
-    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(check<T>(0)) == sizeof(Yes));
 };
 
 template <typename T>
@@ -285,21 +285,21 @@ private:
     static No s_No;
 
     template <typename C>
-    static auto Call_entry_count(const C & t, size_type & count, void *)
+    static auto entry_count_impl(const C & t, size_type & count, void *)
         -> decltype(size_type{ std::declval<C const>().entry_count() }, Yes{ }) {
         count = t.entry_count();
         return Yes{ };
     };
 
     template <typename>
-    static No & Call_entry_count(...) {
+    static No & entry_count_impl(...) {
         return s_No;
     }
 
 public:
     static size_type entry_count(const T & t) {
         size_type count = 0;
-        Call_entry_count<T>(t, count, 0);
+        entry_count_impl<T>(t, count, 0);
         return count;
     }
 };
@@ -317,14 +317,14 @@ private:
     typedef char No[2];
 
     template <typename C>
-    static auto Check(void *)
+    static auto check(void *)
         -> decltype(std::string{ std::declval<C const>().name() }, Yes{ });
 
     template <typename>
-    static No & Check(...);
+    static No & check(...);
 
 public:
-    static bool const value = (sizeof(Check<T>(0)) == sizeof(Yes));
+    static bool const value = (sizeof(check<T>(0)) == sizeof(Yes));
 };
 
 template <typename T>
@@ -338,14 +338,14 @@ private:
     static No s_No;
 
     template <typename C>
-    static auto Call_name(const C * t, std::string * sname, void *)
+    static auto name_impl(const C * t, std::string * sname, void *)
         -> decltype(std::string{ std::declval<C const>().name() }, Yes{ }) {
         *sname = C::name();
         return Yes{ };
     };
 
     template <typename>
-    static No & Call_name(...) {
+    static No & name_impl(...) {
         return s_No;
     }
 
@@ -353,7 +353,7 @@ public:
     static std::string name() {
         std::string sname;
         T t;
-        Call_name<T>(&t, &sname, 0);
+        name_impl<T>(&t, &sname, 0);
         return sname;
     }
 };
@@ -375,13 +375,13 @@ private:
     struct really_has;
 
     template <typename C>
-    static Yes & Check(really_has<const CharTy * (C::*)() const, &C::c_str> *);
+    static Yes & check(really_has<const CharTy * (C::*)() const, &C::c_str> *);
 
     template <typename>
-    static No & Check(...);
+    static No & check(...);
 
 public:
-    static const bool value = (sizeof(Check<T>(0)) == sizeof(Yes));
+    static const bool value = (sizeof(check<T>(0)) == sizeof(Yes));
 };
 
 template <typename T, typename CharTy>
@@ -398,23 +398,23 @@ private:
     struct really_has;
 
     template <typename C>
-    static const CharTy * Call_c_str(const C * s, really_has<const CharTy * (C::*)() const, &C::c_str> *) {
+    static const CharTy * c_str_impl(const C * s, really_has<const CharTy * (C::*)() const, &C::c_str> *) {
         return s->c_str();
     }
 
     template <typename C>
-    static CharTy * Call_c_str(C * s, really_has<CharTy * (C::*)(), &C::c_str> *) {
+    static CharTy * c_str_impl(C * s, really_has<CharTy * (C::*)(), &C::c_str> *) {
         return s->c_str();
     }
 
     template <typename>
-    static const CharTy * Call_c_str(...) {
+    static const CharTy * c_str_impl(...) {
         return nullptr;
     }
 
 public:
     static const CharTy * c_str(const T & s) {
-        const CharTy * data = Call_c_str<T>(&s, 0);
+        const CharTy * data = c_str_impl<T>(&s, 0);
         return data;
     }
 };

@@ -174,9 +174,9 @@ public:
     typedef Key                             key_type;
     typedef HashObject<Key, Size, HashSize> this_type;
 
-    static const std::size_t kMinSize = (jstd::Max)(sizeof(Key), sizeof(int));
-    static const std::size_t kSize = (jstd::Max)(Size, kMinSize);
-    static const std::size_t kHashSize = (jstd::Min)((jstd::Max)(HashSize, kMinSize), kSize);
+    static const std::size_t kMinSize = jstd::cmax(sizeof(Key), sizeof(int));
+    static const std::size_t kSize = jstd::cmax(Size, kMinSize);
+    static const std::size_t kHashSize = jstd::cmin(jstd::cmax(HashSize, kMinSize), kSize);
     static const std::size_t kBufLen = (kSize > sizeof(Key)) ? (kSize - sizeof(Key)) : 0;
     static const std::size_t kHashLen = (kHashSize > sizeof(Key)) ? (kHashSize - sizeof(Key)) : 0;
 
