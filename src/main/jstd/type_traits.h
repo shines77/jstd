@@ -208,7 +208,9 @@ struct has_size {
     typedef SizeType size_type;
 
     typedef char True;
-    typedef char False[2];
+    struct False {
+        char data[2];
+    }; 
 
     template <typename U, U>
     struct check_has;
@@ -221,7 +223,7 @@ struct has_size {
     static True check(check_has<size_type (U::*)(), &U::size> *);
 
     template <typename>
-    static False & check(...);
+    static False check(...);
 
     static const bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
 };
@@ -253,14 +255,16 @@ struct has_entry_count {
     typedef SizeType size_type;
 
     typedef char True;
-    typedef char False[2];
+    struct False {
+        char data[2];
+    }; 
 
     template <typename U>
-    static auto check(void *)
+    static constexpr auto check(void *)
         -> decltype(size_type{ std::declval<U>().entry_count() }, True{ });
 
     template <typename>
-    static False & check(...);
+    static constexpr False check(...);
 
     static const bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
 };
@@ -269,34 +273,22 @@ template <typename T, typename SizeType = std::size_t>
 struct call_entry_count {
     typedef SizeType size_type;
 
-    typedef char True;
-    struct False {
-        char data[2];
-    };   
-
-    static False s_False;
-
     template <typename U>
-    static auto entry_count_impl(const U * t, size_type * count, void *)
-        -> decltype(size_type{ std::declval<U>().entry_count() }, True{ }) {
+    static auto entry_count_impl(const U * t, size_type * count)
+        -> decltype(size_type{ std::declval<U>().entry_count() }, void) {
         *count = t->entry_count();
-        return True{ };
     }
 
     template <typename>
-    static False & entry_count_impl(...) {
-        return s_False;
+    static void entry_count_impl(...) {
     }
 
     static size_type entry_count(const T & t) {
         size_type count = 0;
-        entry_count_impl<T>(&t, &count, nullptr);
+        entry_count_impl<T>(&t, &count);
         return count;
     }
 };
-
-template <typename T, typename SizeType>
-typename call_entry_count<T, SizeType>::False call_entry_count<T, SizeType>::s_False;
 
 //
 // has_name
@@ -305,49 +297,39 @@ typename call_entry_count<T, SizeType>::False call_entry_count<T, SizeType>::s_F
 template <typename T>
 struct has_name {
     typedef char True;
-    typedef char False[2];
+    struct False {
+        char data[2];
+    }; 
 
     template <typename U>
-    static auto check(void *)
+    static constexpr auto check(void *)
         -> decltype(std::string{ std::declval<U>().name() }, True{ });
 
     template <typename>
-    static False & check(...);
+    static constexpr False check(...);
 
-    static const bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
+    static constexpr bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
 };
 
 template <typename T>
 struct call_name {
-    typedef char True;
-    struct False {
-        char data[2];
-    };   
-
-    static False s_False;
-
     template <typename U>
     static auto name_impl(const U * t, std::string * sname, void *)
-        -> decltype(std::string{ std::declval<U>().name() }, True{ }) {
+        -> decltype(std::string{ std::declval<U>().name() }, void) {
         *sname = t->name();
-        return True{ };
     };
 
     template <typename>
-    static False & name_impl(...) {
-        return s_False;
+    static void name_impl(...) {
     }
 
     static std::string name() {
-        std::string sname;
         T t;
+        std::string sname;
         name_impl<T>(&t, &sname, nullptr);
         return sname;
     }
 };
-
-template <typename T>
-typename call_name<T>::False call_name<T>::s_False;
 
 //
 // call_static_name
@@ -356,37 +338,31 @@ typename call_name<T>::False call_name<T>::s_False;
 template <typename T>
 struct has_static_name {
     typedef char True;
-    typedef char False[2];
-
-    template <typename U>
-    static auto check(void *)
-        -> decltype(std::string{ std::declval<U>()::name() }, True{ });
-
-    template <typename>
-    static False & check(...);
-
-    static const bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
-};
-
-template <typename T>
-struct call_static_name {
-    typedef char True;
     struct False {
         char data[2];
     };   
 
-    static False s_False;
+    template <typename U>
+    static constexpr auto check(void *)
+        -> decltype(std::string{ std::declval<U>()::name() }, True{ });
 
+    template <typename>
+    static constexpr False check(...);
+
+    static constexpr bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
+};
+
+template <typename T>
+struct call_static_name {
     template <typename U>
     static auto static_name_impl(const U * t, std::string * sname, void *)
-        -> decltype(std::string{ std::declval<U>()::name() }, True{ }) {
+        -> decltype(std::string{ std::declval<U>()::name() }, void) {
         *sname = U::name();
-        return True{ };
     };
 
     template <typename>
-    static False & static_name_impl(...) {
-        return s_False;
+    static void static_name_impl(...) {
+        return False{ };
     }
 
     static std::string name() {
@@ -397,28 +373,27 @@ struct call_static_name {
     }
 };
 
-template <typename T>
-typename call_static_name<T>::False call_static_name<T>::s_False;
-
 //
 // has_c_str
 //
 
 template <typename T, typename CharTy>
 struct has_c_str {
-    typedef char Yes;
-    typedef char No[2];
+    typedef char True;
+    struct False {
+        char data[2];
+    };   
 
     template <typename U, U>
     struct check_has;
 
     template <typename U>
-    static Yes & check(check_has<const CharTy * (U::*)() const, &U::c_str> *);
+    static True check(check_has<const CharTy * (U::*)() const, &U::c_str> *);
 
     template <typename>
-    static No & check(...);
+    static False check(...);
 
-    static const bool value = (sizeof(check<T>(nullptr)) == sizeof(Yes));
+    static const bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
 };
 
 template <typename T, typename CharTy>
@@ -455,10 +430,10 @@ struct call_c_str {
 template <typename T>
 struct has_begin_end {
     template <typename U>
-    static auto check(void *) -> decltype(std::declval<U>().begin(), std::declval<U>().end(), std::true_type());
+    static constexpr auto check(void *) -> decltype(std::declval<U>().begin(), std::declval<U>().end(), std::true_type());
 
     template <typename U>
-    static std::false_type check(...);
+    static constexpr std::false_type check(...);
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
 };
@@ -466,10 +441,10 @@ struct has_begin_end {
 template <typename T>
 struct has_iterator {
     template <typename U>
-    static std::true_type check(typename U::iterator *);
+    static constexpr std::true_type check(typename U::iterator *);
 
     template <typename U>
-    static std::false_type check(...); 
+    static constexpr std::false_type check(...); 
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
 }; 
@@ -477,10 +452,10 @@ struct has_iterator {
 template <typename T>
 struct has_const_iterator {
     template <typename U>
-    static std::true_type check(typename U::const_iterator *);
+    static constexpr std::true_type check(typename U::const_iterator *);
 
     template <typename U>
-    static std::false_type check(...); 
+    static constexpr std::false_type check(...); 
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
 }; 
@@ -488,10 +463,10 @@ struct has_const_iterator {
 template <typename T>
 struct has_mapped_type {
     template <typename U>
-    static std::true_type check(typename U::mapped_type *);
+    static constexpr std::true_type check(typename U::mapped_type *);
 
     template <typename U>
-    static std::false_type check(...);
+    static constexpr std::false_type check(...);
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
 };
