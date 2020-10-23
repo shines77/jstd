@@ -500,8 +500,8 @@ template <typename Container>
 void print_test_time(std::size_t checksum, double elapsedTime)
 {
     // printf("---------------------------------------------------------------------------\n");
-    if (jstd::has_name<Container>::value)
-        printf(" %-36s  ", jstd::call_name<Container>::name().c_str());
+    if (jstd::has_static_name<Container>::value)
+        printf(" %-36s  ", jstd::call_static_name<Container>::name().c_str());
     else
         printf(" %-36s  ", "std::unordered_map<K, V>");
     printf("sum = %-10" PRIuPTR "  time: %8.3f ms\n", checksum, elapsedTime);
