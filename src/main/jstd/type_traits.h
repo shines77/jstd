@@ -187,7 +187,7 @@ struct ClassName {                                                      \
     static constexpr std::false_type check(...);                        \
                                                                         \
     template <typename U>                                               \
-    static constexpr decltype((Expr), std::true_type{}) check(void *);  \
+    static constexpr decltype((Expr), std::true_type{ }) check(void *); \
                                                                         \
     static constexpr bool value = decltype(check<T>(nullptr))::value;   \
 };
@@ -234,13 +234,13 @@ struct has_size_cxx11 {
 
     template <typename U>
     static constexpr auto check(void *)
-        -> decltype(size_type{ std::declval<U>().size() }, std::true_type) {
+        -> decltype(std::declval<U>().size(), std::true_type{ }) {
         return std::true_type();
     }
 
     template <typename>
     static constexpr std::false_type check(...) {
-        return std::false_type();
+        return std::false_type{ };
     }
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
@@ -275,12 +275,13 @@ struct call_entry_count {
 
     template <typename U>
     static auto entry_count_impl(const U * t, size_type * count)
-        -> decltype(std::declval<U>().entry_count(), void) {
+        -> decltype(std::declval<U>().entry_count(), int(0)) {
         *count = t->entry_count();
     }
 
     template <typename>
-    static void entry_count_impl(...) {
+    static int entry_count_impl(...) {
+        return 0;
     }
 
     static size_type entry_count(const T & t) {
@@ -315,12 +316,14 @@ template <typename T>
 struct call_name {
     template <typename U>
     static auto name_impl(const U * t, std::string * sname)
-        -> decltype(std::declval<U>().name(), void) {
+        -> decltype(std::declval<U>().name(), int(0)) {
         *sname = t->name();
+        return 0;
     };
 
     template <typename>
-    static void name_impl(...) {
+    static int name_impl(...) {
+        return 0;
     }
 
     static std::string name() {
@@ -344,7 +347,7 @@ struct has_static_name {
 
     template <typename U>
     static constexpr auto check(void *)
-        -> decltype(std::declval<U>()::name(), True{ });
+        -> decltype(U::name(), True{ });
 
     template <typename>
     static constexpr False check(...);
@@ -356,12 +359,13 @@ template <typename T>
 struct call_static_name {
     template <typename U>
     static auto static_name_impl(const U * t, std::string * sname)
-        -> decltype(std::declval<U>()::name(), void) {
+        -> decltype(U::name(), int(0)) {
         *sname = U::name();
     };
 
     template <typename>
-    static void static_name_impl(...) {
+    static int static_name_impl(...) {
+        return 0;
     }
 
     static std::string name() {
