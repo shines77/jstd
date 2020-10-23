@@ -214,11 +214,11 @@ struct has_size {
     struct check_has;
 
     template <typename U>
-    static True & check(check_has<size_type (U::*)() const, &U::size> *);
+    static True check(check_has<size_type (U::*)() const, &U::size> *);
 
     // EDIT: and you can detect one of several overloads... by overloading :)
     template <typename U>
-    static True & check(check_has<size_type (U::*)(), &U::size> *);
+    static True check(check_has<size_type (U::*)(), &U::size> *);
 
     template <typename>
     static False & check(...);
@@ -237,7 +237,7 @@ struct has_size_cxx11 {
     }
 
     template <typename>
-    static constexpr std::false_type & check(...) {
+    static constexpr std::false_type check(...) {
         return std::false_type();
     }
 
@@ -360,7 +360,7 @@ struct has_static_name {
 
     template <typename U>
     static auto check(void *)
-        -> decltype(std::string{ std::declval<U>::name() }, True{ });
+        -> decltype(std::string{ std::declval<U>()::name() }, True{ });
 
     template <typename>
     static False & check(...);
@@ -379,7 +379,7 @@ struct call_static_name {
 
     template <typename U>
     static auto static_name_impl(const U * t, std::string * sname, void *)
-        -> decltype(std::string{ std::declval<U>::name() }, True{ }) {
+        -> decltype(std::string{ std::declval<U>()::name() }, True{ }) {
         *sname = U::name();
         return True{ };
     };
