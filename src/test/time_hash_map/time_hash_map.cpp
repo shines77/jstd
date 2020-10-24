@@ -490,7 +490,7 @@ struct extract_ident_type {
 
 template <typename T>
 struct extract_ident_type<T *> {
-    typedef std::uintptr_t  ident_type;
+    typedef T *  ident_type;
 };
 
 template <typename Key, typename Value, typename Hasher>
@@ -504,7 +504,7 @@ public:
     StdHashMap(std::size_t initCapacity) : this_type() {
     }
 
-    void emplace(ident_type & id, mapped_type && value) {
+    void emplace(const ident_type & id, mapped_type && value) {
         this->operator [](id) = std::forward<mapped_type>(value);
     }
 
