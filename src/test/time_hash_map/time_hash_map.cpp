@@ -117,7 +117,7 @@ static const bool FLAGS_test_dense_hash_map = true;
 #if defined(_MSC_VER)
 static const bool FLAGS_test_std_hash_map = false;
 #else
-static const bool FLAGS_test_std_hash_map = true;
+static const bool FLAGS_test_std_hash_map = false;
 #endif
 static const bool FLAGS_test_std_unordered_map = true;
 static const bool FLAGS_test_jstd_dictionary = true;
@@ -173,8 +173,8 @@ namespace test {
 
 template <typename Key>
 struct hash {
-    size_t operator () (const Key & key) const {
-        return static_cast<size_t>(key);
+    std::size_t operator () (const Key & key) const {
+        return static_cast<std::size_t>(key);
     }
 };
 
