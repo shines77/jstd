@@ -504,8 +504,8 @@ public:
     StdHashMap(std::size_t initCapacity) : this_type() {
     }
 
-    void emplace(ident_type && id, mapped_type && value) {
-        this->operator [](std::forward<ident_type>(id)) = std::forward<mapped_type>(value);
+    void emplace(ident_type & id, mapped_type && value) {
+        this->operator [](id) = std::forward<mapped_type>(value);
     }
 
     // Don't need to do anything: hash_map is already easy to use!
