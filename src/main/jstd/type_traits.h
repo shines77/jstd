@@ -266,7 +266,7 @@ struct has_entry_count {
     template <typename>
     static constexpr False check(...);
 
-    static const bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
+    static constexpr bool value = (sizeof(check<T>(nullptr)) == sizeof(True));
 };
 
 template <typename T, typename SizeType = std::size_t>

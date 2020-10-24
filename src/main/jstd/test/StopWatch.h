@@ -25,7 +25,7 @@
 #pragma intrinsic(_ReadWriteBarrier)
 #define __COMPILER_BARRIER()        _ReadWriteBarrier()
 #else
-#define __COMPILER_BARRIER()        asm volatile ("" : : : "memory")
+#define __COMPILER_BARRIER()        __asm__ __volatile__ ("" : : : "memory")
 #endif
 #endif
 

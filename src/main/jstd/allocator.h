@@ -23,9 +23,9 @@
 #include <cstdlib>      // For std::malloc(), std::free()
 #include <memory>       // For std::pointer_traits<T>
 #include <limits>       // For std::numeric_limits<T>::max()
-#include <type_traits>  // std::alignment_of<T>
+#include <type_traits>  // For std::alignment_of<T>
 
-#include <new>          // ::operator new, ::operator new[], ::operator delete
+#include <new>          // For ::operator new, ::operator new[], ::operator delete
 
 #define USE_JM_ALIGNED_MALLOC   1
 
