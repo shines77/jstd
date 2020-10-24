@@ -484,12 +484,12 @@ public:
 #else
 
 template <typename T>
-struct extract_ident_type {
+struct get_ident_type {
     typedef typename T::key_type  ident_type;
 };
 
 template <typename T>
-struct extract_ident_type<T *> {
+struct get_ident_type<T *> {
     typedef T *  ident_type;
 };
 
@@ -497,8 +497,8 @@ template <typename Key, typename Value, typename Hasher>
 class StdHashMap : public STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> {
 public:
     typedef STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> this_type;
-    typedef Value                                           mapped_type;
-    typedef typename extract_ident_type<Key>::ident_type    ident_type;
+    typedef Value                                       mapped_type;
+    typedef typename get_ident_type<Key>::ident_type    ident_type;
 
     StdHashMap() : this_type() {}
     StdHashMap(std::size_t initCapacity) : this_type() {

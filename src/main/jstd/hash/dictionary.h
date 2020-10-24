@@ -686,12 +686,14 @@ protected:
     void assert_buckets_capacity(entry_type ** new_buckets, size_type new_bucket_capacity) {
         assert(this->buckets() != nullptr);
         assert(new_buckets != nullptr);
+        (void)new_buckets;
         assert_bucket_capacity(new_bucket_capacity);
     }
 
     void assert_entries_capacity(entry_type * new_entries, size_type new_entry_capacity) {
         assert(this->entries() != nullptr);
         assert(new_entries != nullptr);
+        (void)new_entries;
         assert_entry_capacity(new_entry_capacity);
     }
 
@@ -699,12 +701,14 @@ protected:
         assert(run_time::is_pow2(bucket_capacity));
         assert(bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
         assert(bucket_capacity >= this->min_bucket_count());
+        (void)bucket_capacity;
     }
 
     void assert_entry_capacity(size_type entry_capacity) {
         assert(run_time::is_pow2(entry_capacity));
         assert(entry_capacity >= kMinimumCapacity);
         assert(entry_capacity >= this->entry_size());
+        (void)entry_capacity;
     }
 
     JSTD_FORCEINLINE
