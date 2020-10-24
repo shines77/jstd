@@ -483,19 +483,29 @@ public:
 
 #else
 
+template <typename T>
+struct extract_ident_type {
+    typedef typename Key::key_type  ident_type;
+};
+
+template <typename T>
+struct extract_ident_type<T *> {
+    typedef T *  ident_type;
+};
+
 template <typename Key, typename Value, typename Hasher>
 class StdHashMap : public STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> {
 public:
     typedef STDEXT_HASH_NAMESPACE::hash_map<Key, Value, Hasher> this_type;
-    typedef Value                        mapped_type;
-    typedef typename Key::key_type       ident_type;
+    typedef Value                                           mapped_type;
+    typedef typename extract_ident_type<Key>::ident_type    ident_type;
 
     StdHashMap() : this_type() {}
     StdHashMap(std::size_t initCapacity) : this_type() {
     }
 
-    void emplace(ident_type id, mapped_type value) {
-        this->operator [](id) = value;
+    void emplace(ident_type && id, mapped_type && value) {
+        this->operator [](std::forward<ident_type>(id)) = std::forward<mapped_type>(value);
     }
 
     // Don't need to do anything: hash_map is already easy to use!
@@ -582,8 +592,6 @@ namespace v1 {
 template <class MapType, class Vector>
 static void time_map_find(char const * title, std::size_t iters,
                           const Vector & indices) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
     std::uint32_t r;
@@ -609,11 +617,9 @@ static void time_map_find(char const * title, std::size_t iters,
 
 template <class MapType>
 static void time_map_find_sequential(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
-    mapped_type max_iters = static_cast<mapped_type>(iters);
-    std::vector<mapped_type> v(iters);
-    for (mapped_type i = 0; i < max_iters; i++) {
+    std::uint32_t max_iters = static_cast<std::uint32_t>(iters);
+    std::vector<std::uint32_t> v(iters);
+    for (std::uint32_t i = 0; i < max_iters; i++) {
         v[i] = i + 1;
     }
 
@@ -622,8 +628,6 @@ static void time_map_find_sequential(std::size_t iters) {
 
 template <class MapType>
 static void time_map_find_random(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     std::uint32_t max_iters = static_cast<std::uint32_t>(iters);
     std::vector<std::uint32_t> v(iters);
     for (std::uint32_t i = 0; i < max_iters; i++) {
@@ -637,8 +641,6 @@ static void time_map_find_random(std::size_t iters) {
 
 template <class MapType>
 static void time_map_find_failed(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
     std::uint32_t r;
@@ -664,8 +666,6 @@ static void time_map_find_failed(std::size_t iters) {
 
 template <class MapType>
 static void time_map_find_empty(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
     std::uint32_t r;
@@ -687,8 +687,6 @@ static void time_map_find_empty(std::size_t iters) {
 
 template <class MapType>
 static void time_map_insert(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -709,8 +707,6 @@ static void time_map_insert(std::size_t iters) {
 
 template <class MapType>
 static void time_map_insert_predicted(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -733,8 +729,6 @@ static void time_map_insert_predicted(std::size_t iters) {
 
 template <class MapType>
 static void time_map_insert_replace(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -759,8 +753,6 @@ static void time_map_insert_replace(std::size_t iters) {
 
 template <class MapType>
 static void time_map_emplace(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -781,8 +773,6 @@ static void time_map_emplace(std::size_t iters) {
 
 template <class MapType>
 static void time_map_emplace_predicted(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -805,8 +795,6 @@ static void time_map_emplace_predicted(std::size_t iters) {
 
 template <class MapType>
 static void time_map_emplace_replace(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -831,8 +819,6 @@ static void time_map_emplace_replace(std::size_t iters) {
 
 template <class MapType>
 static void time_map_erase(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -857,8 +843,6 @@ static void time_map_erase(std::size_t iters) {
 
 template <class MapType>
 static void time_map_erase_failed(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -883,8 +867,6 @@ static void time_map_erase_failed(std::size_t iters) {
 
 template <class MapType>
 static void time_map_toggle(std::size_t iters) {
-    typedef typename MapType::mapped_type mapped_type;
-
     MapType hashmap(kInitCapacity);
     StopWatch sw;
 
@@ -906,7 +888,6 @@ static void time_map_toggle(std::size_t iters) {
 
 template <class MapType>
 static void time_map_iterate(std::size_t iters) {
-    typedef typename MapType::mapped_type       mapped_type;
     typedef typename MapType::const_iterator    const_iterator;
 
     MapType hashmap(kInitCapacity);
