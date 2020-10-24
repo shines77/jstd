@@ -92,10 +92,12 @@
 #define USE_CTOR_COUNTER        0
 #define USE_FAST_SIMPLE_HASH    0
 
+#define USE_STD_HASH_FUNCTION   0
+
 #if USE_FAST_SIMPLE_HASH
   #define HASH_MAP_FUNCTION     test::hash
 #else
-  #if 1
+  #if USE_STD_HASH_FUNCTION
     #define HASH_MAP_FUNCTION   std::hash
   #else
     #if defined(_MSC_VER)
@@ -531,23 +533,23 @@ public:
 #if 1
 
 template <typename Vector>
-void shuffle_vector(Vector & vector) {
+void shuffle_vector(Vector * vector) {
     // shuffle
     ::srand(9);
-    for (std::size_t n = vector.size(); n >= 2; n--) {
+    for (std::size_t n = vector->size(); n >= 2; n--) {
         std::size_t rnd_idx = std::size_t(::rand()) % n;
-        std::swap(vector[n - 1], vector[rnd_idx]);
+        std::swap((*vector)[n - 1], (*vector)[rnd_idx]);
     }
 }
 
 #else
 
 template <typename Vector>
-void shuffle_vector(Vector & vector) {
+void shuffle_vector(Vector * vector) {
     // shuffle
-    for (std::size_t n = vector.size() - 1; n > 0; n--) {
+    for (std::size_t n = vector->size() - 1; n > 0; n--) {
         std::size_t rnd_idx = jstd::MtRandomGen::nextUInt32(static_cast<std::uint32_t>(n));
-        std::swap(vector[n], vector[rnd_idx]);
+        std::swap((*vector)[n], (*vector)[rnd_idx]);
     }
 }
 
@@ -634,7 +636,7 @@ static void time_map_find_random(std::size_t iters) {
         v[i] = i + 1;
     }
 
-    shuffle_vector(v);
+    shuffle_vector(&v);
 
     time_map_find<MapType>("map_find_random", iters, v);
 }
@@ -888,7 +890,7 @@ static void time_map_toggle(std::size_t iters) {
 
 template <class MapType>
 static void time_map_iterate(std::size_t iters) {
-    typedef typename MapType::const_iterator    const_iterator;
+    typedef typename MapType::const_iterator const_iterator;
 
     MapType hashmap(kInitCapacity);
     StopWatch sw;
@@ -1118,7 +1120,7 @@ static void time_map_find_random(std::size_t iters) {
         v[i] = i + 1;
     }
 
-    shuffle_vector(v);
+    shuffle_vector(&v);
 
     time_map_find<MapType>("map_find_random", iters, v);
 }
@@ -1520,20 +1522,20 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
 
 template <typename HashObj, typename Value>
 static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
-    const bool is_stress_hash_function = (obj_size <= 8);
+    const bool has_stress_hash_function = (obj_size <= 8);
 
     if (FLAGS_test_std_hash_map) {
         measure_hashmap<StdHashMap<HashObj,   Value, HashFn<HashObj>>,
                         StdHashMap<HashObj *, Value, HashFn<HashObj>>
                         >(
-            "stdext::hash_map<K, V>", obj_size, 0, iters, is_stress_hash_function);
+            "stdext::hash_map<K, V>", obj_size, 0, iters, has_stress_hash_function);
     }
 
     if (FLAGS_test_std_unordered_map) {
         measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<HashObj>>,
                         StdUnorderedMap<HashObj *, Value, HashFn<HashObj>>
                         >(
-            "std::unordered_map<K, V>", obj_size, 0, iters, is_stress_hash_function);
+            "std::unordered_map<K, V>", obj_size, 0, iters, has_stress_hash_function);
     }
 
     if (FLAGS_test_jstd_dictionary) {
@@ -1542,7 +1544,7 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
                         jstd::Dictionary<HashObj *, Value, HashFn<HashObj>>
                         >(
             "jstd::Dectionary<K, V>", obj_size,
-            sizeof(typename JDictionary::node_type), iters, is_stress_hash_function);
+            sizeof(typename JDictionary::node_type), iters, has_stress_hash_function);
     }
 }
 
