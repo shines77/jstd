@@ -490,7 +490,7 @@ struct extract_ident_type {
 
 template <typename T>
 struct extract_ident_type<T *> {
-    typedef T *  ident_type;
+    typedef std::uintptr_t  ident_type;
 };
 
 template <typename Key, typename Value, typename Hasher>
