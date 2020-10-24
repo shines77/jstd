@@ -485,7 +485,7 @@ public:
 
 template <typename T>
 struct extract_ident_type {
-    typedef typename Key::key_type  ident_type;
+    typedef typename T::key_type  ident_type;
 };
 
 template <typename T>
