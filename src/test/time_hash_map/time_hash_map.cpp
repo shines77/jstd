@@ -90,8 +90,8 @@
 #include "BenchmarkResult.h"
 
 #define USE_CTOR_COUNTER        0
-#define USE_FAST_SIMPLE_HASH    0
 
+#define USE_FAST_SIMPLE_HASH    1
 #define USE_STD_HASH_FUNCTION   0
 
 #if USE_FAST_SIMPLE_HASH
