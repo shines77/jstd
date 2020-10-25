@@ -413,12 +413,11 @@ struct has_trivial_destructor< HashObject<std::size_t, Size, HashSize> > : true_
 
 #endif
 
-template <typename HashObj, typename ResultType = std::size_t>
+template <typename Key>
 class HashFn {
 public:
-    typedef HashObj                     hash_object_t;
-    typedef typename HashObj::key_type  key_type;
-    typedef ResultType                  result_type;
+    //typedef HashObj   hash_object_t;
+    typedef Key key_type;
 
     // These two public members are required by msvc.  4 and 8 are defaults.
     static const std::size_t bucket_size = 4;
@@ -445,14 +444,14 @@ public:
     //}
 
     template <std::size_t Size, std::size_t HashSize>
-    result_type operator () (const HashObject<key_type, Size, HashSize> & obj) const {
-        return static_cast<result_type>(obj.Hash());
+    std::size_t operator () (const HashObject<key_type, Size, HashSize> & obj) const {
+        return static_cast<std::size_t>(obj.Hash());
     }
 
     // Do the identity hash for pointers.
     template <std::size_t Size, std::size_t HashSize>
-    result_type operator () (const HashObject<key_type, Size, HashSize> * obj) const {
-        return reinterpret_cast<result_type>(obj);
+    std::size_t operator () (const HashObject<key_type, Size, HashSize> * obj) const {
+        return reinterpret_cast<std::size_t>(obj);
     }
 
     // Less operator for MSVC's hash containers.
@@ -1018,23 +1017,23 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
     const bool is_stress_hash_function = (obj_size <= 8);
 
     if (FLAGS_test_std_hash_map) {
-        measure_hashmap<StdHashMap<HashObj,   Value, HashFn<HashObj>>,
-                        StdHashMap<HashObj *, Value, HashFn<HashObj>>
+        measure_hashmap<StdHashMap<HashObj,   Value, HashFn<typename HashObj::key_type>>,
+                        StdHashMap<HashObj *, Value, HashFn<typename HashObj::key_type>>
                         >(
             "stdext::hash_map<K, V>", obj_size, 0, iters, is_stress_hash_function);
     }
 
     if (FLAGS_test_std_unordered_map) {
-        measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<HashObj>>,
-                        StdUnorderedMap<HashObj *, Value, HashFn<HashObj>>
+        measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<typename HashObj::key_type>>,
+                        StdUnorderedMap<HashObj *, Value, HashFn<typename HashObj::key_type>>
                         >(
             "std::unordered_map<K, V>", obj_size, 0, iters, is_stress_hash_function);
     }
 
     if (FLAGS_test_jstd_dictionary) {
-        typedef jstd::Dictionary<HashObj, Value, HashFn<HashObj>> JDictionary;
-        measure_hashmap<jstd::Dictionary<HashObj,   Value, HashFn<HashObj>>,
-                        jstd::Dictionary<HashObj *, Value, HashFn<HashObj>>
+        typedef jstd::Dictionary<HashObj, Value, HashFn<typename HashObj::key_type>> JDictionary;
+        measure_hashmap<jstd::Dictionary<HashObj,   Value, HashFn<typename HashObj::key_type>>,
+                        jstd::Dictionary<HashObj *, Value, HashFn<typename HashObj::key_type>>
                         >(
             "jstd::Dectionary<K, V>", obj_size,
             sizeof(typename JDictionary::node_type), iters, is_stress_hash_function);
@@ -1525,23 +1524,23 @@ static void test_all_hashmaps(std::size_t obj_size, std::size_t iters) {
     const bool has_stress_hash_function = (obj_size <= 8);
 
     if (FLAGS_test_std_hash_map) {
-        measure_hashmap<StdHashMap<HashObj,   Value, HashFn<HashObj>>,
-                        StdHashMap<HashObj *, Value, HashFn<HashObj>>
+        measure_hashmap<StdHashMap<HashObj,   Value, HashFn<typename HashObj::key_type>>,
+                        StdHashMap<HashObj *, Value, HashFn<typename HashObj::key_type>>
                         >(
             "stdext::hash_map<K, V>", obj_size, 0, iters, has_stress_hash_function);
     }
 
     if (FLAGS_test_std_unordered_map) {
-        measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<HashObj>>,
-                        StdUnorderedMap<HashObj *, Value, HashFn<HashObj>>
+        measure_hashmap<StdUnorderedMap<HashObj,   Value, HashFn<typename HashObj::key_type>>,
+                        StdUnorderedMap<HashObj *, Value, HashFn<typename HashObj::key_type>>
                         >(
             "std::unordered_map<K, V>", obj_size, 0, iters, has_stress_hash_function);
     }
 
     if (FLAGS_test_jstd_dictionary) {
-        typedef jstd::Dictionary<HashObj, Value, HashFn<HashObj>> JDictionary;
-        measure_hashmap<jstd::Dictionary<HashObj,   Value, HashFn<HashObj>>,
-                        jstd::Dictionary<HashObj *, Value, HashFn<HashObj>>
+        typedef jstd::Dictionary<HashObj, Value, HashFn<typename HashObj::key_type>> JDictionary;
+        measure_hashmap<jstd::Dictionary<HashObj,   Value, HashFn<typename HashObj::key_type>>,
+                        jstd::Dictionary<HashObj *, Value, HashFn<typename HashObj::key_type>>
                         >(
             "jstd::Dectionary<K, V>", obj_size,
             sizeof(typename JDictionary::node_type), iters, has_stress_hash_function);
