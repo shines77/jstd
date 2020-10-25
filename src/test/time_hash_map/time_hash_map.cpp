@@ -91,8 +91,8 @@
 
 #define USE_CTOR_COUNTER        0
 
-#define USE_FAST_SIMPLE_HASH    1
-#define USE_STD_HASH_FUNCTION   0
+#define USE_FAST_SIMPLE_HASH    0
+#define USE_STD_HASH_FUNCTION   1
 
 #if USE_FAST_SIMPLE_HASH
   #define HASH_MAP_FUNCTION     test::hash
