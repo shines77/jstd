@@ -95,7 +95,7 @@
 #define MODE_STD_HASH_FUNCTION      1   // std::hash<T>()
 #define MODE_STDEXT_HASH_FUNCTION   2   // stdext::hash_compare<T>() or __gnu_cxx::hash<T>()
 
-#define HASH_FUNCTION_MODE          MODE_FAST_SIMPLE_HASH
+#define HASH_FUNCTION_MODE          MODE_STD_HASH_FUNCTION
 
 #if (HASH_FUNCTION_MODE == MODE_STD_HASH_FUNCTION)
   #define HASH_MAP_FUNCTION     std::hash
