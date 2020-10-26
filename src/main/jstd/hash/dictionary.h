@@ -44,6 +44,8 @@
 #undef  USE_FAST_FIND_ENTRY
 #define USE_FAST_FIND_ENTRY             1
 
+#define USE_CHUNKLIST_ITERATOR          1
+
 namespace jstd {
 
 template <typename Key, typename Value>
@@ -378,6 +380,7 @@ protected:
 #endif
     free_list_t             freelist_;
 
+    mutable
     entry_chunk_list_t      chunk_list_;
 
     hasher_type             hasher_;
@@ -768,54 +771,137 @@ protected:
         }
     }
 
-    entry_type * find_first_valid_entry(index_type index = 0) const {
-        size_type bucket_capacity = this->bucket_count();
-        entry_type * first;
-        do {
-            first = get_bucket_head(index);
-            if (likely(first == nullptr)) {
-                index++;
-                if (likely(index >= bucket_capacity))
-                    return nullptr;
+#if USE_CHUNKLIST_ITERATOR
+
+    entry_type * find_first_valid_entry(size_type chunk_index = 0,
+                                        size_type entry_index = 0) const {
+        size_type chunk_list_size = this->chunk_list_.size();
+        assert(chunk_index < chunk_list_size);
+        
+        entry_type * first = nullptr;
+        while (chunk_index < chunk_list_size) {
+            // Find first of not nullptr chunk.
+            const entry_chunk_t & cur_chunk = this->chunk_list_[chunk_index];
+            if (cur_chunk.entries != nullptr) {
+                while (entry_index < cur_chunk.size) {
+                    first = cur_chunk.entries + entry_index;
+                    // Find first of in use entry.
+                    if (likely(!first->attrib.isInUseEntry())) {
+                        entry_index++;
+                    }
+                    else {
+                        return first;
+                    }
+                }
             }
-            else break;
-        } while (1);
+            entry_index = 0;
+            chunk_index++;
+        }
 
         return first;
     }
 
-    entry_type * next_link_entry(entry_type * node) const {
-        if (likely(node->next != nullptr)) {
-            return node->next;
+    entry_type * next_link_entry(entry_type * entry) const {
+        assert(entry != nullptr);
+
+        size_type chunk_list_size = this->chunk_list_.size();
+        size_type chunk_index = entry->attrib.getChunkId();
+        assert(chunk_index < chunk_list_size);
+
+        const entry_chunk_t & cur_chunk = this->chunk_list_[chunk_index];
+        assert(cur_chunk.entries != nullptr);
+
+        entry_type * next_entry = ++entry;
+        assert(next_entry >= cur_chunk.entries);
+        
+        do {
+            if (likely(next_entry < (cur_chunk.entries + cur_chunk.size))) {
+                if (!(next_entry->attrib.isInUseEntry()))
+                    next_entry++;
+                else
+                    return next_entry;
+            }
+            else break;
+        } while (1);
+
+        next_entry = nullptr;
+        chunk_index++;
+
+        while (chunk_index < chunk_list_size) {
+            // Find first of not nullptr chunk.
+            const entry_chunk_t & cur_chunk2 = this->chunk_list_[chunk_index];
+            if (cur_chunk2.entries != nullptr) {
+                size_type entry_index = 0;
+                while (entry_index < cur_chunk2.size) {
+                    next_entry = cur_chunk2.entries + entry_index;
+                    // Find first of in use entry.
+                    if (likely(!next_entry->attrib.isInUseEntry())) {
+                        entry_index++;
+                    }
+                    else {
+                        return next_entry;
+                    }
+                }
+            }
+            chunk_index++;
+        }
+
+        return next_entry;
+    }
+
+    const entry_type * next_const_link_entry(const entry_type * centry) {
+        entry_type * entry = const_cast<entry_type *>(centry);
+        entry_type * next_entry = this->next_link_entry(entry);
+        return const_cast<const entry_type *>(next_entry);
+    }
+
+#else
+
+    entry_type * find_first_valid_entry(index_type index = 0) const {        
+        size_type bucket_capacity = this->bucket_count();
+        assert(index < bucket_capacity);
+
+        entry_type * first = nullptr;
+        while (index < bucket_capacity) {
+            first = get_bucket_head(index);
+            if (likely(first == nullptr))
+                index++;
+            else
+                break;
+        }
+
+        return first;
+    }
+
+    entry_type * next_link_entry(entry_type * entry) const {
+        if (likely(entry->next != nullptr)) {
+            return entry->next;
         }
         else {
             size_type bucket_capacity = this->bucket_count();
-            index_type index = this->index_for(node->hash_code);
+            index_type index = this->index_for(entry->hash_code);
             index++;
-            if (likely(index < bucket_capacity)) {
-                entry_type * first;
-                do {
-                    first = get_bucket_head(index);
-                    if (likely(first == nullptr)) {
-                        index++;
-                        if (likely(index >= bucket_capacity))
-                            return nullptr;
-                    }
-                    else break;
-                } while (1);
 
-                return first;
+            entry_type * next_entry = nullptr;
+            while (index < bucket_capacity) {
+                next_entry = get_bucket_head(index);
+                if (likely(next_entry == nullptr))
+                    index++;
+                else
+                    break;
             }
 
-            return nullptr;
+            return next_entry;
         }
     }
 
-    const entry_type * next_const_link_entry(const entry_type * node_ptr) {
-        entry_type * node = const_cast<entry_type *>(node_ptr);
-        node = this->next_link_entry(node);
-        return const_cast<const entry_type *>(node);
+    const entry_type * next_const_link_entry(const entry_type * centry) {
+        entry_type * entry = const_cast<entry_type *>(centry);
+        entry_type * next_entry = this->next_link_entry(entry);
+        return const_cast<const entry_type *>(next_entry);
     }
+
+#endif // USE_CHUNKLIST_ITERATOR
 
     // Init the new entries's status.
     void init_entries_chunk(entry_type * entries, size_type capacity, uint32_t chunk_id) {

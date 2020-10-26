@@ -150,7 +150,7 @@ public:
     typedef hash_entry_chunk_list<T, Allocator, EntryAllocator>
                                                     this_type;
 
-private:
+protected:
     entry_chunk_t           last_chunk_;
     vector_type             chunk_list_;
     allocator_type          allocator_;
@@ -203,7 +203,28 @@ public:
         return this->last_chunk_.size;
     }
 
-public:
+    element_type & operator [] (size_type pos) {
+        return this->chunk_list_[pos];
+    }
+
+    const element_type & operator [] (size_type pos) const {
+        return this->chunk_list_[pos];
+    }
+
+    element_type & at(size_type pos) {
+        if (pos < this->size())
+            return this->chunk_list_[pos];
+        else
+            throw std::out_of_range("hash_entry_chunk_list<T>::at(pos) out of range.");
+    }
+
+    const element_type & at(size_type pos) const {
+        if (pos < this->size())
+            return this->chunk_list_[pos];
+        else
+            throw std::out_of_range("hash_entry_chunk_list<T>::at(pos) out of range.");
+    }
+
     void destory() {
         if (likely(this->chunk_list_.size() > 0)) {
             size_type last_index = this->chunk_list_.size() - 1;
@@ -313,28 +334,6 @@ public:
         else if (this->size() == 0) {
             this->last_chunk_.clear();
         }
-    }
-
-    value_type & operator [] (size_type pos) {
-        return this->chunk_list_[pos];
-    }
-
-    const value_type & operator [] (size_type pos) const {
-        return this->chunk_list_[pos];
-    }
-
-    value_type & at(size_type pos) {
-        if (pos < this->size())
-            return this->chunk_list_[pos];
-        else
-            throw std::out_of_range("hash_entry_chunk_list<T>::at(pos) out of range.");
-    }
-
-    const value_type & at(size_type pos) const {
-        if (pos < this->size())
-            return this->chunk_list_[pos];
-        else
-            throw std::out_of_range("hash_entry_chunk_list<T>::at(pos) out of range.");
     }
 
     void appendEntry(uint32_t chunk_id) {
