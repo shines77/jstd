@@ -89,24 +89,25 @@
 
 #include "BenchmarkResult.h"
 
-#define USE_CTOR_COUNTER        0
+#define USE_CTOR_COUNTER            0
 
-#define USE_FAST_SIMPLE_HASH    0
-#define USE_STD_HASH_FUNCTION   1
+#define MODE_FAST_SIMPLE_HASH       0   // test::hash<T>()
+#define MODE_STD_HASH_FUNCTION      1   // std::hash<T>()
+#define MODE_STDEXT_HASH_FUNCTION   2   // stdext::hash_compare<T>() or __gnu_cxx::hash<T>()
 
-#if USE_FAST_SIMPLE_HASH
-  #define HASH_MAP_FUNCTION     test::hash
-#else
-  #if USE_STD_HASH_FUNCTION
-    #define HASH_MAP_FUNCTION   std::hash
+#define HASH_FUNCTION_MODE          MODE_FAST_SIMPLE_HASH
+
+#if (HASH_FUNCTION_MODE == MODE_STD_HASH_FUNCTION)
+  #define HASH_MAP_FUNCTION     std::hash
+#elif (HASH_FUNCTION_MODE == MODE_STDEXT_HASH_FUNCTION)
+  #if defined(_MSC_VER)
+    #define HASH_MAP_FUNCTION   STDEXT_HASH_NAMESPACE::hash_compare
   #else
-    #if defined(_MSC_VER)
-      #define HASH_MAP_FUNCTION STDEXT_HASH_NAMESPACE::hash_compare
-    #else
-      #define HASH_MAP_FUNCTION STDEXT_HASH_NAMESPACE::hash
-    #endif
+    #define HASH_MAP_FUNCTION   STDEXT_HASH_NAMESPACE::hash
   #endif
-#endif // USE_FAST_SIMPLE_HASH
+#else
+  #define HASH_MAP_FUNCTION     test::hash
+#endif // HASH_FUNCTION_MODE
 
 using namespace jstd;
 using namespace jtest;
