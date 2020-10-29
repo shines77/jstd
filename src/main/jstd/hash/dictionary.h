@@ -773,74 +773,68 @@ protected:
 
 #if USE_CHUNKLIST_ITERATOR
 
-    entry_type * find_first_valid_entry(size_type chunk_index = 0,
-                                        size_type entry_index = 0) const {
+    entry_type * find_first_valid_entry() const {     
+        entry_type * first_entry = nullptr;
+        entry_type * last_entry;
+
+        size_type chunk_index = 0;
         size_type chunk_list_size = this->chunk_list_.size();
-        assert(chunk_index < chunk_list_size);
-        
-        entry_type * first = nullptr;
         while (chunk_index < chunk_list_size) {
             // Find first of not nullptr chunk.
             const entry_chunk_t & cur_chunk = this->chunk_list_[chunk_index];
             if (cur_chunk.entries != nullptr) {
-                while (entry_index < cur_chunk.size) {
-                    first = cur_chunk.entries + entry_index;
+                first_entry = cur_chunk.entries;
+                last_entry = cur_chunk.entries + cur_chunk.size;
+                while (first_entry < last_entry) {
                     // Find first of in use entry.
-                    if (likely(!first->attrib.isInUseEntry())) {
-                        entry_index++;
-                    }
-                    else {
-                        return first;
-                    }
+                    if (likely(first_entry->attrib.isInUseEntry()))
+                        return first_entry;
+                    else
+                        first_entry++;
                 }
             }
-            entry_index = 0;
             chunk_index++;
         }
 
-        return first;
+        return first_entry;
     }
 
     entry_type * next_link_entry(entry_type * entry) const {
         assert(entry != nullptr);
 
-        size_type chunk_list_size = this->chunk_list_.size();
         size_type chunk_index = entry->attrib.getChunkId();
-        assert(chunk_index < chunk_list_size);
+        assert(chunk_index < this->chunk_list_.size());
 
         const entry_chunk_t & cur_chunk = this->chunk_list_[chunk_index];
         assert(cur_chunk.entries != nullptr);
 
         entry_type * next_entry = ++entry;
+        entry_type * last_entry = cur_chunk.entries + cur_chunk.size;
         assert(next_entry >= cur_chunk.entries);
-        
-        do {
-            if (likely(next_entry < (cur_chunk.entries + cur_chunk.size))) {
-                if (!(next_entry->attrib.isInUseEntry()))
-                    next_entry++;
-                else
-                    return next_entry;
-            }
-            else break;
-        } while (1);
+
+        while (next_entry < last_entry) {
+            if (likely(next_entry->attrib.isInUseEntry()))
+                return next_entry;
+            else
+                next_entry++;
+        }
 
         next_entry = nullptr;
         chunk_index++;
 
+        size_type chunk_list_size = this->chunk_list_.size();
         while (chunk_index < chunk_list_size) {
             // Find first of not nullptr chunk.
             const entry_chunk_t & cur_chunk2 = this->chunk_list_[chunk_index];
             if (cur_chunk2.entries != nullptr) {
-                size_type entry_index = 0;
-                while (entry_index < cur_chunk2.size) {
-                    next_entry = cur_chunk2.entries + entry_index;
+                next_entry = cur_chunk2.entries;
+                last_entry = cur_chunk2.entries + cur_chunk2.size;
+                while (next_entry < last_entry) {
                     // Find first of in use entry.
-                    if (likely(!next_entry->attrib.isInUseEntry())) {
-                        entry_index++;
-                    }
-                    else {
+                    if (likely(next_entry->attrib.isInUseEntry()))
                         return next_entry;
-                    }
+                    else
+                        next_entry++;
                 }
             }
             chunk_index++;
@@ -855,13 +849,42 @@ protected:
         return const_cast<const entry_type *>(next_entry);
     }
 
+    entry_type * next_first_valid_entry(size_type chunk_index = 0,
+                                        size_type entry_index = 0) const {
+        size_type chunk_list_size = this->chunk_list_.size();
+        assert(chunk_index < chunk_list_size);
+        
+        entry_type * first_entry = nullptr;
+        entry_type * last_entry;
+        while (chunk_index < chunk_list_size) {
+            // Find first of not nullptr chunk.
+            const entry_chunk_t & cur_chunk = this->chunk_list_[chunk_index];
+            if (cur_chunk.entries != nullptr) {
+                first_entry = cur_chunk.entries + entry_index;
+                last_entry = cur_chunk.entries + cur_chunk.size;
+                while (first_entry < last_entry) {
+                    // Find first of in use entry.
+                    if (likely(first_entry->attrib.isInUseEntry()))
+                        return first_entry;
+                    else
+                        first_entry++;
+                }
+            }
+            entry_index = 0;
+            chunk_index++;
+        }
+
+        return first_entry;
+    }
+
 #else
 
-    entry_type * find_first_valid_entry(index_type index = 0) const {        
+    entry_type * find_first_valid_entry() const {        
         size_type bucket_capacity = this->bucket_count();
         assert(index < bucket_capacity);
 
         entry_type * first = nullptr;
+        size_type index = 0;
         while (index < bucket_capacity) {
             first = get_bucket_head(index);
             if (likely(first == nullptr))
@@ -899,6 +922,22 @@ protected:
         entry_type * entry = const_cast<entry_type *>(centry);
         entry_type * next_entry = this->next_link_entry(entry);
         return const_cast<const entry_type *>(next_entry);
+    }
+
+    entry_type * next_first_valid_entry(index_type index = 0) const {        
+        size_type bucket_capacity = this->bucket_count();
+        assert(index < bucket_capacity);
+
+        entry_type * first = nullptr;
+        while (index < bucket_capacity) {
+            first = get_bucket_head(index);
+            if (likely(first == nullptr))
+                index++;
+            else
+                break;
+        }
+
+        return first;
     }
 
 #endif // USE_CHUNKLIST_ITERATOR
