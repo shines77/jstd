@@ -89,6 +89,10 @@
 
 #include "BenchmarkResult.h"
 
+#define PRINT_MACRO_HELPER(x)   #x
+#define PRINT_MACRO(x)          PRINT_MACRO_HELPER(x)
+#define PRINT_MACRO_VAR(x)      #x " = " PRINT_MACRO_HELPER(x)
+
 #define USE_CTOR_COUNTER            0
 
 #define MODE_FAST_SIMPLE_HASH       0   // test::hash<T>()
@@ -108,6 +112,8 @@
 #else
   #define HASH_MAP_FUNCTION     test::hash
 #endif // HASH_FUNCTION_MODE
+
+#pragma message(PRINT_MACRO_VAR(HASH_MAP_FUNCTION))
 
 using namespace jstd;
 using namespace jtest;
@@ -1585,6 +1591,8 @@ int main(int argc, char * argv[])
     }
 
     jtest::CPU::warmup(1000);
+
+    printf("#define HASH_MAP_FUNCTION = %s\n\n", PRINT_MACRO(HASH_MAP_FUNCTION));
 
     if (1) {
         printf("------------------------ v1::benchmark_all_hashmaps(iters) -------------------------\n\n");
