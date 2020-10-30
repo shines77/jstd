@@ -177,15 +177,15 @@ public:
     }
 
     time_float_t peekElapsedNanosec() const {
-        return (this->peekElapsedTime() * time_coffe::kNanosecCoff);
+        return (this->peekElapsedTime() * time_ratio::nanosecs);
     }
 
     time_float_t peekElapsedMicrosec() const {
-        return (this->peekElapsedTime() * time_coffe::kMicrosecCoff);
+        return (this->peekElapsedTime() * time_ratio::microsecs);
     }
 
     time_float_t peekElapsedMillisec() const {
-        return (this->peekElapsedTime() * time_coffe::kMillisecCoff);
+        return (this->peekElapsedTime() * time_ratio::millisecs);
     }
 
     time_float_t peekElapsedSecond() const {
@@ -505,12 +505,12 @@ public:
     defaultStopWatchImpl() {}
     ~defaultStopWatchImpl() {}
 
-    static time_stamp_t to_microsecs(time_point_t * time) {
+    static time_stamp_t to_timestamp_us(time_point_t * time) {
         return static_cast<time_stamp_t>(int64_t(time->tv_sec) * TimeRatio<int64_t>::microsecs + time->tv_usec);
     }
 
     static time_stamp_t interval(time_point_t now_time, time_point_t old_time) {
-        return static_cast<time_stamp_t>(to_microsecs(&now_time) - to_microsecs(&old_time));
+        return static_cast<time_stamp_t>(to_timestamp_us(&now_time) - to_timestamp_us(&old_time));
     }
 
     static time_point_t now() {
@@ -609,8 +609,8 @@ typedef StopWatchExBase< timeGetTimeImpl<double> >  timeGetTimeStopWatchEx;
 
 #else
 
-typedef StopWatchBase< defaultStopWatch<double> >   timeGetTimeStopWatch;
-typedef StopWatchExBase< defaultStopWatch<double> > timeGetTimeStopWatchEx;
+typedef StopWatchBase< defaultStopWatchImpl<double> >   timeGetTimeStopWatch;
+typedef StopWatchExBase< defaultStopWatchImpl<double> > timeGetTimeStopWatchEx;
 
 #endif // _WIN32
 
@@ -647,8 +647,8 @@ typedef StopWatchExBase< getTickCountImpl<double> > getTickCountStopWatchEx;
 
 #else
 
-typedef StopWatchBase< defaultStopWatch<double> >   getTickCountStopWatch;
-typedef StopWatchExBase< defaultStopWatch<double> > getTickCountStopWatchEx;
+typedef StopWatchBase< defaultStopWatchImpl<double> >   getTickCountStopWatch;
+typedef StopWatchExBase< defaultStopWatchImpl<double> > getTickCountStopWatchEx;
 
 #endif // _WIN32
 
