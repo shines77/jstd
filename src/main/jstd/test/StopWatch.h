@@ -6,16 +6,27 @@
 #pragma once
 #endif
 
+#include <time.h>
+
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <winsock.h>
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
+#else
+#include <sys/time.h>
 #endif // _WIN32
 
-#if !defined(_MSC_VER) || (_MSC_VER >= 1800)
+#if (defined(__cplusplus) && (__cplusplus >= 201103L)) || (defined(_MSC_VER) && (_MSC_VER >= 1800))
+  #define HAVE_STD_CHRONO_H     1
+#else
+  #define HAVE_STD_CHRONO_H     0
+#endif
+
+#if HAVE_STD_CHRONO_H
 #include <chrono>
 #endif
 
@@ -29,70 +40,66 @@
 #endif
 #endif
 
-#if !defined(_MSC_VER) || (_MSC_VER >= 1800)
-using namespace std::chrono;
-#endif
-
 namespace jtest {
 
 template <typename T>
-struct TimeCoffe {
-    typedef T   time_float_t;
+struct TimeRatio {
+    typedef T   time_value_t;
 
     // 1 second = 1000 millisecond
-    static time_float_t kMillisecCoff;      // static_cast<time_float_t>(1000.0);
+    static time_value_t millisecs;      // static_cast<time_float_t>(1000.0);
 
     // 1 second = 1,000,000 microsec
-    static time_float_t kMicrosecCoff;      // static_cast<time_float_t>(1000000.0);
+    static time_value_t microsecs;      // static_cast<time_float_t>(1000000.0);
 
     // 1 second = 1,000,000,000 nanosec
-    static time_float_t kNanosecCoff;       // static_cast<time_float_t>(1000000000.0);
+    static time_value_t nanosecs;       // static_cast<time_float_t>(1000000000.0);
 };
 
 // 1 second = 1000 millisec
 template <typename T>
-typename TimeCoffe<T>::time_float_t
-TimeCoffe<T>::kMillisecCoff = static_cast<typename TimeCoffe<T>::time_float_t>(1000.0);
+typename TimeRatio<T>::time_value_t
+TimeRatio<T>::millisecs = static_cast<typename TimeRatio<T>::time_value_t>(1000.0);
 
 // 1 second = 1,000,000 microsec
 template <typename T>
-typename TimeCoffe<T>::time_float_t
-TimeCoffe<T>::kMicrosecCoff = static_cast<typename TimeCoffe<T>::time_float_t>(1000000.0);
+typename TimeRatio<T>::time_value_t
+TimeRatio<T>::microsecs = static_cast<typename TimeRatio<T>::time_value_t>(1000000.0);
 
 // 1 second = 1,000,000,000 nanosec
 template <typename T>
-typename TimeCoffe<T>::time_float_t
-TimeCoffe<T>::kNanosecCoff = static_cast<typename TimeCoffe<T>::time_float_t>(1000000000.0);
+typename TimeRatio<T>::time_value_t
+TimeRatio<T>::nanosecs = static_cast<typename TimeRatio<T>::time_value_t>(1000000000.0);
 
 namespace detail {
 
 template <typename T>
 class duration_time {
 public:
-    typedef T   time_float_t;
+    typedef T   time_value_t;
 
 private:
-    time_float_t duration_;
+    time_value_t duration_;
 
 public:
-    duration_time(time_float_t duration) : duration_(duration) {}
-    duration_time(const duration_time<T> & src) : duration_(src.duration_) {}
+    duration_time(time_value_t duration) : duration_(duration) {}
+    duration_time(const duration_time<time_value_t> & src) : duration_(src.duration_) {}
     ~duration_time() {}
 
-    time_float_t seconds() const {
+    time_value_t seconds() const {
         return this->duration_;
     }
 
-    time_float_t millisecs() const {
-        return (this->seconds() * TimeCoffe<time_float_t>::kMillisecCoff);
+    time_value_t millisecs() const {
+        return (this->seconds() * TimeRatio<time_value_t>::millisecs);
     }
 
-    time_float_t microsecs() const {
-        return (this->seconds() * TimeCoffe<time_float_t>::kMicrosecCoff);
+    time_value_t microsecs() const {
+        return (this->seconds() * TimeRatio<time_value_t>::microsecs);
     }
 
-    time_float_t nanosecs() const {
-        return (this->seconds() * TimeCoffe<time_float_t>::kNanosecCoff);
+    time_value_t nanosecs() const {
+        return (this->seconds() * TimeRatio<time_value_t>::nanosecs);
     }
 };
 
@@ -106,7 +113,7 @@ public:
     typedef typename impl_type::time_stamp_t    time_stamp_t;
     typedef typename impl_type::time_point_t    time_point_t;
     typedef typename impl_type::duration_type   duration_type;
-    typedef TimeCoffe<time_float_t>             time_coffe;
+    typedef TimeRatio<time_float_t>             time_ratio;
 
 private:
     time_point_t start_time_;
@@ -196,15 +203,15 @@ public:
     }
 
     time_float_t getElapsedNanosec() {
-        return (this->getElapsedSecond() * time_coffe::kNanosecCoff);
+        return (this->getElapsedSecond() * time_ratio::nanosecs);
     }
 
     time_float_t getElapsedMicrosec() {
-        return (this->getElapsedSecond() * time_coffe::kMicrosecCoff);
+        return (this->getElapsedSecond() * time_ratio::microsecs);
     }
 
     time_float_t getElapsedMillisec() {
-        return (this->getElapsedSecond() * time_coffe::kMillisecCoff);
+        return (this->getElapsedSecond() * time_ratio::millisecs);
     }
 
     time_float_t getElapsedSecond() {
@@ -225,7 +232,7 @@ public:
     typedef typename impl_type::time_stamp_t    time_stamp_t;
     typedef typename impl_type::time_point_t    time_point_t;
     typedef typename impl_type::duration_type   duration_type;
-    typedef TimeCoffe<time_float_t>             time_coffe;
+    typedef TimeRatio<time_float_t>             time_ratio;
 
 private:
     time_point_t start_time_;
@@ -354,11 +361,15 @@ public:
     }
 
     time_float_t getDurationMicrosec() {
-        return (this->getDurationSecond() * time_coffe::kMicrosecCoff);
+        return (this->getDurationSecond() * time_ratio::microsecs);
     }
 
     time_float_t getDurationMillisec() {
-        return (this->getDurationSecond() * time_coffe::kMillisecCoff);
+        return (this->getDurationSecond() * time_ratio::millisecs);
+    }
+
+    time_float_t getDurationNanosec() {
+        return (this->getDurationSecond() * time_ratio::nanosecs);
     }
 
     time_float_t getDurationSecond() {
@@ -376,11 +387,15 @@ public:
     }
 
     time_float_t peekElapsedMicrosec() const {
-        return (this->peekElapsedTime() * time_coffe::kMicrosecCoff);
+        return (this->peekElapsedTime() * time_ratio::microsecs);
     }
 
     time_float_t peekElapsedMillisec() const {
-        return (this->peekElapsedTime() * time_coffe::kMillisecCoff);
+        return (this->peekElapsedTime() * time_ratio::millisecs);
+    }
+
+    time_float_t peekElapsedNanosec() const {
+        return (this->peekElapsedTime() * time_ratio::nanosecs);
     }
 
     time_float_t peekElapsedSecond() const {
@@ -397,11 +412,15 @@ public:
     }
 
     time_float_t getElapsedMicrosec() {
-        return (this->getElapsedTime() * time_coffe::kMicrosecCoff);
+        return (this->getElapsedTime() * time_ratio::microsecs);
     }
 
     time_float_t getElapsedMillisec() {
-        return (this->getElapsedTime() * time_coffe::kMillisecCoff);
+        return (this->getElapsedTime() * time_ratio::millisecs);
+    }
+
+    time_float_t getElapsedNanosec() {
+        return (this->getElapsedTime() * time_ratio::nanosecs);
     }
 
     time_float_t getElapsedSecond() {
@@ -414,11 +433,15 @@ public:
     }
 
     time_float_t getTotalMicrosec() const {
-        return (this->getTotalElapsedTime() * time_coffe::kMicrosecCoff);
+        return (this->getTotalElapsedTime() * time_ratio::microsecs);
     }
 
     time_float_t getTotalMillisec() const {
-        return (this->getTotalElapsedTime() * time_coffe::kMillisecCoff);
+        return (this->getTotalElapsedTime() * time_ratio::millisecs);
+    }
+
+    time_float_t getTotalNanosec() const {
+        return (this->getTotalElapsedTime() * time_ratio::nanosecs);
     }
 
     time_float_t getTotalSecond() const {
@@ -435,15 +458,86 @@ template <typename T>
 typename StopWatchExBase<T>::time_float_t
 StopWatchExBase<T>::kTimeZero = static_cast<typename StopWatchExBase<T>::time_float_t>(0.0);
 
-#if !defined(_MSC_VER) || (_MSC_VER >= 1800)
+template <typename TimeFloatTy>
+class clockStopWatchImpl {
+public:
+    typedef TimeFloatTy                                     time_float_t;
+    typedef clock_t                                         time_stamp_t;
+    typedef clock_t                                         time_point_t;
+    typedef time_float_t                                    duration_type;
+    typedef clockStopWatchImpl<TimeFloatTy>                 this_type;
+
+public:
+    clockStopWatchImpl() {}
+    ~clockStopWatchImpl() {}
+
+    static time_stamp_t interval(time_point_t now_time, time_point_t old_time) {
+        return static_cast<time_stamp_t>(now_time - old_time);
+    }
+
+    static time_point_t now() {
+        time_point_t now_time = ::clock();
+        return now_time;
+    }
+
+    static time_float_t duration_time(time_point_t now_time, time_point_t old_time) {
+        return (this_type::interval(now_time, old_time) / static_cast<time_float_t>(CLOCKS_PER_SEC));
+    }
+
+    static time_stamp_t timestamp(time_point_t now_time, time_point_t base_time) {
+        return static_cast<time_stamp_t>(now_time);
+    }
+};
+
+typedef StopWatchBase< clockStopWatchImpl<double> >         clockStopWatch;
+typedef StopWatchExBase< clockStopWatchImpl<double> >       clockStopWatchEx;
+
+template <typename TimeFloatTy>
+class defaultStopWatchImpl {
+public:
+    typedef TimeFloatTy                                     time_float_t;
+    typedef int64_t                                         time_stamp_t;
+    typedef timeval                                         time_point_t;
+    typedef time_float_t                                    duration_type;
+    typedef defaultStopWatchImpl<TimeFloatTy>               this_type;
+
+public:
+    defaultStopWatchImpl() {}
+    ~defaultStopWatchImpl() {}
+
+    static time_stamp_t to_microsecs(time_point_t * time) {
+        return static_cast<time_stamp_t>(int64_t(time->tv_sec) * TimeRatio<int64_t>::microsecs + time->tv_usec);
+    }
+
+    static time_stamp_t interval(time_point_t now_time, time_point_t old_time) {
+        return static_cast<time_stamp_t>(to_microsecs(&now_time) - to_microsecs(&old_time));
+    }
+
+    static time_point_t now() {
+        time_point_t now_time;
+        ::gettimeofday(&now_time, nullptr);
+        return now_time;
+    }
+
+    static time_float_t duration_time(time_point_t now_time, time_point_t old_time) {
+        return static_cast<time_float_t>(this_type::interval(now_time, old_time));
+    }
+
+    static time_stamp_t timestamp(time_point_t now_time, time_point_t base_time) {
+        return this_type::interval(now_time, base_time);
+    }
+};
+
+#if HAVE_STD_CHRONO_H
 
 template <typename TimeFloatTy>
 class StdStopWatchImpl {
 public:
     typedef TimeFloatTy                                     time_float_t;
-    typedef double                                          time_stamp_t;
-    typedef std::chrono::time_point<high_resolution_clock>  time_point_t;
-    typedef std::chrono::duration<time_stamp_t>             duration_type;
+    typedef std::uint64_t                                   time_stamp_t;
+    typedef std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds>
+                                                            time_point_t;
+    typedef std::chrono::duration<time_float_t>             duration_type;
 
 public:
     StdStopWatchImpl() {}
@@ -463,14 +557,24 @@ public:
     }
 
     static time_stamp_t timestamp(time_point_t now_time, time_point_t base_time) {
-        return static_cast<time_stamp_t>(duration_time(now_time, base_time));
+        std::chrono::duration<time_stamp_t> _duration_time =
+            std::chrono::duration_cast<std::chrono::duration<time_stamp_t>>(now_time - base_time);
+        return _duration_time.count();
     }
 };
 
-typedef StopWatchBase< StdStopWatchImpl<double> >       StopWatch;
-typedef StopWatchExBase< StdStopWatchImpl<double> >     StopWatchEx;
+typedef StopWatchBase< StdStopWatchImpl<double> >           StopWatch;
+typedef StopWatchExBase< StdStopWatchImpl<double> >         StopWatchEx;
 
-#endif // (_MSC_VER >= 1800)
+typedef StopWatchBase< StdStopWatchImpl<double> >           defaultStopWatch;
+typedef StopWatchExBase< StdStopWatchImpl<double> >         defaultStopWatchEx;
+
+#else
+
+typedef StopWatchBase< defaultStopWatchImpl<double> >       defaultStopWatch;
+typedef StopWatchExBase< defaultStopWatchImpl<double> >     defaultStopWatchEx;
+
+#endif // HAVE_STD_CHRONO_H
 
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
 
@@ -492,7 +596,7 @@ public:
 
     static time_float_t duration_time(time_point_t now_time, time_point_t old_time) {
         time_point_t _duration_time = now_time - old_time;
-        return (static_cast<time_float_t>(_duration_time) / static_cast<time_float_t>(1000));
+        return (_duration_time / static_cast<time_float_t>(1000));
     }
 
     static time_stamp_t timestamp(time_point_t now_time, time_point_t base_time) {
@@ -505,8 +609,8 @@ typedef StopWatchExBase< timeGetTimeImpl<double> >  timeGetTimeStopWatchEx;
 
 #else
 
-typedef StopWatchBase< StdStopWatchImpl<double> >   timeGetTimeStopWatch;
-typedef StopWatchExBase< StdStopWatchImpl<double> > timeGetTimeStopWatchEx;
+typedef StopWatchBase< defaultStopWatch<double> >   timeGetTimeStopWatch;
+typedef StopWatchExBase< defaultStopWatch<double> > timeGetTimeStopWatchEx;
 
 #endif // _WIN32
 
@@ -530,7 +634,7 @@ public:
 
     static time_float_t duration_time(time_point_t now_time, time_point_t old_time) {
         time_point_t _duration_time = now_time - old_time;
-        return (static_cast<time_float_t>(_duration_time) / static_cast<time_float_t>(1000));
+        return (_duration_time / static_cast<time_float_t>(1000));
     }
 
     static time_stamp_t timestamp(time_point_t now_time, time_point_t base_time) {
@@ -543,17 +647,10 @@ typedef StopWatchExBase< getTickCountImpl<double> > getTickCountStopWatchEx;
 
 #else
 
-typedef StopWatchBase< StdStopWatchImpl<double> >   getTickCountStopWatch;
-typedef StopWatchExBase< StdStopWatchImpl<double> > getTickCountStopWatchEx;
+typedef StopWatchBase< defaultStopWatch<double> >   getTickCountStopWatch;
+typedef StopWatchExBase< defaultStopWatch<double> > getTickCountStopWatchEx;
 
 #endif // _WIN32
-
-#if defined(_MSC_VER) && (_MSC_VER < 1800)
-
-typedef StopWatchBase< timeGetTimeImpl<double> >    StopWatch;
-typedef StopWatchExBase< timeGetTimeImpl<double> >  StopWatchEx;
-
-#endif
 
 } // namespace jtest
 
