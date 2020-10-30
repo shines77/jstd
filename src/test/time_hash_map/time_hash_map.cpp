@@ -959,7 +959,7 @@ static void stress_hash_function(std::size_t desired_insertions,
     }
 
     if (num_insertions != 0) {
-        printf("stress_hash_function: map_size = %" PRIuPTR " stride = %" PRIuPTR ": %.2f ns/insertion\n",
+        printf("stress_hash_function: map_size = %-4" PRIuPTR " stride = %-4" PRIuPTR ": %.2f ns/insertion\n",
                map_size, stride, total_seconds * 1e9 / num_insertions);
     }
 }
@@ -1441,7 +1441,7 @@ static void stress_hash_function(std::size_t desired_insertions,
     double total_seconds = 0;
     const std::size_t k = desired_insertions / map_size;
 
-    MapType hashmap(kInitCapacity);
+    MapType hashmap;
     for (std::size_t o = 0; o < k; o++) {
         hashmap.clear();
         hashmap.resize(map_size);
@@ -1466,7 +1466,7 @@ static void stress_hash_function(std::size_t desired_insertions,
     }
 
     if (num_insertions != 0) {
-        printf("stress_hash_function: map_size = %" PRIuPTR " stride = %" PRIuPTR ": %.2f ns/insertion\n",
+        printf("stress_hash_function: map_size = %-4" PRIuPTR " stride = %-4" PRIuPTR ": %.2f ns/insertion\n",
                map_size, stride, total_seconds * 1e9 / num_insertions);
     }
 }
