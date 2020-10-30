@@ -6,18 +6,18 @@
 #pragma once
 #endif
 
-#include <time.h>
+#include <time.h>   // For ::clock()
 
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-#include <winsock.h>
+#include <winsock.h>    // For ::gettimeofday(...)
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
 #else
-#include <sys/time.h>
+#include <sys/time.h>   // For ::gettimeofday(...)
 #endif // _WIN32
 
 #if (defined(__cplusplus) && (__cplusplus >= 201103L)) || (defined(_MSC_VER) && (_MSC_VER >= 1800))
