@@ -59,13 +59,13 @@ enum sprintf_error_code {
 };
 
 template <typename CharTy>
-JSTD_FORCEINLINE
+JSTD_FORCE_INLINE
 static CharTy to_hex_char(CharTy hex) {
     return ((hex >= 10) ? (hex - 10 + CharTy('A')) : (hex + CharTy('0')));
 }
 
 template <typename CharTy>
-JSTD_FORCEINLINE
+JSTD_FORCE_INLINE
 static CharTy to_lower_hex_char(CharTy hex) {
     return ((hex >= 10) ? (hex - 10 + CharTy('a')) : (hex + CharTy('0')));
 }

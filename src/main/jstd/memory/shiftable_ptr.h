@@ -81,7 +81,7 @@ public:
 
 protected:
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void create_impl(Args && ... args) {
         this->value_   = reinterpret_cast<pointer>(new T(std::forward<Args>(args)...));
         this->shifted_ = false;
@@ -97,7 +97,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void destroy_value() {
         if (!this->shifted_) {
             if (this->value_) {
@@ -118,7 +118,7 @@ protected:
 
 public:
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void create(Args && ... args) {
         this->destroy_value();
         this->create_impl(std::forward<Args>(args)...);
@@ -305,7 +305,7 @@ public:
 
 protected:
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void create_impl(Args && ... args) {
         this->value_   = this->allocator_.create(std::forward<Args>(args)...);
         this->shifted_ = false;
@@ -321,7 +321,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void destroy_value() {
         if (!this->shifted_) {
             if (this->value_) {
@@ -337,7 +337,7 @@ protected:
 
 public:
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void create(Args && ... args) {
         this->destroy_value();
         this->create_impl(std::forward<Args>(args)...);

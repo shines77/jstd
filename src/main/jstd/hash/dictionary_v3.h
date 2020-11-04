@@ -706,19 +706,19 @@ protected:
         assert(entry_capacity >= this->entry_size());
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * get_bucket_head(index_type index) const {
         return this->buckets_[index];
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void bucket_push_front(index_type index,
                            entry_type * new_entry) {
         new_entry->next = this->buckets_[index];
         this->buckets_[index] = new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void bucket_push_front(entry_type ** new_buckets,
                            index_type index,
                            entry_type * new_entry) {
@@ -726,7 +726,7 @@ protected:
         new_buckets[index] = new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void bucket_push_back(index_type index,
                           entry_type * new_entry) {
         entry_type * first = this->buckets_[index];
@@ -744,7 +744,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void bucket_push_back(entry_type ** new_buckets,
                           index_type index,
                           entry_type * new_entry) {
@@ -1091,7 +1091,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void rehash_buckets(size_type new_bucket_capacity) {
         assert_bucket_capacity(new_bucket_capacity);
         assert(new_bucket_capacity != this->bucket_capacity_);
@@ -1123,7 +1123,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void add_new_entry_chunk(size_type new_entry_capacity) {
         assert_entry_capacity(new_entry_capacity);
 
@@ -1169,7 +1169,7 @@ protected:
     }
 
     template <bool need_shrink = false>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void rehash_impl(size_type new_bucket_capacity) {
         // [ bucket_capacity = entry_size / kMaxLoadFactor ]
         size_type min_bucket_capacity = run_time::round_up_to_pow2(this->min_bucket_count());
@@ -1186,32 +1186,32 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void resize_impl(size_type new_entry_size) {
         this->realloc_to(new_entry_size);
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     const key_type & get_key(value_type * value) const {
         return key_extractor<value_type>::extract(*const_cast<const value_type *>(value));
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     const key_type & get_key(const value_type & value) const {
         return key_extractor<value_type>::extract(value);
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     const key_type & get_key(n_value_type * value) const {
         return key_extractor<n_value_type>::extract(*const_cast<const n_value_type *>(value));
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     const key_type & get_key(const n_value_type & value) const {
         return key_extractor<n_value_type>::extract(value);
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void move_or_swap_value(n_value_type * old_value, n_value_type && new_value) {
         bool has_noexcept_move_assignment = is_noexcept_move_assignable<n_value_type>::value;
         // Is noexcept move assignment operator ?
@@ -1228,7 +1228,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void move_or_swap_key(key_type * old_key, key_type && new_key) {
         bool has_noexcept_move_assignment = is_noexcept_move_assignable<key_type>::value;
         // Is noexcept move assignment operator ?
@@ -1240,7 +1240,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void move_or_swap_mapped_value(mapped_type * old_value, mapped_type && new_value) {
         bool has_noexcept_move_assignment = is_noexcept_move_assignable<mapped_type>::value;
         // Is noexcept move assignment operator ?
@@ -1252,7 +1252,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void construct_value(entry_type * new_entry, const key_type & key,
                                                  const mapped_type & value) {
         if (new_entry->attrib.isFreeEntry()) {
@@ -1269,7 +1269,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void construct_value(entry_type * new_entry, const key_type & key,
                                                  mapped_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
@@ -1287,7 +1287,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void construct_value(entry_type * new_entry, key_type && key,
                                                  mapped_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
@@ -1306,7 +1306,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void construct_value(entry_type * new_entry, value_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
@@ -1323,7 +1323,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void construct_value(entry_type * new_entry, n_value_type && value) {
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
@@ -1340,7 +1340,7 @@ protected:
     }
 
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void construct_value_args(entry_type * new_entry, Args && ... args) {
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
@@ -1359,14 +1359,14 @@ protected:
     }
 
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_value_args_impl(entry_type * old_entry, const key_type & key, Args && ... args) {
         mapped_type second(std::forward<Args>(args)...);
         move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
     }
 
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_value_args_impl(entry_type * old_entry, key_type && key, Args && ... args) {
         //key_type key_tmp = std::move_if_noexcept(key);
         mapped_type second(std::forward<Args>(args)...);
@@ -1375,53 +1375,53 @@ protected:
 
 #if 1
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_value_args(entry_type * old_entry, Args && ... args) {
         this->update_value_args_impl(old_entry, std::forward<Args>(args)...);
     }
 #else
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_value_args(entry_type * old_entry, Args && ... args) {
         n_value_type value_tmp(std::forward<Args>(args)...);
         move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(value_tmp.second));
     }
 #endif
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value(entry_type * entry, const value_type & value) {
         entry->value.second = value.second;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value(entry_type * entry, value_type && value) {
         move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value(entry_type * entry, const n_value_type & value) {
         entry->value.second = value.second;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value(entry_type * entry, n_value_type && value) {
         //key_type key_tmp = std::move_if_noexcept(value.first);
         move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value(entry_type * entry, const mapped_type & value) {
         entry->value.second = value;
     }
 
     // Update the existed key's value, maybe by move assignment operator.
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value(entry_type * entry, mapped_type && value) {
         move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
     }
 
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value_args_impl(entry_type * entry, const key_type & key, Args && ... args) {
 #ifndef NDEBUG
         static int display_count = 0;
@@ -1442,23 +1442,23 @@ protected:
 #endif
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value_args(entry_type * entry, const mapped_type & value) {
         entry->value.second = value;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value_args(entry_type * entry, mapped_type && value) {
         move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
     }
 
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_mapped_value_args(entry_type * entry, Args && ... args) {
         update_mapped_value_args_impl(entry, std::forward<Args>(args)...);
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * got_a_prepare_entry() {
         if (likely(this->freelist_.is_empty())) {
             if (unlikely(this->chunk_list_.lastChunk().is_full())) {
@@ -1491,7 +1491,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * got_a_free_entry(hash_code_t hash_code, index_type & index) {
         if (likely(this->freelist_.is_empty())) {
             if (unlikely(this->chunk_list_.lastChunk().is_full())) {
@@ -1526,7 +1526,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void destroy_prepare_entry(entry_type * entry) {
         assert(entry->attrib.isFreeEntry() || entry->attrib.isReusableEntry());
         uint32_t chunk_id = entry->attrib.getChunkId();
@@ -1547,7 +1547,7 @@ protected:
         //
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void destroy_entry(entry_type * entry) {
         assert(entry->attrib.isInUseEntry());
         uint32_t chunk_id = entry->attrib.getChunkId();
@@ -1566,7 +1566,7 @@ protected:
         //
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void insert_to_bucket(entry_type * new_entry, hash_code_t hash_code,
                           index_type index) {
         assert(new_entry != nullptr);
@@ -1576,7 +1576,7 @@ protected:
         this->buckets_[index] = new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * insert_new_entry(const key_type & key, const mapped_type & value,
                                   hash_code_t hash_code, index_type index) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
@@ -1586,7 +1586,7 @@ protected:
         return new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * insert_new_entry(const key_type & key, mapped_type && value,
                                   hash_code_t hash_code, index_type index) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
@@ -1596,7 +1596,7 @@ protected:
         return new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * insert_new_entry(key_type && key, mapped_type && value,
                                   hash_code_t hash_code, index_type index) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
@@ -1607,7 +1607,7 @@ protected:
         return new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * insert_new_entry(hash_code_t hash_code, index_type index,
                                   n_value_type && value) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
@@ -1619,7 +1619,7 @@ protected:
 
 #if USE_FAST_FIND_ENTRY
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_entry(const key_type & key) {
         hash_code_t hash_code = this->get_hash(key);
         index_type index = this->index_for(hash_code);
@@ -1648,7 +1648,7 @@ protected:
         return nullptr;  // Not found
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
         assert(this->buckets() != nullptr);
         entry_type * first = this->buckets_[index];
@@ -1677,7 +1677,7 @@ protected:
 
 #else // !USE_FAST_FIND_ENTRY
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_entry(const key_type & key) {
         hash_code_t hash_code = this->get_hash(key);
         index_type index = this->index_for(hash_code);
@@ -1698,7 +1698,7 @@ protected:
         return nullptr;  // Not found
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
         assert(this->buckets() != nullptr);
         entry_type * entry = this->buckets_[index];
@@ -1719,7 +1719,7 @@ protected:
 
 #endif // USE_FAST_FIND_ENTRY
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_before(const key_type & key, entry_type *& before, size_type & index) {
         hash_code_t hash_code = this->get_hash(key);
         index = this->index_for(hash_code);
@@ -1744,7 +1744,7 @@ protected:
         return nullptr;  // Not found
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_or_insert(const key_type & key) {
         assert(this->buckets() != nullptr);
 
@@ -1761,7 +1761,7 @@ protected:
         return entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_or_insert(key_type && key) {
         assert(this->buckets() != nullptr);
 
@@ -1779,7 +1779,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     ReturnType insert_unique(const key_type & key, const mapped_type & value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1805,7 +1805,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     ReturnType insert_unique(const key_type & key, mapped_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1832,7 +1832,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     ReturnType insert_unique(key_type && key, mapped_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1863,7 +1863,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     ReturnType insert_unique(n_value_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1893,7 +1893,7 @@ protected:
     }
 
     template <typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * emplace_new_entry_args(hash_code_t hash_code, index_type index, Args && ... args) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
@@ -1902,7 +1902,7 @@ protected:
         return new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * emplace_new_entry(hash_code_t hash_code,
                                    index_type index, n_value_type && value) {
         entry_type * new_entry = this->got_a_free_entry(hash_code, index);
@@ -1912,7 +1912,7 @@ protected:
         return new_entry;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * emplace_prepare_entry(entry_type * pre_entry,
                                        hash_code_t hash_code,
                                        index_type index) {
@@ -1923,7 +1923,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     ReturnType emplace_unique(const key_type & key, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1950,7 +1950,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -1983,7 +1983,7 @@ protected:
     }
 
     template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     ReturnType emplace_unique_no_prepare(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
@@ -2012,7 +2012,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     size_type erase_key(const key_type & key) {
         assert(this->buckets_ != nullptr);
 
@@ -2063,7 +2063,7 @@ protected:
         return size_type(0);
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void update_version() {
 #if DICTIONARY_SUPPORT_VERSION
         ++(this->version_);
@@ -2196,7 +2196,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     entry_type * find_first_free_entry(entry_type * cur_entry, entry_type * last_entry) {
         while (cur_entry < last_entry) {
             if (likely(cur_entry->attrib.isInUseEntry())) {
@@ -2360,7 +2360,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     size_type move_another_to_target_chunk(size_type target_chunk_id) {
         entry_chunk_t & target_chunk = this->chunk_list_[target_chunk_id];
         entry_type * dest_entry_first = target_chunk.entries;
@@ -2412,7 +2412,7 @@ protected:
         return total_move_count;
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     size_type move_target_chunk_to_another(size_type target_chunk_id) {
         entry_chunk_t & target_chunk = this->chunk_list_[target_chunk_id];
         entry_type * dest_entry_first = target_chunk.entries;
@@ -2547,7 +2547,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void transfer_entry_to_new(entry_type * old_entry, entry_type * new_entry) {
         assert(old_entry != new_entry);
         assert(old_entry->attrib.isInUseEntry());
@@ -2983,7 +2983,7 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void realloc_to(size_type new_entry_size) {
         size_type new_entry_capacity = run_time::round_up_to_pow2(new_entry_size);
         new_entry_capacity = (std::max)(new_entry_capacity, kMinimumCapacity);
@@ -3000,13 +3000,13 @@ protected:
         }
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void realloc_to_fit() {
         this->realloc_to(this->entry_size_);
     }
 
 #if 1
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
             size_type last_chunk_capacity = this->chunk_list_.lastChunk().capacity;
@@ -3025,7 +3025,7 @@ protected:
         }
     }
 #else
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void rearrange_reorder() {
         if (this->chunk_list_.size() > 0) {
             size_type first_chunk_capacity = this->chunk_list_[0].capacity;
@@ -3106,7 +3106,7 @@ public:
         this->rehash_impl<true>(new_bucket_capacity);
     }
 
-    JSTD_FORCEINLINE
+    JSTD_FORCE_INLINE
     void rearrange(size_type arrangeType) {
         if (arrangeType == ArrangeType::Reorder) {
             rearrange_reorder();

@@ -126,20 +126,20 @@
 #define JSTD_HAS_INLINE                       1
 
 #define JSTD_INLINE                         __inline
-#define JSTD_FORCEINLINE                    __forceinline
-#define JSTD_NOINLINE                       __declspec(noinline)
+#define JSTD_FORCE_INLINE                   __forceinline
+#define JSTD_NO_INLINE                      __declspec(noinline)
 
 #define JSTD_INLINE_DECLARE(decl)           __inline decl
-#define JSTD_FORCEINLINE_DECLARE(decl)      __forceinline decl
+#define JSTD_FORCE_INLINE_DECLARE(decl)     __forceinline decl
 #define JSTD_NOINLINE_DECLARE(decl)         __declspec(noinline) decl
 
 #define JSTD_CRT_INLINE                     extern __inline
-#define JSTD_CRT_FORCEINLINE                extern __forceinline
-#define JSTD_CRT_NOINLINE                   extern __declspec(noinline)
+#define JSTD_CRT_FORCE_INLINE               extern __forceinline
+#define JSTD_CRT_NO_INLINE                  extern __declspec(noinline)
 
 #define JSTD_CRT_INLINE_DECLARE(decl)       extern __inline decl
-#define JSTD_CRT_FORCEINLINE_DECLARE(decl)  extern __forceinline decl
-#define JSTD_CRT_NOINLINE_DECLARE(decl)     extern __declspec(noinline) decl
+#define JSTD_CRT_FORCE_INLINE_DECLARE(decl) extern __forceinline decl
+#define JSTD_CRT_NO_INLINE_DECLARE(decl)    extern __declspec(noinline) decl
 
 #define JSTD_RESTRICT                       __restrict
 
@@ -148,40 +148,40 @@
 #define JSTD_HAS_INLINE                       1
 
 #define JSTD_INLINE                         inline __attribute__((gnu_inline))
-#define JSTD_FORCEINLINE                    inline __attribute__((always_inline))
-#define JSTD_NOINLINE                       __attribute__((noinline))
+#define JSTD_FORCE_INLINE                   inline __attribute__((always_inline))
+#define JSTD_NO_INLINE                      __attribute__((noinline))
 
 #define JSTD_INLINE_DECLARE(decl)           inline __attribute__((gnu_inline)) decl
-#define JSTD_FORCEINLINE_DECLARE(decl)      inline __attribute__((always_inline)) decl
+#define JSTD_FORCE_INLINE_DECLARE(decl)     inline __attribute__((always_inline)) decl
 #define JSTD_NOINLINE_DECLARE(decl)         __attribute__((noinline)) decl
 
 #define JSTD_CRT_INLINE                     extern inline __attribute__((gnu_inline))
-#define JSTD_CRT_FORCEINLINE                extern inline __attribute__((always_inline))
-#define JSTD_CRT_NOINLINE                   extern __attribute__((noinline))
+#define JSTD_CRT_FORCE_INLINE               extern inline __attribute__((always_inline))
+#define JSTD_CRT_NO_INLINE                  extern __attribute__((noinline))
 
 #define JSTD_CRT_INLINE_DECLARE(decl)       extern inline __attribute__((gnu_inline)) decl
-#define JSTD_CRT_FORCEINLINE_DECLARE(decl)  extern inline __attribute__((always_inline)) decl
-#define JSTD_CRT_NOINLINE_DECLARE(decl)     extern __attribute__((noinline)) decl
+#define JSTD_CRT_FORCE_INLINE_DECLARE(decl) extern inline __attribute__((always_inline)) decl
+#define JSTD_CRT_NO_INLINE_DECLARE(decl)    extern __attribute__((noinline)) decl
 
 #define JSTD_RESTRICT                       __restrict__
 
 #else // Unknown compiler
 
 #define JSTD_INLINE                         inline
-#define JSTD_FORCEINLINE                    inline
-#define JSTD_NOINLINE
+#define JSTD_FORCE_INLINE                   inline
+#define JSTD_NO_INLINE
 
 #define JSTD_INLINE_DECLARE(decl)           inline decl
-#define JSTD_FORCEINLINE_DECLARE(decl)      inline decl
+#define JSTD_FORCE_INLINE_DECLARE(decl)     inline decl
 #define JSTD_NOINLINE_DECLARE(decl)         decl
 
 #define JSTD_CRT_INLINE                     extern inline
-#define JSTD_CRT_FORCEINLINE                extern inline
-#define JSTD_CRT_NOINLINE                   extern
+#define JSTD_CRT_FORCE_INLINE               extern inline
+#define JSTD_CRT_NO_INLINE                  extern
 
 #define JSTD_CRT_INLINE_DECLARE(decl)       extern inline decl
-#define JSTD_CRT_FORCEINLINE_DECLARE(decl)  extern inline decl
-#define JSTD_CRT_NOINLINE_DECLARE(decl)     extern decl
+#define JSTD_CRT_FORCE_INLINE_DECLARE(decl) extern inline decl
+#define JSTD_CRT_NO_INLINE_DECLARE(decl)    extern decl
 
 #define JSTD_RESTRICT
 
