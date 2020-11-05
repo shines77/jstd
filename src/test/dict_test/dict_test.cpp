@@ -2094,6 +2094,8 @@ void fnv1a_hash_test()
     uint32_t fnv1a_3 = hasher::FNV1A_penumbra(test_str, libc::StrLen(test_str));
 }
 
+#define PTR2HEX16(ptr) (uint32_t)((uint64_t)(ptr) >> 32), (uint32_t)((uint64_t)(ptr) & 0xFFFFFFFFULL)
+
 void realloc_test()
 {
     void * mem_ptr, * new_ptr;
@@ -2109,12 +2111,12 @@ void realloc_test()
         new_ptr = ::realloc(mem_ptr, new_size);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
-                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             else {
-                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             mem_ptr = new_ptr;
         }
@@ -2130,12 +2132,12 @@ void realloc_test()
         new_ptr = ::realloc(mem_ptr, new_size);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
-                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             else {
-                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             mem_ptr = new_ptr;
         }
@@ -2151,12 +2153,12 @@ void realloc_test()
         new_ptr = ::realloc(mem_ptr, new_size);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
-                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             else {
-                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             mem_ptr = new_ptr;
         }
@@ -2186,12 +2188,12 @@ void jm_aligned_realloc_test()
         new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
-                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             else {
-                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             mem_ptr = new_ptr;
         }
@@ -2207,12 +2209,12 @@ void jm_aligned_realloc_test()
         new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
-                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             else {
-                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             mem_ptr = new_ptr;
         }
@@ -2228,12 +2230,12 @@ void jm_aligned_realloc_test()
         new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
-                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             else {
-                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
-                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
             }
             mem_ptr = new_ptr;
         }
