@@ -2099,14 +2099,13 @@ void fnv1a_hash_test()
 void realloc_test()
 {
     void * mem_ptr, * new_ptr;
-    size_t old_size = 16, new_size;
+    size_t old_size = 4, new_size;
     mem_ptr = ::malloc(old_size);
     if (mem_ptr == nullptr)
         return;
-    printf("\n");
     printf("realloc_test()\n");
     printf("\n");
-    for (int i = 0; i < 20; i++) {
+    for (size_t i = 0; i < 25; i++) {
         new_size = old_size * 2;
         new_ptr = ::realloc(mem_ptr, new_size);
         if (new_ptr != nullptr) {
@@ -2122,12 +2121,12 @@ void realloc_test()
         }
         else {
             printf("realloc() error.\n");
-            break;
+            return;
         }
         old_size *= 2;
     }
     printf("\n");
-    for (int i = 0; i < 20; i++) {
+    for (size_t i = 0; i < 25; i++) {
         new_size = old_size / 2;
         new_ptr = ::realloc(mem_ptr, new_size);
         if (new_ptr != nullptr) {
@@ -2143,12 +2142,12 @@ void realloc_test()
         }
         else {
             printf("realloc() error.\n");
-            break;
+            return;
         }
         old_size /= 2;
     }
     printf("\n");
-    for (int i = 0; i < 20; i++) {
+    for (size_t i = 0; i < 25; i++) {
         new_size = old_size * 2;
         new_ptr = ::realloc(mem_ptr, new_size);
         if (new_ptr != nullptr) {
@@ -2164,26 +2163,25 @@ void realloc_test()
         }
         else {
             printf("realloc() error.\n");
-            break;
+            return;
         }
         old_size *= 2;
     }
+    printf("\n");
     if (mem_ptr != nullptr)
         ::free(mem_ptr);
-    printf("\n");
 }
 
 void jm_aligned_realloc_test()
 {
     void * mem_ptr, * new_ptr;
-    size_t old_size = 16, new_size;
+    size_t old_size = 4, new_size;
     mem_ptr = jm_aligned_malloc(old_size, 8);
     if (mem_ptr == nullptr)
         return;
-    printf("\n");
     printf("jm_aligned_realloc_test()\n");
     printf("\n");
-    for (int i = 0; i < 20; i++) {
+    for (size_t i = 0; i < 25; i++) {
         new_size = old_size * 2;
         new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
         if (new_ptr != nullptr) {
@@ -2199,12 +2197,12 @@ void jm_aligned_realloc_test()
         }
         else {
             printf("jm_aligned_realloc() error.\n");
-            break;
+            return;
         }
         old_size *= 2;
     }
     printf("\n");
-    for (int i = 0; i < 20; i++) {
+    for (size_t i = 0; i < 25; i++) {
         new_size = old_size / 2;
         new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
         if (new_ptr != nullptr) {
@@ -2220,12 +2218,12 @@ void jm_aligned_realloc_test()
         }
         else {
             printf("jm_aligned_realloc() error.\n");
-            break;
+            return;
         }
         old_size /= 2;
     }
     printf("\n");
-    for (int i = 0; i < 20; i++) {
+    for (size_t i = 0; i < 25; i++) {
         new_size = old_size * 2;
         new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
         if (new_ptr != nullptr) {
@@ -2241,13 +2239,13 @@ void jm_aligned_realloc_test()
         }
         else {
             printf("jm_aligned_realloc() error.\n");
-            break;
+            return;
         }
         old_size *= 2;
     }
+    printf("\n");
     if (mem_ptr != nullptr)
         jm_aligned_free(mem_ptr, 8);
-    printf("\n");
 }
 
 bool read_dict_file(const std::string & filename)
