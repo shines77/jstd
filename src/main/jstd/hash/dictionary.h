@@ -787,10 +787,10 @@ protected:
                 last_entry = cur_chunk.entries + cur_chunk.size;
                 while (first_entry < last_entry) {
                     // Find first of in use entry.
-                    if (likely(first_entry->attrib.isInUseEntry()))
-                        return first_entry;
-                    else
+                    if (likely(!first_entry->attrib.isInUseEntry()))
                         first_entry++;
+                    else
+                        return first_entry;
                 }
             }
             chunk_index++;
@@ -813,10 +813,10 @@ protected:
         assert(next_entry >= cur_chunk.entries);
 
         while (next_entry < last_entry) {
-            if (likely(next_entry->attrib.isInUseEntry()))
-                return next_entry;
-            else
+            if (likely(!next_entry->attrib.isInUseEntry()))
                 next_entry++;
+            else
+                return next_entry;
         }
 
         next_entry = nullptr;
@@ -831,10 +831,10 @@ protected:
                 last_entry = cur_chunk2.entries + cur_chunk2.size;
                 while (next_entry < last_entry) {
                     // Find first of in use entry.
-                    if (likely(next_entry->attrib.isInUseEntry()))
-                        return next_entry;
-                    else
+                    if (likely(!next_entry->attrib.isInUseEntry()))
                         next_entry++;
+                    else
+                        return next_entry;
                 }
             }
             chunk_index++;
@@ -864,10 +864,10 @@ protected:
                 last_entry = cur_chunk.entries + cur_chunk.size;
                 while (first_entry < last_entry) {
                     // Find first of in use entry.
-                    if (likely(first_entry->attrib.isInUseEntry()))
-                        return first_entry;
-                    else
+                    if (likely(!first_entry->attrib.isInUseEntry()))
                         first_entry++;
+                    else
+                        return first_entry;
                 }
             }
             entry_index = 0;

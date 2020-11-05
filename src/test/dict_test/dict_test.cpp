@@ -80,6 +80,8 @@
 #include <jstd/string/formatter.h>
 #include <jstd/string/snprintf.hpp>
 
+#include <jstd/memory/c_aligned_malloc.h>
+
 //#include <jstd/all.h>
 
 using namespace jstd;
@@ -2092,6 +2094,160 @@ void fnv1a_hash_test()
     uint32_t fnv1a_3 = hasher::FNV1A_penumbra(test_str, libc::StrLen(test_str));
 }
 
+void realloc_test()
+{
+    void * mem_ptr, * new_ptr;
+    size_t old_size = 16, new_size;
+    mem_ptr = ::malloc(old_size);
+    if (mem_ptr == nullptr)
+        return;
+    printf("\n");
+    printf("realloc_test()\n");
+    printf("\n");
+    for (int i = 0; i < 20; i++) {
+        new_size = old_size * 2;
+        new_ptr = ::realloc(mem_ptr, new_size);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("realloc() error.\n");
+            break;
+        }
+        old_size *= 2;
+    }
+    printf("\n");
+    for (int i = 0; i < 20; i++) {
+        new_size = old_size / 2;
+        new_ptr = ::realloc(mem_ptr, new_size);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("realloc() error.\n");
+            break;
+        }
+        old_size /= 2;
+    }
+    printf("\n");
+    for (int i = 0; i < 20; i++) {
+        new_size = old_size * 2;
+        new_ptr = ::realloc(mem_ptr, new_size);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("realloc() error.\n");
+            break;
+        }
+        old_size *= 2;
+    }
+    if (mem_ptr != nullptr)
+        ::free(mem_ptr);
+    printf("\n");
+}
+
+void jm_aligned_realloc_test()
+{
+    void * mem_ptr, * new_ptr;
+    size_t old_size = 16, new_size;
+    mem_ptr = jm_aligned_malloc(old_size, 8);
+    if (mem_ptr == nullptr)
+        return;
+    printf("\n");
+    printf("jm_aligned_realloc_test()\n");
+    printf("\n");
+    for (int i = 0; i < 20; i++) {
+        new_size = old_size * 2;
+        new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("jm_aligned_realloc() error.\n");
+            break;
+        }
+        old_size *= 2;
+    }
+    printf("\n");
+    for (int i = 0; i < 20; i++) {
+        new_size = old_size / 2;
+        new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("jm_aligned_realloc() error.\n");
+            break;
+        }
+        old_size /= 2;
+    }
+    printf("\n");
+    for (int i = 0; i < 20; i++) {
+        new_size = old_size * 2;
+        new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%p, new-ptr: 0x%p, size: [%8u -> %-8u] bytes\n",
+                        mem_ptr, new_ptr, (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("jm_aligned_realloc() error.\n");
+            break;
+        }
+        old_size *= 2;
+    }
+    if (mem_ptr != nullptr)
+        jm_aligned_free(mem_ptr, 8);
+    printf("\n");
+}
+
 bool read_dict_file(const std::string & filename)
 {
     bool is_ok = false;
@@ -2135,10 +2291,12 @@ int main(int argc, char * argv[])
     //shiftable_ptr_test();
     //formatter_test();
     //fnv1a_hash_test();
+    realloc_test();
+    jm_aligned_realloc_test();
 
     //formatter_benchmark();
-    hashtable_uinttest();
-    hashtable_benchmark();
+    //hashtable_uinttest();
+    //hashtable_benchmark();
 
     jstd::Console::ReadKey();
     return 0;
