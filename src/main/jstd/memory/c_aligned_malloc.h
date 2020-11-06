@@ -64,10 +64,20 @@
 #define JMC_RESTRICT
 #endif
 
-#ifndef _MSC_VER
-  #ifndef _RPT1
-    #define _RPT1(rptno, msg, arg1)
+#if defined(MALLOC_ALIGNMENT)
+  #define JM_MALLOC_ALIGNMENT       MALLOC_ALIGNMENT
+#else
+  #if JM_MALLOC_IS_X64
+    #define JM_MALLOC_ALIGNMENT     16
+  #else
+    #define JM_MALLOC_ALIGNMENT     8
   #endif
+#endif // MALLOC_ALIGNMENT
+
+#if JM_MALLOC_IS_X64
+  #define JM_VOID_PTR_SIZE          8
+#else
+  #define JM_VOID_PTR_SIZE          4
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -233,7 +243,9 @@ jm_adjust_alignment(size_t alignment)
     // we must also report the assertion in debug mode.
     //
     assert(jm_is_power_of_2(alignment));
+#if (JM_VOID_PTR_SIZE > JM_MALLOC_ALIGNMENT)
     alignment = (alignment >= sizeof(uintptr_t)) ? alignment : sizeof(uintptr_t);
+#endif
 
 #if JMC_ADJUST_ALIGNMENT
     alignment = jm_round_up_power_of_2(alignment);
@@ -384,6 +396,10 @@ jm_aligned_usable_size(void * ptr, size_t alignment)
     ptrdiff_t usable_size;  /* Aligned alloce size of the user block */
     uintptr_t pvData;
 
+    if (alignment <= JM_MALLOC_ALIGNMENT) {
+        return jm_usable_size(ptr);
+    }
+
     /* HEADER_SIZE + FOOTER_SIZE = (ALIGNMENT - 1) + SIZE_OF(aligned_block_header_t)) */
     /* HEADER_SIZE + USER_SIZE + FOOTER_SIZE = TOTAL_SIZE */
 
@@ -447,6 +463,10 @@ jm_aligned_malloc(size_t size, size_t alignment)
 {
     size_t alloc_size;
     uintptr_t pvAlloc, pvData;
+
+    if (alignment <= JM_MALLOC_ALIGNMENT) {
+        return malloc(size);
+    }
 
     //
     // The alignment must be a power of 2,
@@ -516,6 +536,10 @@ jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
     void * pvAlloc, * new_ptr;
     void * newData;
     size_t new_alloc_size;
+
+    if (alignment <= JM_MALLOC_ALIGNMENT) {
+        return realloc(ptr, new_size);
+    }
 
     if (likely(ptr != nullptr)) {
         if (likely(new_size != 0)) {
@@ -603,6 +627,10 @@ jm_aligned_free(void * ptr, size_t alignment)
     aligned_block_header_t * pBlockHdr;
     uintptr_t pvData;
     void * pvAlloc;
+
+    if (alignment <= JM_MALLOC_ALIGNMENT) {
+        return free(ptr);
+    }
 
     // Diagnosing in debug mode
     jm_aligned_check_param(ptr, alignment);
