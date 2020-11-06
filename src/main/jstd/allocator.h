@@ -345,10 +345,15 @@ struct allocator : public allocator_base<
     static const size_type kAlignOf = base_type::kAlignOf;
     static const size_type kAlignment = base_type::kAlignment;
 #if defined(MALLOC_ALIGNMENT)
-    static const size_type kMallocDefaultAlignment = MALLOC_ALIGNMENT;
+    static const size_type kMallocDefaultAlignment = compile_time::round_up_to_pow2<MALLOC_ALIGNMENT>::value;
 #else
-    static const size_type kMallocDefaultAlignment = 0;
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
+    static const size_type kMallocDefaultAlignment = 16;
+#else
+    static const size_type kMallocDefaultAlignment = 8;
 #endif
+#endif // MALLOC_ALIGNMENT
 
     allocator() noexcept {}
     allocator(const this_type & other) noexcept {}
@@ -371,7 +376,11 @@ struct allocator : public allocator_base<
     };
 
     bool needAlignedAllocaote() const {
+#if 1
+        return (kAlignment > kMallocDefaultAlignment);
+#else
         return ((kAlignment != 0) && (kAlignment != kMallocDefaultAlignment));
+#endif
     }
 
     pointer allocate(size_type count = 1) {

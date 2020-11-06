@@ -2176,14 +2176,15 @@ void jm_aligned_realloc_test()
 {
     void * mem_ptr, * new_ptr;
     size_t old_size = 4, new_size;
-    mem_ptr = jm_aligned_malloc(old_size, 8);
+    size_t alignment = allocator<int>::kMallocDefaultAlignment;
+    mem_ptr = jm_aligned_malloc(old_size, alignment);
     if (mem_ptr == nullptr)
         return;
-    printf("jm_aligned_realloc_test()\n");
+    printf("jm_aligned_realloc_test(): alignment = %u\n", (uint32_t)alignment);
     printf("\n");
     for (size_t i = 0; i < 25; i++) {
         new_size = old_size * 2;
-        new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
+        new_ptr = jm_aligned_realloc(mem_ptr, new_size, alignment);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
                 printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
@@ -2204,7 +2205,7 @@ void jm_aligned_realloc_test()
     printf("\n");
     for (size_t i = 0; i < 25; i++) {
         new_size = old_size / 2;
-        new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
+        new_ptr = jm_aligned_realloc(mem_ptr, new_size, alignment);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
                 printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
@@ -2225,7 +2226,7 @@ void jm_aligned_realloc_test()
     printf("\n");
     for (size_t i = 0; i < 25; i++) {
         new_size = old_size * 2;
-        new_ptr = jm_aligned_realloc(mem_ptr, new_size, 8);
+        new_ptr = jm_aligned_realloc(mem_ptr, new_size, alignment);
         if (new_ptr != nullptr) {
             if (mem_ptr != new_ptr) {
                 printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
