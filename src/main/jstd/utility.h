@@ -18,6 +18,7 @@
 #include "jstd/type_traits.h"
 
 namespace jstd {
+namespace detail {
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1800)
 
@@ -53,6 +54,7 @@ auto const_cast_(T * ptr) -> const typename std::remove_const<T>::type * {
 
 #endif // (_MSC_VER >= 1800)
 
+} // namespace detail
 } // namespace jstd
 
 #endif // JSTD_UTILITY_H

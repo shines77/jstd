@@ -283,7 +283,7 @@ private:
 public:
     static JM_INLINE
     size_t JM_X86_CDECL
-    unaligned_usable_size(void * ptr) {
+    original_usable_size(void * ptr) {
 #ifdef _MSC_VER
         size_t alloc_size = ::_msize(ptr);
 #else
@@ -292,35 +292,44 @@ public:
         return alloc_size;
     }
 
+    template <typename U>
+    static JM_INLINE
+    size_t JM_X86_CDECL
+    original_usable_size(U * ptr) {
+        void * p = reinterpret_cast<void *>(ptr);
+        return this_type::original_usable_size(p);
+    }
+
     JM_INLINE
     size_t JM_X86_CDECL
-    get_usable_size(void * ptr, size_t alignment) {
+    get_usable_size(void * ptr) {
         ptrdiff_t header_size;  /* Size of the header block */
         size_t alloc_size;      /* Actual alloce size of the allocated block */
         ptrdiff_t usable_size;  /* Aligned alloce size of the user block */
         uintptr_t pvData;
 
-        if (alignment <= JM_MALLOC_ALIGNMENT) {
-            return this_type::unaligned_usable_size(ptr);
+        //
+        // The alignment must be a power of 2,
+        // the behavior is undefined if alignment is not a power of 2.
+        //
+        size_t alignment = this_type::adjust_alignment(kAlignment);
+        JSTD_UNUSED_VARS(alignment);
+
+        if (kAlignment <= JM_MALLOC_ALIGNMENT) {
+            return this_type::original_usable_size(ptr);
         }
 
         /* HEADER_SIZE + FOOTER_SIZE = (ALIGNMENT - 1) + SIZE_OF(aligned_block_header)) */
         /* HEADER_SIZE + USER_SIZE + FOOTER_SIZE = TOTAL_SIZE */
 
         // Diagnosing in debug mode
-        check_param(ptr, alignment);
+        check_param(ptr, kAlignment);
 
         assert(ptr != nullptr);
         //
         // The ptr value aligned to sizeof(uintptr_t) bytes if need.
         //
         pvData = (uintptr_t)this_type::adjust_pointer(ptr);
-
-        //
-        // The alignment must be a power of 2,
-        // the behavior is undefined if alignment is not a power of 2.
-        //
-        alignment = this_type::adjust_alignment(alignment);
 
 #if JM_SUPPORT_ALIGNED_OFFSET_MALLOC
         // The ptr value aligned to sizeof(uintptr_t) bytes
@@ -334,7 +343,7 @@ public:
         aligned_block_header * pBlockHdr = (aligned_block_header *)pvData - 1;
         assert(((uintptr_t)pBlockHdr & (sizeof(uintptr_t) - 1)) == 0);
 
-        alloc_size = this_type::unaligned_usable_size(pBlockHdr->pvAlloc);
+        alloc_size = this_type::original_usable_size(pBlockHdr->pvAlloc);
 
 #ifdef NDEBUG
         header_size = (ptrdiff_t)pvData - (ptrdiff_t)(pBlockHdr->pvAlloc);
@@ -355,6 +364,14 @@ public:
 
         return (size_t)-1;
 #endif // NDEBUG
+    }
+
+    template <typename U>
+    static JM_INLINE
+    size_t JM_X86_CDECL
+    get_usable_size(U * ptr) {
+        void * p = reinterpret_cast<void *>(ptr);
+        return this_type::get_usable_size(p);
     }
 
     static JM_INLINE
@@ -483,14 +500,14 @@ public:
             }
             else {
                 // If ptr is not null and new_size is zero, call free(ptr) and return null.
-                this_type::free(ptr, alignment);
+                this_type::free(ptr);
                 new_ptr = nullptr;
             }
         }
         else {
             if (likely(new_size != 0)) {
                 // If ptr is null and new_size is not zero, return malloc(new_size).
-                new_ptr = (void *)this_type::malloc(new_size, alignment);
+                new_ptr = (void *)this_type::malloc(new_size);
             }
             else {
                 // If ptr is null and new_size is zero, return null.
