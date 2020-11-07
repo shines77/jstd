@@ -156,6 +156,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\all.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\allocator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\assert.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\base.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\compiler.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\export.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\inttypes.h" />
@@ -199,6 +200,8 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\iterator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\lib.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\math\log10_int.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\aligned_allocator.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\aligned_malloc.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\c_aligned_malloc.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\defines.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\shiftable_ptr.h" />
@@ -239,7 +242,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch_v1.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits\has_member.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\xutility.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\utility.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\basic\assert-c.c" />

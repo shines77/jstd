@@ -21,25 +21,25 @@
 
 /////////////////////////////////////////////////////////////////////////////
 
-#define JM_SUPPORT_ALIGNED_OFFSET_MALLOC    0
+#define JMC_SUPPORT_ALIGNED_OFFSET_MALLOC    0
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
-#  define JM_MALLOC_IS_X64      1
+#  define JMC_MALLOC_IS_X64      1
 #else
-#  define JM_MALLOC_IS_X64      0
+#  define JMC_MALLOC_IS_X64      0
 #endif
 
-#undef  JM_X86_CDECL
-#if !defined(JM_MALLOC_IS_X64) || (JM_MALLOC_IS_X64 == 0)
-#define JM_X86_CDECL    __cdecl
+#undef  JMC_X86_CDECL
+#if !defined(JMC_MALLOC_IS_X64) || (JMC_MALLOC_IS_X64 == 0)
+#define JMC_X86_CDECL    __cdecl
 #else
-#define JM_X86_CDECL
+#define JMC_X86_CDECL
 #endif
 
 /* The align sign size of aligned_block */
-#define JM_ALIGN_SIGN_SIZE      sizeof(void *)
-#define JM_NO_MANS_LAND_SIZE    sizeof(void *)
+#define JMC_ALIGN_SIGN_SIZE      sizeof(void *)
+#define JMC_NO_MANS_LAND_SIZE    sizeof(void *)
 
 #ifndef __cplusplus
 #ifndef nullptr
@@ -48,37 +48,53 @@
 #endif
 
 #if defined(_MSC_VER)
-#define JMC_INLINE          __inline
-#define JMC_FORCEINLINE     __forceinline
-#define JMC_NOINLINE        __declspec(noinline)
-#define JMC_RESTRICT        __restrict
+#define JMC_INLINE              __inline
+#define JMC_FORCE_INLINE        __forceinline
+#define JMC_NO_INLINE           __declspec(noinline)
+#define JMC_RESTRICT            __restrict
 #elif defined(__GNUC__) || defined(__clang__) || defined(__linux__)
-#define JMC_INLINE          __inline__
-#define JMC_FORCEINLINE     __inline__ __attribute__((always_inline))
-#define JMC_NOINLINE        __attribute__((noinline))
-#define JMC_RESTRICT        __restrict__
+#define JMC_INLINE              __inline__
+#define JMC_FORCE_INLINE        __inline__ __attribute__((always_inline))
+#define JMC_NO_INLINE           __attribute__((noinline))
+#define JMC_RESTRICT            __restrict__
 #else
-#define JMC_INLINE          inline
-#define JMC_FORCEINLINE     inline
-#define JMC_NOINLINE
+#define JMC_INLINE              inline
+#define JMC_FORCE_INLINE        inline
+#define JMC_NO_INLINE
 #define JMC_RESTRICT
 #endif
 
 #if defined(MALLOC_ALIGNMENT)
-  #define JM_MALLOC_ALIGNMENT       MALLOC_ALIGNMENT
+  #define JMC_MALLOC_ALIGNMENT       MALLOC_ALIGNMENT
 #else
-  #if JM_MALLOC_IS_X64
-    #define JM_MALLOC_ALIGNMENT     16
+  #if JMC_MALLOC_IS_X64
+    #define JMC_MALLOC_ALIGNMENT     16
   #else
-    #define JM_MALLOC_ALIGNMENT     8
+    #define JMC_MALLOC_ALIGNMENT     8
   #endif
 #endif // MALLOC_ALIGNMENT
 
-#if JM_MALLOC_IS_X64
-  #define JM_VOID_PTR_SIZE          8
+#if JMC_MALLOC_IS_X64
+  #define JMC_VOID_PTR_SIZE          8
 #else
-  #define JM_VOID_PTR_SIZE          4
+  #define JMC_VOID_PTR_SIZE          4
 #endif
+
+/*********************************************************************************
+#ifndef INTERNAL_SIZE_T
+#define INTERNAL_SIZE_T     size_t
+#endif
+
+// The corresponding word size
+#define SIZE_SZ             (sizeof(INTERNAL_SIZE_T))
+
+#ifndef MALLOC_ALIGNMENT
+#define MALLOC_ALIGNMENT    (2 * SIZE_SZ < __alignof__ (long double) \
+                             ? __alignof__ (long double) : 2 * SIZE_SZ)
+
+//#define MALLOC_ALIGNMENT  (2 * SIZE_SZ)
+#endif
+*********************************************************************************/
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -106,28 +122,28 @@ extern "C" {
  */
 
 /* fill no-man's sign for aligned routines */
-static unsigned char kcAlignSignFill  = 0xE9;
+static const unsigned char kcAlignSignFill  = 0xE9;
 
 /* fill no-man's sign for free routines */
-static unsigned char kcClearSignFill  = 0x00;
+static const unsigned char kcClearSignFill  = 0x00;
 
 /* fill no-man's land with this */
-static unsigned char kcNoMansLandFill = 0xFD;
+static const unsigned char kcNoMansLandFill = 0xFD;
 
 /* fill no-man's land for aligned routines */
-static unsigned char kcAlignLandFill  = 0xED;
+static const unsigned char kcAlignLandFill  = 0xED;
 
 /* fill free objects with this */
-static unsigned char kcDeadLandFill   = 0xDD;
+static const unsigned char kcDeadLandFill   = 0xDD;
 
 /* fill new objects with this */
-static unsigned char kcCleanLandFill  = 0xCD;
+static const unsigned char kcCleanLandFill  = 0xCD;
 
 #pragma pack(push, 1)
 struct _aligned_block_header {
     void *          pvAlloc;
 #ifndef NDEBUG
-    unsigned char   sign[JM_ALIGN_SIGN_SIZE];
+    unsigned char   sign[JMC_ALIGN_SIGN_SIZE];
 #endif
 };
 #pragma pack(pop)
@@ -136,31 +152,31 @@ typedef struct _aligned_block_header    aligned_block_header_t;
 
 /////////////////////////////////////////////////////////////////////////////
 
-bool   JM_X86_CDECL jm_is_power_of_2(size_t n);
-size_t JM_X86_CDECL jm_next_power_of_2(size_t n);
-size_t JM_X86_CDECL jm_round_up_power_of_2(size_t alignment);
+bool   JMC_X86_CDECL jm_is_power_of_2(size_t n);
+size_t JMC_X86_CDECL jm_next_power_of_2(size_t n);
+size_t JMC_X86_CDECL jm_round_up_power_of_2(size_t alignment);
 
 // For debug
-bool   JM_X86_CDECL jm_check_bytes(unsigned char * pb,
+bool   JMC_X86_CDECL jm_check_bytes(unsigned char * pb,
                                    unsigned char bCheck,
                                    size_t nSize);
 // For debug
-int    JM_X86_CDECL jm_aligned_check_param(void * ptr, size_t alignment);
+int    JMC_X86_CDECL jm_aligned_check_param(void * ptr, size_t alignment);
 
-size_t JM_X86_CDECL jm_adjust_alignment(size_t alignment);
-void * JM_X86_CDECL jm_adjust_aligned_pointer(void * ptr);
+size_t JMC_X86_CDECL jm_adjust_alignment(size_t alignment);
+void * JMC_X86_CDECL jm_adjust_aligned_pointer(void * ptr);
 
-void * JM_X86_CDECL jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment);
+void * JMC_X86_CDECL jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment);
 
-size_t JM_X86_CDECL jm_usable_size(void * ptr);
-size_t JM_X86_CDECL jm_aligned_usable_size(void * ptr, size_t alignment);
+size_t JMC_X86_CDECL jm_usable_size(void * ptr);
+size_t JMC_X86_CDECL jm_aligned_usable_size(void * ptr, size_t alignment);
 
-void * JM_X86_CDECL jm_aligned_malloc(size_t size, size_t alignment);
-void * JM_X86_CDECL jm_aligned_realloc(void *ptr, size_t new_size, size_t alignment);
-void * JM_X86_CDECL jm_aligned_calloc(size_t count, size_t size, size_t alignment);
-void * JM_X86_CDECL jm_aligned_recalloc(void *ptr, size_t count, size_t new_size, size_t alignment);
+void * JMC_X86_CDECL jm_aligned_malloc(size_t size, size_t alignment);
+void * JMC_X86_CDECL jm_aligned_realloc(void *ptr, size_t new_size, size_t alignment);
+void * JMC_X86_CDECL jm_aligned_calloc(size_t count, size_t size, size_t alignment);
+void * JMC_X86_CDECL jm_aligned_recalloc(void *ptr, size_t count, size_t new_size, size_t alignment);
 
-void   JM_X86_CDECL jm_aligned_free(void * ptr, size_t alignment);
+void   JMC_X86_CDECL jm_aligned_free(void * ptr, size_t alignment);
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -173,7 +189,7 @@ static int jm_malloc_errno = 0;
 /////////////////////////////////////////////////////////////////////////////
 
 JMC_INLINE
-bool JM_X86_CDECL
+bool JMC_X86_CDECL
 jm_check_bytes(unsigned char * pb,
                unsigned char bCheck,
                size_t nSize)
@@ -190,14 +206,14 @@ jm_check_bytes(unsigned char * pb,
 /////////////////////////////////////////////////////////////////////////////
 
 JMC_INLINE
-bool JM_X86_CDECL
+bool JMC_X86_CDECL
 jm_is_power_of_2(size_t n)
 {
     return ((n & (n - 1)) == 0);
 }
 
 JMC_INLINE
-size_t JM_X86_CDECL
+size_t JMC_X86_CDECL
 jm_next_power_of_2(size_t n)
 {
     if (n != 0) {
@@ -208,7 +224,7 @@ jm_next_power_of_2(size_t n)
         n |= n >> 4;
         n |= n >> 8;
         n |= n >> 16;
-#if JM_MALLOC_IS_X64
+#if JMC_MALLOC_IS_X64
         n |= n >> 32;
 #endif
         return ++n;
@@ -218,7 +234,7 @@ jm_next_power_of_2(size_t n)
 }
 
 JMC_INLINE
-size_t JM_X86_CDECL
+size_t JMC_X86_CDECL
 jm_round_up_power_of_2(size_t alignment)
 {
     if (jm_is_power_of_2(alignment)) {
@@ -234,7 +250,7 @@ jm_round_up_power_of_2(size_t alignment)
 }
 
 JMC_INLINE
-size_t JM_X86_CDECL
+size_t JMC_X86_CDECL
 jm_adjust_alignment(size_t alignment)
 {
     //
@@ -243,7 +259,7 @@ jm_adjust_alignment(size_t alignment)
     // we must also report the assertion in debug mode.
     //
     assert(jm_is_power_of_2(alignment));
-#if (JM_VOID_PTR_SIZE > JM_MALLOC_ALIGNMENT)
+#if (JMC_VOID_PTR_SIZE > JMC_MALLOC_ALIGNMENT)
     alignment = (alignment >= sizeof(uintptr_t)) ? alignment : sizeof(uintptr_t);
 #endif
 
@@ -256,11 +272,11 @@ jm_adjust_alignment(size_t alignment)
 }
 
 JMC_INLINE
-void * JM_X86_CDECL
+void * JMC_X86_CDECL
 jm_adjust_aligned_pointer(void * ptr)
 {
     void * pvData;
-#if JM_SUPPORT_ALIGNED_OFFSET_MALLOC
+#if JMC_SUPPORT_ALIGNED_OFFSET_MALLOC
     // The ptr value aligned to sizeof(uintptr_t) bytes
     pvData = (void *)((uintptr_t)ptr & ~(sizeof(uintptr_t) - 1));
 #else
@@ -273,7 +289,7 @@ jm_adjust_aligned_pointer(void * ptr)
 /////////////////////////////////////////////////////////////////////////////
 
 JMC_INLINE
-int JM_X86_CDECL
+int JMC_X86_CDECL
 jm_aligned_check_param(void * ptr, size_t alignment)
 {
 #ifndef NDEBUG
@@ -284,7 +300,7 @@ jm_aligned_check_param(void * ptr, size_t alignment)
    
     malloc_errno = 0;
 
-#if JM_SUPPORT_ALIGNED_OFFSET_MALLOC
+#if JMC_SUPPORT_ALIGNED_OFFSET_MALLOC
     // The ptr value aligned to sizeof(uintptr_t) bytes
     pvData = (uintptr_t)ptr & ~(sizeof(uintptr_t) - 1);
 #else
@@ -316,7 +332,7 @@ jm_aligned_check_param(void * ptr, size_t alignment)
     assert(headerPaddingSize >= (ptrdiff_t)sizeof(aligned_block_header_t));
     assert(headerPaddingSize <= (ptrdiff_t)(sizeof(aligned_block_header_t) + (alignment - 1)));
 
-    if (!jm_check_bytes(pBlockHdr->sign, kcAlignSignFill, JM_ALIGN_SIGN_SIZE)) {
+    if (!jm_check_bytes(pBlockHdr->sign, kcAlignSignFill, JMC_ALIGN_SIGN_SIZE)) {
         // We don't know where (file, linenum) pvData was allocated
         fprintf(stderr, "Damage before 0x%p which was allocated by jm_aligned routine\n\n", (void *)pvData);
         assert(false);
@@ -330,8 +346,8 @@ jm_aligned_check_param(void * ptr, size_t alignment)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-JMC_FORCEINLINE
-void * JM_X86_CDECL
+JMC_FORCE_INLINE
+void * JMC_X86_CDECL
 jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
 {
     uintptr_t pvAlloc, pvData;
@@ -358,7 +374,7 @@ jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
     assert((uintptr_t)pBlockHdr >= pvAlloc);
 
 #ifndef NDEBUG
-    memset((void *)pBlockHdr->sign, kcAlignSignFill, JM_ALIGN_SIGN_SIZE);
+    memset((void *)pBlockHdr->sign, kcAlignSignFill, JMC_ALIGN_SIGN_SIZE);
 #endif
     pBlockHdr->pvAlloc = (void *)pvAlloc;
 
@@ -376,7 +392,7 @@ jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
 }
 
 JMC_INLINE
-size_t JM_X86_CDECL
+size_t JMC_X86_CDECL
 jm_usable_size(void * ptr)
 {
 #ifdef _MSC_VER
@@ -388,7 +404,7 @@ jm_usable_size(void * ptr)
 }
 
 JMC_INLINE
-size_t JM_X86_CDECL
+size_t JMC_X86_CDECL
 jm_aligned_usable_size(void * ptr, size_t alignment)
 {
     ptrdiff_t header_size;  /* Size of the header block */
@@ -396,7 +412,7 @@ jm_aligned_usable_size(void * ptr, size_t alignment)
     ptrdiff_t usable_size;  /* Aligned alloce size of the user block */
     uintptr_t pvData;
 
-    if (alignment <= JM_MALLOC_ALIGNMENT) {
+    if (alignment <= JMC_MALLOC_ALIGNMENT) {
         return jm_usable_size(ptr);
     }
 
@@ -418,7 +434,7 @@ jm_aligned_usable_size(void * ptr, size_t alignment)
     //
     alignment = jm_adjust_alignment(alignment);
 
-#if JM_SUPPORT_ALIGNED_OFFSET_MALLOC
+#if JMC_SUPPORT_ALIGNED_OFFSET_MALLOC
     // The ptr value aligned to sizeof(uintptr_t) bytes
     pvData = (uintptr_t)ptr & ~(sizeof(uintptr_t) - 1);
 #else
@@ -458,13 +474,13 @@ jm_aligned_usable_size(void * ptr, size_t alignment)
 }
 
 JMC_INLINE
-void * JM_X86_CDECL
+void * JMC_X86_CDECL
 jm_aligned_malloc(size_t size, size_t alignment)
 {
     size_t alloc_size;
     uintptr_t pvAlloc, pvData;
 
-    if (alignment <= JM_MALLOC_ALIGNMENT) {
+    if (alignment <= JMC_MALLOC_ALIGNMENT) {
         return malloc(size);
     }
 
@@ -528,7 +544,7 @@ jm_aligned_malloc(size_t size, size_t alignment)
 /*****************************************************************************************/
 
 JMC_INLINE
-void * JM_X86_CDECL
+void * JMC_X86_CDECL
 jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
 {
     aligned_block_header_t * pBlockHdr;
@@ -537,7 +553,7 @@ jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
     void * newData;
     size_t new_alloc_size;
 
-    if (alignment <= JM_MALLOC_ALIGNMENT) {
+    if (alignment <= JMC_MALLOC_ALIGNMENT) {
         return realloc(ptr, new_size);
     }
 
@@ -599,36 +615,36 @@ jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
 }
 
 JMC_INLINE
-void * JM_X86_CDECL
+void * JMC_X86_CDECL
 jm_aligned_calloc(size_t count, size_t size, size_t alignment)
 {
     void * pvData = jm_aligned_malloc(count * size, alignment);
     if (pvData != nullptr) {
-        memset(pvData, 0, count * size * sizeof(char));
+        memset(pvData, 0, count * size);
     }
     return pvData;
 }
 
 JMC_INLINE
-void * JM_X86_CDECL
+void * JMC_X86_CDECL
 jm_aligned_recalloc(void * ptr, size_t count, size_t new_size, size_t alignment)
 {
     void * pvData = jm_aligned_realloc(ptr, count * new_size, alignment);
     if (pvData != nullptr) {
-        memset(pvData, 0, count * new_size * sizeof(char));
+        memset(pvData, 0, count * new_size);
     }
     return pvData;
 }
 
 JMC_INLINE
-void JM_X86_CDECL
+void JMC_X86_CDECL
 jm_aligned_free(void * ptr, size_t alignment)
 {
     aligned_block_header_t * pBlockHdr;
     uintptr_t pvData;
     void * pvAlloc;
 
-    if (alignment <= JM_MALLOC_ALIGNMENT) {
+    if (alignment <= JMC_MALLOC_ALIGNMENT) {
         return free(ptr);
     }
 
@@ -647,7 +663,7 @@ jm_aligned_free(void * ptr, size_t alignment)
     pvAlloc = pBlockHdr->pvAlloc;
 
 #ifndef NDEBUG
-    //if (jm_check_bytes(pBlockHdr->sign, kcNoMansLandFill, JM_NO_MANS_LAND_SIZE)) {
+    //if (jm_check_bytes(pBlockHdr->sign, kcNoMansLandFill, JMC_NO_MANS_LAND_SIZE)) {
     //    // We don't know where (file, linenum) pvData was allocated
     //    fprintf(stderr, "The block at 0x%p was not allocated by jm_aligned routines, use free()\n\n", (void *)pvData);
     //    return;
@@ -659,7 +675,7 @@ jm_aligned_free(void * ptr, size_t alignment)
     pBlockHdr->pvAlloc = nullptr;
 
     // Set and fill clear sign
-    memset(pBlockHdr->sign, kcClearSignFill, JM_ALIGN_SIGN_SIZE);
+    memset(pBlockHdr->sign, kcClearSignFill, JMC_ALIGN_SIGN_SIZE);
 #endif
 
     // Free memory block if need

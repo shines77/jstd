@@ -1,6 +1,6 @@
 
-#ifndef JSTD_XUTILITY_H
-#define JSTD_XUTILITY_H
+#ifndef JSTD_UTILITY_H
+#define JSTD_UTILITY_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -18,7 +18,6 @@
 #include "jstd/type_traits.h"
 
 namespace jstd {
-namespace detail {
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1800)
 
@@ -54,7 +53,6 @@ auto const_cast_(T * ptr) -> const typename std::remove_const<T>::type * {
 
 #endif // (_MSC_VER >= 1800)
 
-} // namespace detail
 } // namespace jstd
 
-#endif // JSTD_XUTILITY_H
+#endif // JSTD_UTILITY_H

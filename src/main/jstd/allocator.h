@@ -10,8 +10,10 @@
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 
+#include "jstd/basic/base.h"
 #include "jstd/support/PowerOf2.h"
 #include "jstd/memory/c_aligned_malloc.h"
+#include "jstd/memory/aligned_allocator.h"
 
 #include <stddef.h>
 #include <malloc.h>
@@ -126,16 +128,6 @@ std::size_t aligned_to(std::size_t size, std::size_t alignment)
     assert((size / alignment * alignment) == size);
     return size;
 }
-
-template <typename T>
-struct align_of {
-#if 1
-    static const std::size_t value = (alignof(T) >= alignof(std::max_align_t))
-                                    ? alignof(T) :  alignof(std::max_align_t);
-#else
-    static constexpr std::size_t value = std::alignment_of<T>::value;
-#endif
-};
 
 template <class Derive, class T, std::size_t Alignment = align_of<T>::value>
 struct allocator_base {
@@ -386,9 +378,9 @@ struct allocator : public allocator_base<
     pointer allocate(size_type count = 1) {
         pointer ptr;
         if (needAlignedAllocaote())
-            ptr = static_cast<pointer>(_AlignedAllocate(count * sizeof(value_type), kAlignment));
+            ptr = aligned_allocator<T, kAlignment>::malloc(count * sizeof(value_type));
         else
-            ptr = static_cast<pointer>(_Allocate(count * sizeof(value_type)));
+            ptr = static_cast<pointer>(std::malloc(count * sizeof(value_type)));
         if (ThrowEx && (ptr == nullptr)) {
             throw std::bad_alloc();
         }
@@ -399,9 +391,9 @@ struct allocator : public allocator_base<
     pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr;
         if (needAlignedAllocaote())
-            new_ptr = static_cast<pointer>(_AlignedReallocate((void *)ptr, count * sizeof(value_type), kAlignment));
+            new_ptr = aligned_allocator<T, kAlignment>::realloc(ptr, count * sizeof(value_type));
         else
-            new_ptr = static_cast<pointer>(_Reallocate((void *)ptr, count * sizeof(value_type)));
+            new_ptr = static_cast<pointer>(std::realloc((void *)ptr, count * sizeof(value_type)));
         if (ThrowEx && (new_ptr == nullptr)) {
             throw std::bad_alloc();
         }
@@ -412,9 +404,9 @@ struct allocator : public allocator_base<
     void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
         if (needAlignedAllocaote())
-            _AlignedDeallocate((void *)ptr, kAlignment);
+            aligned_allocator<T, kAlignment>::free((void *)ptr);
         else
-            _Deallocate((void *)ptr, count * sizeof(value_type));
+            std::free((void *)ptr);
     }
 
     bool is_auto_release() { return true; }

@@ -10,7 +10,7 @@
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 #include "jstd/basic/inttypes.h"
-#include "jstd/xutility.h"
+#include "jstd/utility.h"
 #include "jstd/type_traits.h"
 #include "jstd/iterator.h"
 #include "jstd/allocator.h"

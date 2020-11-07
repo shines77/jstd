@@ -2120,8 +2120,8 @@ void realloc_test()
             mem_ptr = new_ptr;
         }
         else {
-            printf("realloc() error.\n");
-            return;
+            printf("realloc() error.\n\n");
+            goto realloc_exit;
         }
         old_size *= 2;
     }
@@ -2141,8 +2141,8 @@ void realloc_test()
             mem_ptr = new_ptr;
         }
         else {
-            printf("realloc() error.\n");
-            return;
+            printf("realloc() error.\n\n");
+            goto realloc_exit;
         }
         old_size /= 2;
     }
@@ -2162,15 +2162,102 @@ void realloc_test()
             mem_ptr = new_ptr;
         }
         else {
-            printf("realloc() error.\n");
+            printf("realloc() error.\n\n");
+            goto realloc_exit;
+        }
+        old_size *= 2;
+    }
+realloc_exit:
+    printf("\n");
+    if (mem_ptr != nullptr)
+        ::free(mem_ptr);
+}
+
+#ifdef _MSC_VER
+
+//
+// MSVC: _expand(void * ptr, size_t size);
+// https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/expand?view=msvc-160
+//
+
+void expand_test()
+{
+    void * mem_ptr, * new_ptr;
+    size_t old_size = 4, new_size;
+    mem_ptr = ::malloc(old_size);
+    if (mem_ptr == nullptr)
+        return;
+    printf("expand_test()\n");
+    printf("\n");
+    for (size_t i = 0; i < 25; i++) {
+        new_size = old_size * 2;
+        new_ptr = ::_expand(mem_ptr, new_size);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("_expand() error.\n\n");
             return;
         }
         old_size *= 2;
     }
     printf("\n");
+    for (size_t i = 0; i < 25; i++) {
+        new_size = old_size / 2;
+        new_ptr = ::_expand(mem_ptr, new_size);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("_expand() error.\n\n");
+            goto expand_exit;
+        }
+        old_size /= 2;
+    }
+    printf("\n");
+    for (size_t i = 0; i < 25; i++) {
+        new_size = old_size * 2;
+        new_ptr = ::_expand(mem_ptr, new_size);
+        if (new_ptr != nullptr) {
+            if (mem_ptr != new_ptr) {
+                printf("    old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
+            }
+            else {
+                printf("(*) old-ptr: 0x%08X%08X, new-ptr: 0x%08X%08X, size: [%8u -> %-8u] bytes\n",
+                        PTR2HEX16(mem_ptr), PTR2HEX16(new_ptr), (uint32_t)old_size, (uint32_t)new_size);
+            }
+            mem_ptr = new_ptr;
+        }
+        else {
+            printf("_expand() error.\n\n");
+            goto expand_exit;
+        }
+        old_size *= 2;
+    }
+expand_exit:
+    printf("\n");
     if (mem_ptr != nullptr)
         ::free(mem_ptr);
 }
+
+#endif // _MSC_VER
 
 void jm_aligned_realloc_test()
 {
@@ -2197,8 +2284,8 @@ void jm_aligned_realloc_test()
             mem_ptr = new_ptr;
         }
         else {
-            printf("jm_aligned_realloc() error.\n");
-            return;
+            printf("jm_aligned_realloc() error.\n\n");
+            goto realloc_exit;
         }
         old_size *= 2;
     }
@@ -2218,8 +2305,8 @@ void jm_aligned_realloc_test()
             mem_ptr = new_ptr;
         }
         else {
-            printf("jm_aligned_realloc() error.\n");
-            return;
+            printf("jm_aligned_realloc() error.\n\n");
+            goto realloc_exit;
         }
         old_size /= 2;
     }
@@ -2239,11 +2326,12 @@ void jm_aligned_realloc_test()
             mem_ptr = new_ptr;
         }
         else {
-            printf("jm_aligned_realloc() error.\n");
-            return;
+            printf("jm_aligned_realloc() error.\n\n");
+            goto realloc_exit;
         }
         old_size *= 2;
     }
+realloc_exit:
     printf("\n");
     if (mem_ptr != nullptr)
         jm_aligned_free(mem_ptr, 8);
@@ -2293,6 +2381,9 @@ int main(int argc, char * argv[])
     //formatter_test();
     //fnv1a_hash_test();
     realloc_test();
+#ifdef _MSC_VER
+    expand_test();
+#endif
     jm_aligned_realloc_test();
 
     //formatter_benchmark();

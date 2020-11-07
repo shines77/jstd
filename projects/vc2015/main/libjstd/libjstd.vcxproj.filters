@@ -91,9 +91,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\all.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\xutility.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -318,6 +315,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits\has_member.h">
       <Filter>src\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\utility.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\basic\base.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\aligned_allocator.h">
+      <Filter>src\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\aligned_malloc.h">
+      <Filter>src\memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
