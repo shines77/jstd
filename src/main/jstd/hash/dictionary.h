@@ -237,45 +237,45 @@ public:
         typedef typename this_type::size_type   size_type;
 
     protected:
-        node_type * head_;
+        node_type * next_;
         size_type   size_;
 
     public:
-        free_list(node_type * head = nullptr) : head_(head), size_(0) {}
+        free_list(node_type * next = nullptr) : next_(next), size_((next == nullptr) ? 0 : 1) {}
         ~free_list() {
 #ifndef NDEBUG
             clear();
 #endif
         }
 
-        node_type * begin() const { return this->head_; }
-        node_type * end() const { return nullptr; }
+        node_type * begin() const { return this->next_; }
+        node_type * end() const   { return nullptr; }
 
-        node_type * head() const { return this->head_; }
+        node_type * next() const { return this->next_; }
         size_type   size() const { return this->size_; }
 
-        bool is_valid() const { return (this->head_ != nullptr); }
+        bool is_valid() const { return (this->next_ != nullptr); }
         bool is_empty() const { return (this->size_ == 0); }
 
-        void set_head(node_type * head) {
-            this->head_ = head;
+        void set_next(node_type * next) {
+            this->next_ = next;
         }
         void set_size(size_type size) {
             this->size_ = size;
         }
 
-        void set_list(node_type * head, size_type size) {
-            this->head_ = head;
+        void set_list(node_type * next, size_type size) {
+            this->next_ = next;
             this->size_ = size;
         }
 
         void clear() {
-            this->head_ = nullptr;
+            this->next_ = nullptr;
             this->size_ = 0;
         }
 
-        void reset(node_type * head) {
-            this->head_ = head;
+        void reset(node_type * next) {
+            this->next_ = next;
             this->size_ = 0;
         }
 
@@ -299,26 +299,26 @@ public:
 
         void push_front(node_type * node) {
             assert(node != nullptr);
-            node->next = this->head_;
-            this->head_ = node;
+            node->next = this->next_;
+            this->next_ = node;
             this->increase();
         }
 
         node_type * pop_front() {
-            assert(this->head_ != nullptr);
-            node_type * node = this->head_;
-            this->head_ = node->next;
+            assert(this->next_ != nullptr);
+            node_type * node = this->next_;
+            this->next_ = node->next;
             this->decrease();
             return node;
         }
 
         node_type * front() {
-            return this->head();
+            return this->next();
         }
 
         node_type * back() {
             node_type * prev = nullptr;
-            node_type * node = this->head_;
+            node_type * node = this->next_;
             while (node != nullptr) {
                 prev = node;
                 node = node->next;
@@ -327,17 +327,24 @@ public:
         }
 
         void erase(node_type * where, node_type * node) {
-            if (likely(where != nullptr))
-                where->next = node->next;
-            else
-                this->head_ = node->next;
-            this->decrease();
+            if (where != nullptr) {
+                if (where->next == node) {
+                    where->next = node->next;
+                    this->decrease();
+                }
+            }
+            else {
+                if (this->next_ == node) {
+                    this->next_ = node->next;
+                    this->decrease();
+                }
+            }
         }
 
-        void swap(free_list & right) {
-            if (&right != this) {
-                std::swap(this->head_, right.head_);
-                std::swap(this->size_, right.size_);
+        void swap(free_list & other) {
+            if (&other != this) {
+                std::swap(this->next_, other.next_);
+                std::swap(this->size_, other.size_);
             }
         }
     };
@@ -965,8 +972,8 @@ protected:
         }
 
         entry_type * last_entry = entries + capacity - 1;
-        last_entry->next = this->freelist_.head();
-        this->freelist_.set_head(entries);
+        last_entry->next = this->freelist_.next();
+        this->freelist_.set_next(entries);
         this->freelist_.inflate(capacity);
     }
 
@@ -2202,7 +2209,7 @@ protected:
 
     void release_and_erase_freelist_in_chunk(size_type target_chunk_id) {
         entry_type * prev = nullptr;
-        entry_type * entry = this->freelist_.head();
+        entry_type * entry = this->freelist_.next();
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() == target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
@@ -2242,7 +2249,7 @@ protected:
     }
 
     void release_freelist_not_in_chunk(size_type target_chunk_id) {
-        entry_type * entry = this->freelist_.head();
+        entry_type * entry = this->freelist_.next();
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() != target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
@@ -2310,7 +2317,7 @@ protected:
 
     void release_and_erase_freelist_not_in_chunk(size_type target_chunk_id) {
         entry_type * prev = nullptr;
-        entry_type * entry = this->freelist_.head();
+        entry_type * entry = this->freelist_.next();
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() != target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
