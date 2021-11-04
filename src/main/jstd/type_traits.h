@@ -50,15 +50,17 @@ struct integral_traits {
     typedef typename std::make_unsigned<T>::type    unsigned_type;
 
     static_assert(std::is_integral<T>::value,
-        "Error: integral_traits<T> -- T must be a integral type.");
+        "Error: jstd::integral_traits<T> -- T must be a integral type.");
 
-    // max bits
-    static const size_t bits = sizeof(T) * 8;
+    // Bits
+    static const size_t bytes = sizeof(T);
+    static const size_t bits = bytes * 8;
     static const size_t max_shift = bits - 1;
-    // 0x80000000UL;
-    static const unsigned_type max_power2 = static_cast<unsigned_type>(1UL) << max_shift;
+
     // 0xFFFFFFFFUL;
     static const unsigned_type max_num = static_cast<unsigned_type>(-1);
+    // 0x80000000UL;
+    static const unsigned_type max_power2 = static_cast<unsigned_type>(1) << max_shift;
 };
 
 template <typename T>
