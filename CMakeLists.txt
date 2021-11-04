@@ -74,12 +74,12 @@ endif()
 
 if (NOT MSVC)
     ## -Wall -Werror -Wextra -Wno-format -Wno-unused-function
-    # set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -Wno-register -Wno-deprecated fPIC -U__STRICT_ANSI__")
+    # set(CMAKE_CXX_FLAGS_DEFAULT "${CMAKE_CXX_FLAGS} -std=gnu++11 -march=native -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mavx -mavx2 -mavx512vl -mavx512f -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -Wno-register -Wno-deprecated fPIC -U__STRICT_ANSI__")
     ## add_compile_options(-D__SSE3__ -D__SSE4A__ -D__SSE4_1__ -D__SSE4_2__)
     # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
     # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
 
-    set(CMAKE_CPP_FLAGS_COMMON          "-Wno-deprecated-declarations -Wno-float-equal -Wno-padded -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-deprecated -fPIC -U__STRICT_ANSI__")
+    set(CMAKE_CPP_FLAGS_COMMON          "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mavx -mavx2 -mavx512vl -mavx512f -Wno-deprecated-declarations -Wno-float-equal -Wno-padded -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-deprecated -fPIC -U__STRICT_ANSI__")
     set(CMAKE_C_FLAGS_COMMON            "-Wno-missing-prototypes")
     set(CMAKE_CXX_FLAGS_COMMON          "-Wno-old-style-cast -Wno-register")
 
