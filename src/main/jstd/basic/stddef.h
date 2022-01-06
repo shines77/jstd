@@ -6,8 +6,66 @@
 #pragma once
 #endif
 
-#ifndef JSTD_TO_STRING
-#define JSTD_TO_STRING(Text)   #Text
+////////////////////////////////////////////////////////////////////////////////
+
+//
+// Clang Language Extensions
+//
+// See: http://clang.llvm.org/docs/LanguageExtensions.html#checking_language_features
+//
+
+////////////////////////////////////////////////////////////////////////////////
+
+#ifndef __has_builtin                               // Optional of course.
+  #define __has_builtin(x)              0           // Compatibility with non-clang compilers.
+#endif
+
+#ifndef __has_feature                               // Optional of course.
+  #define __has_feature(x)              0           // Compatibility with non-clang compilers.
+#endif
+
+#ifndef __has_extension
+  #define __has_extension               __has_feature   // Compatibility with pre-3.0 compilers.
+#endif
+
+#ifndef __has_cpp_attribute                         // Optional of course.
+  #define __has_cpp_attribute(x)        0           // Compatibility with non-clang compilers.
+#endif
+
+#ifndef __has_c_attribute                           // Optional of course.
+  #define __has_c_attribute(x)          0           // Compatibility with non-clang compilers.
+#endif
+
+#ifndef __has_attribute                             // Optional of course.
+  #define __has_attribute(x)            0           // Compatibility with non-clang compilers.
+#endif
+
+#ifndef __has_declspec_attribute                    // Optional of course.
+  #define __has_declspec_attribute(x)   0           // Compatibility with non-clang compilers.
+#endif
+
+#ifndef __is_identifier                             // Optional of course.
+  // It evaluates to 1 if the argument x is just a regular identifier and not a reserved keyword.
+  #define __is_identifier(x)            1           // Compatibility with non-clang compilers.
+#endif
+
+#if defined(_MSC_VER)
+#ifndef __attribute__
+  #define __attribute__(x)
+#endif
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
+#if __has_feature(cxx_rvalue_references)
+    // This code will only be compiled with the -std=c++11 and -std=gnu++11
+    // options, because rvalue references are only standardized in C++11.
+#endif
+
+#if __has_extension(cxx_rvalue_references)
+    // This code will be compiled with the -std=c++11, -std=gnu++11, -std=c++98
+    // and -std=gnu++98 options, because rvalue references are supported as a
+    // language extension in C++98.
 #endif
 
 //
@@ -98,7 +156,7 @@
 //
 // Aligned prefix and suffix declare
 //
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC)
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC) || defined(__ECC)
 #ifndef ALIGNED_PREFIX
 #define ALIGNED_PREFIX(n)       __declspec(align(n))
 #endif
@@ -123,45 +181,45 @@
  */
 #if defined(_MSC_VER) || defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC)
 
-#define JSTD_HAS_INLINE                       1
+#define JSTD_HAS_INLINE                     1
 
 #define JSTD_INLINE                         __inline
 #define JSTD_FORCE_INLINE                   __forceinline
 #define JSTD_NO_INLINE                      __declspec(noinline)
 
-#define JSTD_INLINE_DECLARE(decl)           __inline decl
-#define JSTD_FORCE_INLINE_DECLARE(decl)     __forceinline decl
-#define JSTD_NOINLINE_DECLARE(decl)         __declspec(noinline) decl
+#define JSTD_INLINE_DECLARE(type)           __inline type
+#define JSTD_FORCE_INLINE_DECLARE(type)     __forceinline type
+#define JSTD_NOINLINE_DECLARE(type)         __declspec(noinline) type
 
 #define JSTD_CRT_INLINE                     extern __inline
 #define JSTD_CRT_FORCE_INLINE               extern __forceinline
 #define JSTD_CRT_NO_INLINE                  extern __declspec(noinline)
 
-#define JSTD_CRT_INLINE_DECLARE(decl)       extern __inline decl
-#define JSTD_CRT_FORCE_INLINE_DECLARE(decl) extern __forceinline decl
-#define JSTD_CRT_NO_INLINE_DECLARE(decl)    extern __declspec(noinline) decl
+#define JSTD_CRT_INLINE_DECLARE(type)       extern __inline type
+#define JSTD_CRT_FORCE_INLINE_DECLARE(type) extern __forceinline type
+#define JSTD_CRT_NO_INLINE_DECLARE(type)    extern __declspec(noinline) type
 
 #define JSTD_RESTRICT                       __restrict
 
 #elif defined(__GNUC__) || defined(__clang__) || defined(__MINGW32__) || defined(__CYGWIN__) || defined(__linux__)
 
-#define JSTD_HAS_INLINE                       1
+#define JSTD_HAS_INLINE                     1
 
 #define JSTD_INLINE                         inline __attribute__((gnu_inline))
 #define JSTD_FORCE_INLINE                   inline __attribute__((always_inline))
 #define JSTD_NO_INLINE                      __attribute__((noinline))
 
-#define JSTD_INLINE_DECLARE(decl)           inline __attribute__((gnu_inline)) decl
-#define JSTD_FORCE_INLINE_DECLARE(decl)     inline __attribute__((always_inline)) decl
-#define JSTD_NOINLINE_DECLARE(decl)         __attribute__((noinline)) decl
+#define JSTD_INLINE_DECLARE(type)           inline __attribute__((gnu_inline)) type
+#define JSTD_FORCE_INLINE_DECLARE(type)     inline __attribute__((always_inline)) type
+#define JSTD_NOINLINE_DECLARE(type)         __attribute__((noinline)) type
 
 #define JSTD_CRT_INLINE                     extern inline __attribute__((gnu_inline))
 #define JSTD_CRT_FORCE_INLINE               extern inline __attribute__((always_inline))
 #define JSTD_CRT_NO_INLINE                  extern __attribute__((noinline))
 
-#define JSTD_CRT_INLINE_DECLARE(decl)       extern inline __attribute__((gnu_inline)) decl
-#define JSTD_CRT_FORCE_INLINE_DECLARE(decl) extern inline __attribute__((always_inline)) decl
-#define JSTD_CRT_NO_INLINE_DECLARE(decl)    extern __attribute__((noinline)) decl
+#define JSTD_CRT_INLINE_DECLARE(type)       extern inline __attribute__((gnu_inline)) type
+#define JSTD_CRT_FORCE_INLINE_DECLARE(type) extern inline __attribute__((always_inline)) type
+#define JSTD_CRT_NO_INLINE_DECLARE(type)    extern __attribute__((noinline)) type
 
 #define JSTD_RESTRICT                       __restrict__
 
@@ -171,17 +229,17 @@
 #define JSTD_FORCE_INLINE                   inline
 #define JSTD_NO_INLINE
 
-#define JSTD_INLINE_DECLARE(decl)           inline decl
-#define JSTD_FORCE_INLINE_DECLARE(decl)     inline decl
-#define JSTD_NOINLINE_DECLARE(decl)         decl
+#define JSTD_INLINE_DECLARE(type)           inline type
+#define JSTD_FORCE_INLINE_DECLARE(type)     inline type
+#define JSTD_NOINLINE_DECLARE(type)         type
 
 #define JSTD_CRT_INLINE                     extern inline
 #define JSTD_CRT_FORCE_INLINE               extern inline
 #define JSTD_CRT_NO_INLINE                  extern
 
-#define JSTD_CRT_INLINE_DECLARE(decl)       extern inline decl
-#define JSTD_CRT_FORCE_INLINE_DECLARE(decl) extern inline decl
-#define JSTD_CRT_NO_INLINE_DECLARE(decl)    extern decl
+#define JSTD_CRT_INLINE_DECLARE(type)       extern inline type
+#define JSTD_CRT_FORCE_INLINE_DECLARE(type) extern inline type
+#define JSTD_CRT_NO_INLINE_DECLARE(type)    extern type
 
 #define JSTD_RESTRICT
 
@@ -206,6 +264,10 @@
 
 #ifndef JSTD_UNUSED_VARS
 #define JSTD_UNUSED_VARS(x)     (void)(x)
+#endif
+
+#ifndef JSTD_TO_STRING
+#define JSTD_TO_STRING(Text)    #Text
 #endif
 
 #define STD_IOS_RIGHT(width, var) \
