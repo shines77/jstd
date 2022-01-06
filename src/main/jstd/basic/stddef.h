@@ -7,13 +7,11 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-
 //
 // Clang Language Extensions
 //
 // See: http://clang.llvm.org/docs/LanguageExtensions.html#checking_language_features
 //
-
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef __has_builtin                               // Optional of course.
@@ -68,6 +66,32 @@
     // language extension in C++98.
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined(_MSC_VER) || __has_declspec_attribute(dllexport)
+  #define DLL_EXPORT        __declspec(dllexport)
+#else
+  #if defined(__GNUC__) || defined(__clang__) || defined(__linux__)
+    #define DLL_EXPORT      __attribute__((visibility("default")))
+  #else
+    #define DLL_EXPORT
+  #endif
+#endif
+
+#if defined(_MSC_VER) || __has_declspec_attribute(dllimport)
+  #define DLL_IMPORT        __declspec(dllimport)
+#else
+  #define DLL_EXPORT
+#endif
+
+#if __is_identifier(__wchar_t)
+    // __wchar_t is not a reserved keyword
+  #if !defined(_MSC_VER)
+    typedef wchar_t __wchar_t;
+  #endif // !_MSC_VER
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 //
 // C++ compiler macro define
 // See: http://www.cnblogs.com/zyl910/archive/2012/08/02/printmacro.html
@@ -81,7 +105,8 @@
 //      http://www.boost.org/doc/libs/1_60_0/boost/config/compiler/gcc.hpp10
 //      http://www.boost.org/doc/libs/1_60_0/boost/config/compiler/clang.hpp4
 //      http://www.boost.org/doc/libs/1_60_0/boost/config/compiler/intel.hpp2
-//
+// 
+////////////////////////////////////////////////////////////////////////////////
 
 //
 // Intel C++ compiler version
@@ -100,6 +125,16 @@
 #  define __INTEL_CXX_VERSION       __ECC
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+//
+// C++ compiler macro define
+// See: http://www.cnblogs.com/zyl910/archive/2012/08/02/printmacro.html
+//
+// LLVM Branch Weight Metadata
+// See: http://llvm.org/docs/BranchWeightMetadata.html
+//
+////////////////////////////////////////////////////////////////////////////////
+
 //
 // Since gcc 2.96 or Intel C++ compiler 8.0
 //
@@ -110,10 +145,10 @@
     || (defined(__GNUC__) && (__INTEL_CXX_VERSION >= 800))
   #define SUPPORT_LIKELY        1
 #elif defined(__clang__)
-//
-// clang: GCC extensions not implemented yet
-// See: http://clang.llvm.org/docs/UsersManual.html#gcc-extensions-not-implemented-yet
-//
+  //
+  // clang: GCC extensions not implemented yet
+  // See: http://clang.llvm.org/docs/UsersManual.html#gcc-extensions-not-implemented-yet
+  //
   #if defined(__has_builtin)
     #if __has_builtin(__builtin_expect)
       #define SUPPORT_LIKELY    1
@@ -244,6 +279,14 @@
 #define JSTD_RESTRICT
 
 #endif // _MSC_VER
+
+#ifndef JSTD_CDECL
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER) || defined(__ICL) || defined(__ICC)
+#define JSTD_CDECL        __cdecl
+#else
+#define JSTD_CDECL        __attribute__((__cdecl__))
+#endif
+#endif // JSTD_CDECL
 
 /**
  * For exported func
