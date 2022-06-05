@@ -116,7 +116,7 @@ void cpuid_count(int op, int count, int * eax, int * ebx, int * ecx, int * edx)
 void cpuid(int op, int * eax, int * ebx, int * ecx, int * edx);
 void cpuid_count(int op, int count, int * eax, int * ebx, int * ecx, int * edx);
 
-#else
+#else // !(__APPLE__ && __i386__)
 
 static C_INLINE void cpuid(int op, int * eax, int * ebx, int * ecx, int * edx)
 {
@@ -145,7 +145,7 @@ static C_INLINE void cpuid_count(int op, int count, int * eax, int * ebx, int * 
     ("cpuid": "=a" (*eax), "=b" (*ebx), "=c" (*ecx), "=d" (*edx) : "0" (op), "2" (count) : "cc");
 #endif
 }
-#endif
+#endif // (__APPLE__ && __i386__)
 
 #else // defined(CPUIDEMU)
 
@@ -194,7 +194,7 @@ void cpuid_count(unsigned int op, unsigned int count, unsigned int * eax,
 
 #endif // !defined(CPUIDEMU)
 
-#endif // _MSC_VER
+#endif // (_MSC_VER && !__clang__)
 
 static C_INLINE int have_cpuid(void)
 {
@@ -223,7 +223,6 @@ struct reg64_t {
 static C_INLINE void xgetbv(int op, int * eax, int * edx) {
     // Use binary code for xgetbv
 #if defined(_MSC_VER) && !defined(__clang__)
-
     unsigned __int64 result = __xgetbv(op);
 
     struct reg64_t * r64 = (struct reg64_t *)&result;
@@ -232,9 +231,9 @@ static C_INLINE void xgetbv(int op, int * eax, int * edx) {
 #else
     __asm__ __volatile__
     (".byte 0x0f, 0x01, 0xd0": "=a" (*eax), "=d" (*edx) : "c" (op) : "cc");
-#endif
+#endif // _MSC_VER
 }
-#endif
+#endif // NO_AVX
 
 int support_avx()
 {
@@ -247,13 +246,13 @@ int support_avx()
     if ((ecx & (1 << 28)) != 0 && (ecx & (1 << 27)) != 0 && (ecx & (1 << 26)) != 0) {
         xgetbv(0, &eax, &edx);
         if ((eax & 6) == 6) {
-            ret = 1;  // OS support AVX
+            ret = 1;  // CPU support AVX
         }
     }
     return ret;
 #else
     return 0;
-#endif
+#endif // NO_AVX
 }
 
 int support_avx2() {
@@ -266,12 +265,12 @@ int support_avx2() {
 
     cpuid(7, &eax, &ebx, &ecx, &edx);
 
-    if ((ebx & (1 << 7)) != 0)
-        ret = 1;  // OS supports AVX2
+    if ((ebx & (1 << 5)) != 0)
+        ret = 1;  // CPU have AVX2 flag
     return ret;
 #else
     return 0;
-#endif
+#endif // NO_AVX2
 }
 
 int support_avx512()
@@ -285,233 +284,67 @@ int support_avx512()
 
     cpuid(7, &eax, &ebx, &ecx, &edx);
 
-    if ((ebx & 32) != 32) {
-        ret = 0;  // OS does not even support AVX2
+    if ((ebx & (1 << 5)) == 0) {
+        ret = 0;  // cpu does not have avx2 flag
     }
-    if ((ebx & (1 << 31)) != 0) {
+    if ((ebx & (1 << 31)) != 0) { // CPU have AVX512VL flag
         xgetbv(0, &eax, &edx);
         if ((eax & 0xe0) == 0xe0)
-            ret = 1;  // OS supports AVX512VL
+            ret = 1;  // CPU supports saving zmm registers
+    }
+    return ret;
+#else
+    return 0;
+#endif // NO_AVX512
+}
+
+int support_avx512_bf16()
+{
+#if !defined(NO_AVX) && !defined(NO_AVX512)
+    int eax, ebx, ecx, edx;
+    int ret = 0;
+
+    if (!support_avx512())
+        return 0;
+
+    cpuid_count(7, 1, &eax, &ebx, &ecx, &edx);
+
+    if ((eax & (1 << 5)) != 0) {
+        ret = 1;  // CPUID.7.1:EAX[bit 5] indicates whether avx512_bf16 supported or not
+    }
+    return ret;
+#else
+    return 0;
+#endif // NO_AVX512
+}
+
+#define BIT_AMX_TILE    0x01000000
+#define BIT_AMX_BF16    0x00400000
+#define BIT_AMX_ENBD    0x00060000
+
+int support_amx_bf16()
+{
+#if !defined(NO_AVX) && !defined(NO_AVX512)
+    int eax, ebx, ecx, edx;
+    int ret = 0;
+
+    if (!support_avx512())
+        return 0;
+
+    // CPUID.7.0:EDX indicates AMX support
+    cpuid_count(7, 0, &eax, &ebx, &ecx, &edx);
+
+    if ((edx & BIT_AMX_TILE) && (edx & BIT_AMX_BF16)) {
+        // CPUID.D.0:EAX[17:18] indicates AMX enabled
+        cpuid_count(0xd, 0, &eax, &ebx, &ecx, &edx);
+        if ((eax & BIT_AMX_ENBD) == BIT_AMX_ENBD)
+            ret = 1;
     }
     return ret;
 #else
     return 0;
 #endif
 }
-
-static const char * cpuname[] = {
-    "UNKNOWN",
-    "INTEL_UNKNOWN",
-    "UMC_UNKNOWN",
-    "AMD_UNKNOWN",
-    "CYRIX_UNKNOWN",
-    "NEXGEN_UNKNOWN",
-    "CENTAUR_UNKNOWN",
-    "RISE_UNKNOWN",
-    "SIS_UNKNOWN",
-    "TRANSMETA_UNKNOWN",
-    "NSC_UNKNOWN",
-    "80386",
-    "80486",
-    "PENTIUM",
-    "PENTIUM2",
-    "PENTIUM3",
-    "PENTIUMM",
-    "PENTIUM4",
-    "CORE2",
-    "PENRYN",
-    "DUNNINGTON",
-    "NEHALEM",
-    "ATOM",
-    "ITANIUM",
-    "ITANIUM2",
-    "5X86",
-    "K6",
-    "ATHLON",
-    "DURON",
-    "OPTERON",
-    "BARCELONA",
-    "SHANGHAI",
-    "ISTANBUL",
-    "CYRIX5X86",
-    "CYRIXM1",
-    "CYRIXM2",
-    "NEXGENNX586",
-    "CENTAURC6",
-    "RISEMP6",
-    "SYS55X",
-    "TM3X00",
-    "NSGEODE",
-    "VIAC3",
-    "NANO",
-    "SANDYBRIDGE",
-    "BOBCAT",
-    "BULLDOZER",
-    "PILEDRIVER",
-    "HASWELL",
-    "STEAMROLLER",
-    "EXCAVATOR",
-    "ZEN",
-    "SKYLAKEX",
-    "DHYANA"
-};
-
-static const char * lowercpuname[] = {
-    "unknown",
-    "intel_unknown",
-    "umc_unknown",
-    "amd_unknown",
-    "cyrix_unknown",
-    "nexgen_unknown",
-    "centaur_unknown",
-    "rise_unknown",
-    "sis_unknown",
-    "transmeta_unknown",
-    "nsc_unknown",
-    "80386",
-    "80486",
-    "pentium",
-    "pentium2",
-    "pentium3",
-    "pentiumm",
-    "pentium4",
-    "core2",
-    "penryn",
-    "dunnington",
-    "nehalem",
-    "atom",
-    "itanium",
-    "itanium2",
-    "5x86",
-    "k6",
-    "athlon",
-    "duron",
-    "opteron",
-    "barcelona",
-    "shanghai",
-    "istanbul",
-    "cyrix5x86",
-    "cyrixm1",
-    "cyrixm2",
-    "nexgennx586",
-    "centaurc6",
-    "risemp6",
-    "sys55x",
-    "tms3x00",
-    "nsgeode",
-    "nano",
-    "sandybridge",
-    "bobcat",
-    "bulldozer",
-    "piledriver",
-    "haswell",
-    "steamroller",
-    "excavator",
-    "zen",
-    "skylakex",
-    "dhyana"
-};
-
-static const char * corename[] = {
-    "UNKNOWN",
-    "80486",
-    "P5",
-    "P6",
-    "KATMAI",
-    "COPPERMINE",
-    "NORTHWOOD",
-    "PRESCOTT",
-    "BANIAS",
-    "ATHLON",
-    "OPTERON",
-    "BARCELONA",
-    "VIAC3",
-    "YONAH",
-    "CORE2",
-    "PENRYN",
-    "DUNNINGTON",
-    "NEHALEM",
-    "ATOM",
-    "NANO",
-    "SANDYBRIDGE",
-    "BOBCAT",
-    "BULLDOZER",
-    "PILEDRIVER",
-    "HASWELL",
-    "STEAMROLLER",
-    "EXCAVATOR",
-    "ZEN",
-    "SKYLAKEX",
-    "DHYANA"
-};
-
-static const char * corename_lower[] = {
-    "unknown",
-    "80486",
-    "p5",
-    "p6",
-    "katmai",
-    "coppermine",
-    "northwood",
-    "prescott",
-    "banias",
-    "athlon",
-    "opteron",
-    "barcelona",
-    "viac3",
-    "yonah",
-    "core2",
-    "penryn",
-    "dunnington",
-    "nehalem",
-    "atom",
-    "nano",
-    "sandybridge",
-    "bobcat",
-    "bulldozer",
-    "piledriver",
-    "haswell",
-    "steamroller",
-    "excavator",
-    "zen",
-    "skylakex",
-    "dhyana"
-};
-
-static const char * cpu_features[] = {
-    "x87 FPU On Chip",
-    "Virtual-8086 Mode Enhancement",
-    "Debugging Extensions",
-    "Page Size Extensions",
-    "Time Stamp Counter",
-    "RDMSR and WRMSR Support",
-    "Physical Address Extensions",
-    "Machine Check Exception",
-    "CMPXCHG8B Instruction",
-    "APIC On Chip",
-    "Unknown1",
-    "SYSENTER and SYSEXIT",
-    "Memory Type Range Registers",
-    "PTE Global Bit",
-    "Machine Check Architecture",
-    "Conditional Move/Compare Instruction",
-    "Page Attribute Table",
-    "36-bit Page Size Extension",
-    "Processor Serial Number",
-    "CFLUSH Extension",
-    "Unknown2",
-    "Debug Store",
-    "Thermal Monitor and Clock Ctrl",
-    "MMX Technology",
-    "FXSAVE/FXRSTOR",
-    "SSE Extensions",
-    "SSE2 Extensions",
-    "Self Snoop",
-    "Multithreading Technology",
-    "Thermal Monitor",
-    "Unknown4",
-    "Pend. Brk. EN."
-};
 
 int get_vendor(void)
 {
@@ -531,6 +364,7 @@ int get_vendor(void)
     if (!strcmp(vendor, "CyrixInstead")) return VENDOR_CYRIX;
     if (!strcmp(vendor, "NexGenDriven")) return VENDOR_NEXGEN;
     if (!strcmp(vendor, "CentaurHauls")) return VENDOR_CENTAUR;
+    if (!strcmp(vendor, "  Shanghai  ")) return VENDOR_ZHAOXIN;
     if (!strcmp(vendor, "RiseRiseRise")) return VENDOR_RISE;
     if (!strcmp(vendor, " SiS SiS SiS")) return VENDOR_SIS;
     if (!strcmp(vendor, "GenuineTMx86")) return VENDOR_TRANSMETA;
@@ -542,7 +376,7 @@ int get_vendor(void)
     return VENDOR_UNKNOWN;
 }
 
-int get_cpuinfo(int info_type)
+int get_cpu_info(int info_type)
 {
     int eax, ebx, ecx, edx;
     // int extend_family, family;
@@ -600,6 +434,8 @@ int get_cpuinfo(int info_type)
             if (support_avx()) feature |= HAVE_AVX;
             if (support_avx2()) feature |= HAVE_AVX2;
             if (support_avx512()) feature |= HAVE_AVX512VL;
+            if (support_avx512_bf16()) feature |= HAVE_AVX512BF16;
+            if (support_amx_bf16()) feature |= HAVE_AMXBF16;
             if ((ecx & (1 << 12)) != 0) feature |= HAVE_FMA3;
 #endif
             if (have_excpuid() >= 0x01) {
@@ -630,19 +466,19 @@ int get_cacheinfo(int type, cache_info_t * cacheinfo)
     int info[15];
     int i;
     cache_info_t LC1, LD1, L2, L3,
-        ITB, DTB, LITB, LDTB,
-        L2ITB, L2DTB, L2LITB, L2LDTB;
+                 ITB, DTB, LITB, LDTB,
+                 L2ITB, L2DTB, L2LITB, L2LDTB;
 
-    LC1.size = 0; LC1.associative = 0; LC1.linesize = 0; LC1.shared = 0;
-    LD1.size = 0; LD1.associative = 0; LD1.linesize = 0; LD1.shared = 0;
-    L2.size = 0; L2.associative = 0; L2.linesize = 0; L2.shared = 0;
-    L3.size = 0; L3.associative = 0; L3.linesize = 0; L3.shared = 0;
-    ITB.size = 0; ITB.associative = 0; ITB.linesize = 0; ITB.shared = 0;
-    DTB.size = 0; DTB.associative = 0; DTB.linesize = 0; DTB.shared = 0;
-    LITB.size = 0; LITB.associative = 0; LITB.linesize = 0; LITB.shared = 0;
-    LDTB.size = 0; LDTB.associative = 0; LDTB.linesize = 0; LDTB.shared = 0;
-    L2ITB.size = 0; L2ITB.associative = 0; L2ITB.linesize = 0; L2ITB.shared = 0;
-    L2DTB.size = 0; L2DTB.associative = 0; L2DTB.linesize = 0; L2DTB.shared = 0;
+    LC1.size    = 0; LC1.associative    = 0; LC1.linesize    = 0; LC1.shared    = 0;
+    LD1.size    = 0; LD1.associative    = 0; LD1.linesize    = 0; LD1.shared    = 0;
+    L2.size     = 0; L2.associative     = 0; L2.linesize     = 0; L2.shared     = 0;
+    L3.size     = 0; L3.associative     = 0; L3.linesize     = 0; L3.shared     = 0;
+    ITB.size    = 0; ITB.associative    = 0; ITB.linesize    = 0; ITB.shared    = 0;
+    DTB.size    = 0; DTB.associative    = 0; DTB.linesize    = 0; DTB.shared    = 0;
+    LITB.size   = 0; LITB.associative   = 0; LITB.linesize   = 0; LITB.shared   = 0;
+    LDTB.size   = 0; LDTB.associative   = 0; LDTB.linesize   = 0; LDTB.shared   = 0;
+    L2ITB.size  = 0; L2ITB.associative  = 0; L2ITB.linesize  = 0; L2ITB.shared  = 0;
+    L2DTB.size  = 0; L2DTB.associative  = 0; L2DTB.linesize  = 0; L2DTB.shared  = 0;
     L2LITB.size = 0; L2LITB.associative = 0; L2LITB.linesize = 0; L2LITB.shared = 0;
     L2LDTB.size = 0; L2LDTB.associative = 0; L2LDTB.linesize = 0; L2LDTB.shared = 0;
 
@@ -650,7 +486,9 @@ int get_cacheinfo(int type, cache_info_t * cacheinfo)
 
     if (cpuid_level > 1) {
         int numcalls = 0;
+
         cpuid(2, &eax, &ebx, &ecx, &edx);
+
         numcalls = BITMASK(eax, 0, 0xff); // FIXME some systems may require repeated calls to read all entries
         info[0] = BITMASK(eax, 8, 0xff);
         info[1] = BITMASK(eax, 16, 0xff);
@@ -855,7 +693,7 @@ int get_cacheinfo(int type, cache_info_t * cacheinfo)
                     L2.linesize = 64;
                     break;
                 case 0x49:
-                    if ((get_cpuinfo(GET_FAMILY) == 0x0f) && (get_cpuinfo(GET_MODEL) == 0x06)) {
+                    if ((get_cpu_info(GET_FAMILY) == 0x0f) && (get_cpu_info(GET_MODEL) == 0x06)) {
                         L3.size = 4096;
                         L3.associative = 16;
                         L3.linesize = 64;
@@ -1314,7 +1152,8 @@ int get_cacheinfo(int type, cache_info_t * cacheinfo)
 
     if ((get_vendor() == VENDOR_AMD) ||
         (get_vendor() == VENDOR_HYGON) ||
-        (get_vendor() == VENDOR_CENTAUR)) {
+        (get_vendor() == VENDOR_CENTAUR) ||
+        (get_vendor() == VENDOR_ZHAOXIN)) {
         cpuid(0x80000005, &eax, &ebx, &ecx, &edx);
 
         LDTB.size = 4096;
@@ -1433,16 +1272,17 @@ int get_cacheinfo(int type, cache_info_t * cacheinfo)
     return 0;
 }
 
-int get_cputype(void)
+int get_cpu_type(void)
 {
-    int family, exfamily, model, vendor, exmodel;
+    int family, exfamily, model, vendor, exmodel, stepping;
 
     if (!have_cpuid()) return CPUTYPE_80386;
 
-    family = get_cpuinfo(GET_FAMILY);
-    exfamily = get_cpuinfo(GET_EXFAMILY);
-    model = get_cpuinfo(GET_MODEL);
-    exmodel = get_cpuinfo(GET_EXMODEL);
+    family = get_cpu_info(GET_FAMILY);
+    exfamily = get_cpu_info(GET_EXFAMILY);
+    model = get_cpu_info(GET_MODEL);
+    exmodel = get_cpu_info(GET_EXMODEL);
+    stepping = get_cpu_info(GET_STEPPING);
 
     vendor = get_vendor();
 
@@ -1591,7 +1431,7 @@ int get_cputype(void)
                     case 5:  // family 6 exmodel 5
                         switch (model) {
                             case 6:
-                                //Broadwell
+                                // Broadwell
                                 if (support_avx2())
                                     return CPUTYPE_HASWELL;
                                 if (support_avx())
@@ -1600,6 +1440,8 @@ int get_cputype(void)
                                     return CPUTYPE_NEHALEM;
                             case 5:
                                 // Skylake X
+                                if (support_avx512_bf16())
+                                    return CPUTYPE_COOPERLAKE;
                                 if (support_avx512())
                                     return CPUTYPE_SKYLAKEX;
                                 if (support_avx2())
@@ -1642,6 +1484,18 @@ int get_cputype(void)
                                     return CPUTYPE_SANDYBRIDGE;
                                 else
                                     return CPUTYPE_NEHALEM;
+
+                            case 10: // Ice Lake SP
+                                if (support_avx512_bf16())
+                                    return CPUTYPE_COOPERLAKE;
+                                if (support_avx512())
+                                    return CPUTYPE_SKYLAKEX;
+                                if (support_avx2())
+                                    return CPUTYPE_HASWELL;
+                                if (support_avx())
+                                    return CPUTYPE_SANDYBRIDGE;
+                                else
+                                    return CPUTYPE_NEHALEM;
                         }
                         break;
                     case 7: // family 6 exmodel 7
@@ -1659,9 +1513,61 @@ int get_cputype(void)
                                     return CPUTYPE_NEHALEM;
                         }
                         break;
-                    case 9:
                     case 8:
                         switch (model) {
+                            case 12: // Tiger Lake
+                            case 13: // Tiger Lake (11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz)
+                                if (support_avx512())
+                                    return CPUTYPE_SKYLAKEX;
+                                if (support_avx2())
+                                    return CPUTYPE_HASWELL;
+                                if (support_avx())
+                                    return CPUTYPE_SANDYBRIDGE;
+                                else
+                                    return CPUTYPE_NEHALEM;
+                            case 14: // Kaby Lake and refreshes
+                                if (support_avx2())
+                                    return CPUTYPE_HASWELL;
+                                if (support_avx())
+                                    return CPUTYPE_SANDYBRIDGE;
+                                else
+                                    return CPUTYPE_NEHALEM;
+                            case 15: // Sapphire Rapids
+                                if (support_avx512_bf16())
+                                    return CPUTYPE_COOPERLAKE;
+                                if (support_avx512())
+                                    return CPUTYPE_SKYLAKEX;
+                                if (support_avx2())
+                                    return CPUTYPE_HASWELL;
+                                if (support_avx())
+                                    return CPUTYPE_SANDYBRIDGE;
+                                else
+                                    return CPUTYPE_NEHALEM;
+                        }
+                        break;
+                    case 9:
+                        switch (model) {
+                            case 7: // Alder Lake desktop
+                            case 10: // Alder Lake mobile
+                                if (support_avx512_bf16())
+                                    return CPUTYPE_COOPERLAKE;
+                                if (support_avx512())
+                                    return CPUTYPE_SKYLAKEX;
+                                if (support_avx2())
+                                    return CPUTYPE_HASWELL;
+                                if (support_avx())
+                                    return CPUTYPE_SANDYBRIDGE;
+                                else
+                                    return CPUTYPE_NEHALEM;
+                            case 13: // Ice Lake NNPI
+                                if (support_avx512())
+                                    return CPUTYPE_SKYLAKEX;
+                                if (support_avx2())
+                                    return CPUTYPE_HASWELL;
+                                if (support_avx())
+                                    return CPUTYPE_SANDYBRIDGE;
+                                else
+                                    return CPUTYPE_NEHALEM;
                             case 14: // Kaby Lake and refreshes
                                 if (support_avx2())
                                     return CPUTYPE_HASWELL;
@@ -1670,10 +1576,20 @@ int get_cputype(void)
                                 else
                                     return CPUTYPE_NEHALEM;
                         }
+                        break;
                     case 10: // family 6 exmodel 10
                         switch (model) {
                             case 5: // Comet Lake H and S
                             case 6: // Comet Lake U
+                                if (support_avx2())
+                                    return CPUTYPE_HASWELL;
+                                if (support_avx())
+                                    return CPUTYPE_SANDYBRIDGE;
+                                else
+                                    return CPUTYPE_NEHALEM;
+                            case 7: // Rocket Lake
+                                if (support_avx512())
+                                    return CPUTYPE_SKYLAKEX;
                                 if (support_avx2())
                                     return CPUTYPE_HASWELL;
                                 if (support_avx())
@@ -1792,6 +1708,7 @@ int get_cputype(void)
 #endif
                         else
                             return CPUTYPE_BARCELONA;
+                        break;
                 }
                 break;
         }
@@ -1803,7 +1720,7 @@ int get_cputype(void)
             case 0xf:
                 switch (exfamily) {
                     case 9:
-                        //Hygon Dhyana
+                        // Hygon Dhyana
                         if (support_avx())
 #ifndef NO_AVX2
                             return CPUTYPE_ZEN;
@@ -1844,11 +1761,45 @@ int get_cputype(void)
                 return CPUTYPE_CENTAURC6;
                 break;
             case 0x6:
-                return CPUTYPE_NANO;
+                if (model == 0xf && stepping < 0xe)
+                    return CPUTYPE_NANO;
+                else
+                    return CPUTYPE_NEHALEM;
                 break;
-
+            case 0x7:
+                switch (exmodel) {
+                    case 5:
+                        if (support_avx2())
+                            return CPUTYPE_ZEN;
+                        else
+                            return CPUTYPE_DUNNINGTON;
+                    default:
+                        return CPUTYPE_NEHALEM;
+                }
+                break;
+            default:
+                if (family >= 0x8)
+                    return CPUTYPE_NEHALEM;
+                else
+                    return CPUTYPE_VIAC3;
         }
-        return CPUTYPE_VIAC3;
+    }
+
+    if (vendor == VENDOR_ZHAOXIN) {
+        switch (family) {
+            case 0x7:
+                switch (exmodel) {
+                    case 5:
+                        if (support_avx2())
+                            return CPUTYPE_ZEN;
+                        else
+                            return CPUTYPE_DUNNINGTON;
+                    default:
+                        return CPUTYPE_NEHALEM;
+                }
+            default:
+                return CPUTYPE_NEHALEM;
+        }
     }
 
     if (vendor == VENDOR_RISE) {
@@ -1892,10 +1843,10 @@ int get_coretype(void)
 
     if (!have_cpuid()) return CORE_80486;
 
-    family = get_cpuinfo(GET_FAMILY);
-    exfamily = get_cpuinfo(GET_EXFAMILY);
-    model = get_cpuinfo(GET_MODEL);
-    exmodel = get_cpuinfo(GET_EXMODEL);
+    family = get_cpu_info(GET_FAMILY);
+    exfamily = get_cpu_info(GET_EXFAMILY);
+    model = get_cpu_info(GET_MODEL);
+    exmodel = get_cpu_info(GET_EXMODEL);
 
     vendor = get_vendor();
 
@@ -2053,19 +2004,6 @@ int get_coretype(void)
                                 return CORE_NEHALEM;
                         }
                         break;
-                    case 10:
-                        switch (model) {
-                            case 5: // Comet Lake H and S
-                            case 6: // Comet Lake U
-                                if (support_avx())
-#ifndef NO_AVX2
-                                    return CORE_HASWELL;
-#else
-                                    return CORE_SANDYBRIDGE;
-#endif
-                                else
-                                    return CORE_NEHALEM;
-                        }
                     case 5:
                         switch (model) {
                             case 6:
@@ -2081,7 +2019,10 @@ int get_coretype(void)
                             case 5:
                                 // Skylake X
 #ifndef NO_AVX512
-                                return CORE_SKYLAKEX;
+                                if (support_avx512_bf16())
+                                    return CORE_COOPERLAKE;
+                                else
+                                    return CORE_SKYLAKEX;
 #else
                                 if (support_avx())
 #ifndef NO_AVX2
@@ -2118,8 +2059,9 @@ int get_coretype(void)
                         }
                         break;
                     case 6:
-                        if (model == 6)
+                        if (model == 6) {
 #ifndef NO_AVX512
+
                             return CORE_SKYLAKEX;
 #else
                             if (support_avx())
@@ -2131,11 +2073,30 @@ int get_coretype(void)
                             else
                                 return CORE_NEHALEM;
 #endif
+                        }
+
+                        if (model == 10 || model == 12) {
+#ifndef NO_AVX512
+                            if (support_avx512_bf16())
+                                return CORE_COOPERLAKE;
+                            else
+                                return CORE_SKYLAKEX;
+#else
+                            if (support_avx())
+#ifndef NO_AVX2
+                                return CORE_HASWELL;
+#else
+                                return CORE_SANDYBRIDGE;
+#endif
+                            else
+                                return CORE_NEHALEM;
+#endif
+                        }
                         break;
                     case 7:
                         if (model == 10)
                             return CORE_NEHALEM;
-                        if (model == 14)
+                        if (model == 13 || model == 14) { // Ice Lake
 #ifndef NO_AVX512
                             return CORE_SKYLAKEX;
 #else
@@ -2148,10 +2109,60 @@ int get_coretype(void)
                             else
                                 return CORE_NEHALEM;
 #endif
+                        }
+                        break;
+                    case 8:
+                        if (model == 12 || model == 13) { // Tiger Lake
+                            if (support_avx512())
+                                return CORE_SKYLAKEX;
+                            if (support_avx2())
+                                return CORE_HASWELL;
+                            if (support_avx())
+                                return CORE_SANDYBRIDGE;
+                            else
+                                return CORE_NEHALEM;
+                        } else if (model == 14) { // Kaby Lake mobile
+                            if (support_avx())
+#ifndef NO_AVX2
+                                return CORE_HASWELL;
+#else
+                                return CORE_SANDYBRIDGE;
+#endif
+                            else
+                                return CORE_NEHALEM;
+                        } else if (model == 15) { // Sapphire Rapids
+                            if (support_avx512_bf16())
+                                return CPUTYPE_COOPERLAKE;
+                            if (support_avx512())
+                                return CPUTYPE_SKYLAKEX;
+                            if (support_avx2())
+                                return CPUTYPE_HASWELL;
+                            if (support_avx())
+                                return CPUTYPE_SANDYBRIDGE;
+                            else
+                                return CPUTYPE_NEHALEM;
+                        }
                         break;
                     case 9:
-                    case 8:
-                        if (model == 14) { // Kaby Lake
+                        if (model == 7 || model == 10) { // Alder Lake
+                            if (support_avx2())
+                                return CORE_HASWELL;
+                            if (support_avx())
+                                return CORE_SANDYBRIDGE;
+                            else
+                                return CORE_NEHALEM;
+                        }
+                        else if (model == 13) { // Ice Lake NNPI
+                            if (support_avx512())
+                                return CORE_SKYLAKEX;
+                            if (support_avx2())
+                                return CORE_HASWELL;
+                            if (support_avx())
+                                return CORE_SANDYBRIDGE;
+                            else
+                                return CORE_NEHALEM;
+                        }
+                        else if (model == 14) { // Kaby Lake desktop
                             if (support_avx())
 #ifndef NO_AVX2
                                 return CORE_HASWELL;
@@ -2161,12 +2172,41 @@ int get_coretype(void)
                             else
                                 return CORE_NEHALEM;
                         }
+                        break;
+                    case 10:
+                        switch (model) {
+                            case 5: // Comet Lake H and S
+                            case 6: // Comet Lake U
+                                if (support_avx())
+#ifndef NO_AVX2
+                                    return CORE_HASWELL;
+#else
+                                    return CORE_SANDYBRIDGE;
+#endif
+                                else
+                                    return CORE_NEHALEM;
+                            case 7: // Rocket Lake
+#ifndef NO_AVX512
+                                if (support_avx512())
+                                    return CORE_SKYLAKEX;
+#endif
+#ifndef NO_AVX2
+                                if (support_avx2())
+                                    return CORE_HASWELL;
+#endif
+                                if (support_avx())
+                                    return CORE_SANDYBRIDGE;
+                                else
+                                    return CORE_NEHALEM;
+                        }
+                        break;
+                    case 15:
+                        if (model <= 0x2)
+                            return CORE_NORTHWOOD;
+                        else
+                            return CORE_PRESCOTT;
+                        break;
                 }
-                break;
-
-            case 15:
-                if (model <= 0x2) return CORE_NORTHWOOD;
-                else return CORE_PRESCOTT;
         }
     }
 
@@ -2268,23 +2308,277 @@ int get_coretype(void)
     if (vendor == VENDOR_CENTAUR) {
         switch (family) {
             case 0x6:
-                return CORE_NANO;
+                if (model == 0xf && stepping < 0xe)
+                    return CORE_NANO;
+                else
+                    return CORE_NEHALEM;
                 break;
+            case 0x7:
+                switch (exmodel) {
+                    case 5:
+                        if (support_avx2())
+                            return CORE_ZEN;
+                        else
+                            return CORE_DUNNINGTON;
+                    default:
+                        return CORE_NEHALEM;
+                }
+                break;
+            default:
+                if (family >= 0x8)
+                    return CORE_NEHALEM;
+                else
+                    return CORE_VIAC3;
         }
-        return CORE_VIAC3;
+    }
+
+    if (vendor == VENDOR_ZHAOXIN) {
+        switch (family) {
+            case 0x7:
+                switch (exmodel) {
+                    case 5:
+                        if (support_avx2())
+                            return CORE_ZEN;
+                        else
+                            return CORE_DUNNINGTON;
+                    default:
+                        return CORE_NEHALEM;
+                }
+            default:
+                return CORE_NEHALEM;
+        }
     }
 
     return CORE_UNKNOWN;
 }
 
-const char * get_cpunamechar(void)
+static const char * cpuname[] = {
+    "UNKNOWN",
+    "INTEL_UNKNOWN",
+    "UMC_UNKNOWN",
+    "AMD_UNKNOWN",
+    "CYRIX_UNKNOWN",
+    "NEXGEN_UNKNOWN",
+    "CENTAUR_UNKNOWN",
+    "RISE_UNKNOWN",
+    "SIS_UNKNOWN",
+    "TRANSMETA_UNKNOWN",
+    "NSC_UNKNOWN",
+    "80386",
+    "80486",
+    "PENTIUM",
+    "PENTIUM2",
+    "PENTIUM3",
+    "PENTIUMM",
+    "PENTIUM4",
+    "CORE2",
+    "PENRYN",
+    "DUNNINGTON",
+    "NEHALEM",
+    "ATOM",
+    "ITANIUM",
+    "ITANIUM2",
+    "5X86",
+    "K6",
+    "ATHLON",
+    "DURON",
+    "OPTERON",
+    "BARCELONA",
+    "SHANGHAI",
+    "ISTANBUL",
+    "CYRIX5X86",
+    "CYRIXM1",
+    "CYRIXM2",
+    "NEXGENNX586",
+    "CENTAURC6",
+    "RISEMP6",
+    "SYS55X",
+    "TM3X00",
+    "NSGEODE",
+    "VIAC3",
+    "NANO",
+    "SANDYBRIDGE",
+    "BOBCAT",
+    "BULLDOZER",
+    "PILEDRIVER",
+    "HASWELL",
+    "STEAMROLLER",
+    "EXCAVATOR",
+    "ZEN",
+    "SKYLAKEX",
+    "DHYANA",
+    "COOPERLAKE"
+};
+
+static const char * cpuname_lower[] = {
+    "unknown",
+    "intel_unknown",
+    "umc_unknown",
+    "amd_unknown",
+    "cyrix_unknown",
+    "nexgen_unknown",
+    "centaur_unknown",
+    "rise_unknown",
+    "sis_unknown",
+    "transmeta_unknown",
+    "nsc_unknown",
+    "80386",
+    "80486",
+    "pentium",
+    "pentium2",
+    "pentium3",
+    "pentiumm",
+    "pentium4",
+    "core2",
+    "penryn",
+    "dunnington",
+    "nehalem",
+    "atom",
+    "itanium",
+    "itanium2",
+    "5x86",
+    "k6",
+    "athlon",
+    "duron",
+    "opteron",
+    "barcelona",
+    "shanghai",
+    "istanbul",
+    "cyrix5x86",
+    "cyrixm1",
+    "cyrixm2",
+    "nexgennx586",
+    "centaurc6",
+    "risemp6",
+    "sys55x",
+    "tms3x00",
+    "nsgeode",
+    "nano",
+    "sandybridge",
+    "bobcat",
+    "bulldozer",
+    "piledriver",
+    "haswell",
+    "steamroller",
+    "excavator",
+    "zen",
+    "skylakex",
+    "dhyana",
+    "cooperlake"
+};
+
+static const char * corename[] = {
+    "UNKNOWN",
+    "80486",
+    "P5",
+    "P6",
+    "KATMAI",
+    "COPPERMINE",
+    "NORTHWOOD",
+    "PRESCOTT",
+    "BANIAS",
+    "ATHLON",
+    "OPTERON",
+    "BARCELONA",
+    "VIAC3",
+    "YONAH",
+    "CORE2",
+    "PENRYN",
+    "DUNNINGTON",
+    "NEHALEM",
+    "ATOM",
+    "NANO",
+    "SANDYBRIDGE",
+    "BOBCAT",
+    "BULLDOZER",
+    "PILEDRIVER",
+    "HASWELL",
+    "STEAMROLLER",
+    "EXCAVATOR",
+    "ZEN",
+    "SKYLAKEX",
+    "DHYANA",
+    "COOPERLAKE"
+};
+
+static const char * corename_lower[] = {
+    "unknown",
+    "80486",
+    "p5",
+    "p6",
+    "katmai",
+    "coppermine",
+    "northwood",
+    "prescott",
+    "banias",
+    "athlon",
+    "opteron",
+    "barcelona",
+    "viac3",
+    "yonah",
+    "core2",
+    "penryn",
+    "dunnington",
+    "nehalem",
+    "atom",
+    "nano",
+    "sandybridge",
+    "bobcat",
+    "bulldozer",
+    "piledriver",
+    "haswell",
+    "steamroller",
+    "excavator",
+    "zen",
+    "skylakex",
+    "dhyana",
+    "dhyana",
+    "cooperlake"
+};
+
+static const char * cpu_features[] = {
+    "x87 FPU On Chip",
+    "Virtual-8086 Mode Enhancement",
+    "Debugging Extensions",
+    "Page Size Extensions",
+    "Time Stamp Counter",
+    "RDMSR and WRMSR Support",
+    "Physical Address Extensions",
+    "Machine Check Exception",
+    "CMPXCHG8B Instruction",
+    "APIC On Chip",
+    "Unknown1",
+    "SYSENTER and SYSEXIT",
+    "Memory Type Range Registers",
+    "PTE Global Bit",
+    "Machine Check Architecture",
+    "Conditional Move/Compare Instruction",
+    "Page Attribute Table",
+    "36-bit Page Size Extension",
+    "Processor Serial Number",
+    "CFLUSH Extension",
+    "Unknown2",
+    "Debug Store",
+    "Thermal Monitor and Clock Ctrl",
+    "MMX Technology",
+    "FXSAVE/FXRSTOR",
+    "SSE Extensions",
+    "SSE2 Extensions",
+    "Self Snoop",
+    "Multithreading Technology",
+    "Thermal Monitor",
+    "Unknown4",
+    "Pend. Brk. EN."
+};
+
+const char * get_cpuname(void)
 {
-    return cpuname[get_cputype()];
+    return cpuname[get_cpu_type()];
 }
 
-const char * get_lower_cpunamechar(void)
+const char * get_lower_cpuname(void)
 {
-    return lowercpuname[get_cputype()];
+    return cpuname_lower[get_cpu_type()];
 }
 
 const char * get_corename(void)
@@ -2308,7 +2602,7 @@ void get_architecture(void)
 
 void get_subarchitecture(void)
 {
-    printf("%s", get_cpunamechar());
+    printf("%s", get_cpuname());
 }
 
 void get_subdirname(void)
@@ -2320,12 +2614,12 @@ void get_subdirname(void)
 #endif
 }
 
-void get_cpuconfig(void)
+void get_cpu_config(void)
 {
     cache_info_t info;
     int features, coretype;
 
-    printf("#define %s\n", get_cpunamechar());
+    printf("#define %s\n", get_cpuname());
 
     if (get_coretype() != CORE_P5) {
         get_cacheinfo(CACHE_INFO_L1_I, &info);
@@ -2380,7 +2674,7 @@ void get_cpuconfig(void)
             printf("#define DTB_DEFAULT_ENTRIES 32\n");
         }
 
-        features = get_cpuinfo(GET_FEATURE);
+        features = get_cpu_info(GET_FEATURE);
 
         if (features & HAVE_CMOV)       printf("#define HAVE_CMOV\n");
         if (features & HAVE_MMX)        printf("#define HAVE_MMX\n");
@@ -2395,6 +2689,8 @@ void get_cpuconfig(void)
         if (features & HAVE_AVX)        printf("#define HAVE_AVX\n");
         if (features & HAVE_AVX2)       printf("#define HAVE_AVX2\n");
         if (features & HAVE_AVX512VL)   printf("#define HAVE_AVX512VL\n");
+        if (features & HAVE_AVX512BF16) printf("#define HAVE_AVX512BF16\n");
+        if (features & HAVE_AMXBF16)    printf("#define HAVE_AMXBF16\n");
         if (features & HAVE_3DNOWEX)    printf("#define HAVE_3DNOWEX\n");
         if (features & HAVE_3DNOW)      printf("#define HAVE_3DNOW\n");
         if (features & HAVE_FMA4)       printf("#define HAVE_FMA4\n");
@@ -2405,8 +2701,8 @@ void get_cpuconfig(void)
         if (features & HAVE_128BITFPU)  printf("#define HAVE_128BITFPU\n");
         if (features & HAVE_FASTMOVU)   printf("#define HAVE_FASTMOVU\n");
 
-        printf("#define NUM_SHAREDCACHE %d\n", get_cpuinfo(GET_NUMSHARE) + 1);
-        printf("#define NUM_CORES %d\n", get_cpuinfo(GET_NUMCORES) + 1);
+        printf("#define NUM_SHAREDCACHE %d\n", get_cpu_info(GET_NUMSHARE) + 1);
+        printf("#define NUM_CORES %d\n", get_cpu_info(GET_NUMCORES) + 1);
 
         coretype = get_coretype();
         if (coretype > 0) printf("#define CORE_%s\n", get_corename());
@@ -2423,7 +2719,7 @@ void get_cpuconfig(void)
 void get_sse(void)
 {
     int features;
-    features = get_cpuinfo(GET_FEATURE);
+    features = get_cpu_info(GET_FEATURE);
 
     if (features & HAVE_MMX)        printf("HAVE_MMX=1\n");
     if (features & HAVE_SSE)        printf("HAVE_SSE=1\n");
@@ -2437,6 +2733,8 @@ void get_sse(void)
     if (features & HAVE_AVX)        printf("HAVE_AVX=1\n");
     if (features & HAVE_AVX2)       printf("HAVE_AVX2=1\n");
     if (features & HAVE_AVX512VL)   printf("HAVE_AVX512VL=1\n");
+    if (features & HAVE_AVX512BF16) printf("HAVE_AVX512BF16=1\n");
+    if (features & HAVE_AMXBF16)    printf("HAVE_AMXBF16=1\n");
     if (features & HAVE_3DNOWEX)    printf("HAVE_3DNOWEX=1\n");
     if (features & HAVE_3DNOW)      printf("HAVE_3DNOW=1\n");
     if (features & HAVE_FMA4)       printf("HAVE_FMA4=1\n");
