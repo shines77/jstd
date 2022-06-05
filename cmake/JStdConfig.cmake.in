@@ -1,15 +1,15 @@
 # JStdConfig.cmake
 # --------------------
 #
-# JStd cmake module.
+# jstd cmake module.
 # This module sets the following variables in your project::
 #
-#   JStd_FOUND - true if JStd and all required components found on the system
-#   JStd_VERSION - JStd version in format Major.Minor.Release
-#   JStd_INCLUDE_DIRS - Directory where JStd header is located.
-#   JStd_INCLUDE_DIR - same as DIRS
-#   JStd_LIBRARIES - JStd library to link against.
-#   JStd_LIBRARY - same as LIBRARIES
+#   jstd_FOUND - true if jstd and all required components found on the system
+#   jstd_VERSION - jstd version in format Major.Minor.Release
+#   jstd_INCLUDE_DIRS - Directory where jstd header is located.
+#   jstd_INCLUDE_DIR - same as DIRS
+#   jstd_LIBRARIES - jstd library to link against.
+#   jstd_LIBRARY - same as LIBRARIES
 #
 #
 # Available components::
@@ -23,30 +23,30 @@
 #
 # Exported targets::
 #
-# If JStd is found, this module defines the following :prop_tgt:`IMPORTED`
+# If jstd is found, this module defines the following :prop_tgt:`IMPORTED`
 ## target. Target is shared _or_ static, so, for both, use separate, not
 ## overlapping, installations. ::
 #
-#   JStd::JStd - the main JStd library #with header & defs attached.
+#   jstd::jstd - the main jstd library #with header & defs attached.
 #
 #
 # Suggested usage::
 #
-#   find_package(JStd)
-#   find_package(JStd 0.2.20 EXACT CONFIG REQUIRED COMPONENTS pthread)
+#   find_package(jstd)
+#   find_package(jstd 0.2.20 EXACT CONFIG REQUIRED COMPONENTS pthread)
 #
 #
 # The following variables can be set to guide the search for this package::
 #
-#   JStd_DIR - CMake variable, set to directory containing this Config file
+#   jstd_DIR - CMake variable, set to directory containing this Config file
 #   CMAKE_PREFIX_PATH - CMake variable, set to root directory of this package
 #   PATH - environment variable, set to bin directory of this package
-#   CMAKE_DISABLE_FIND_PACKAGE_JStd - CMake variable, disables
-#     find_package(JStd) when not REQUIRED, perhaps to force internal build
+#   CMAKE_DISABLE_FIND_PACKAGE_jstd - CMake variable, disables
+#     find_package(jstd) when not REQUIRED, perhaps to force internal build
 
 @PACKAGE_INIT@
 
-set(PN JStd)
+set(PN jstd)
 
 # need to check that the @USE_*@ evaluate to something cmake can perform boolean logic upon
 if (@USE_OPENMP@)
@@ -63,16 +63,16 @@ check_required_components(${PN})
 # Don't include targets if this file is being picked up by another
 # project which has already built this as a subproject
 #-----------------------------------------------------------------------------
-if (NOT TARGET ${PN}::JStd)
+if (NOT TARGET ${PN}::jstd)
     include("${CMAKE_CURRENT_LIST_DIR}/${PN}Targets.cmake")
 
-    get_property(_loc TARGET ${PN}::JStd PROPERTY LOCATION)
+    get_property(_loc TARGET ${PN}::jstd PROPERTY LOCATION)
     set(${PN}_LIBRARY ${_loc})
-    get_property(_ill TARGET ${PN}::JStd PROPERTY INTERFACE_LINK_LIBRARIES)
+    get_property(_ill TARGET ${PN}::jstd PROPERTY INTERFACE_LINK_LIBRARIES)
     set(${PN}_LIBRARIES ${_ill})
 
-    get_property(_id TARGET ${PN}::JStd PROPERTY INCLUDE_DIRECTORIES)
+    get_property(_id TARGET ${PN}::jstd PROPERTY INCLUDE_DIRECTORIES)
     set(${PN}_INCLUDE_DIR ${_id})
-    get_property(_iid TARGET ${PN}::JStd PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+    get_property(_iid TARGET ${PN}::jstd PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
     set(${PN}_INCLUDE_DIRS ${_iid})
 endif()

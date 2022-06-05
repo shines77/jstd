@@ -4,7 +4,6 @@
 ##              Sets C related variables.
 
 if (${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "LSB" OR ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
-
   set(CCOMMON_OPT "${CCOMMON_OPT} -Wall")
   set(COMMON_PROF "${COMMON_PROF} -fno-inline")
   set(NO_UNINITIALIZED_WARN "-Wno-uninitialized")
@@ -14,7 +13,6 @@ if (${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "LS
   endif ()
 
   if (NO_BINARY_MODE)
-
     if (MIPS64)
       if (BINARY64)
         set(CCOMMON_OPT "${CCOMMON_OPT} -mabi=64")
@@ -60,9 +58,7 @@ if (${CMAKE_C_COMPILER_ID} STREQUAL "PATHSCALE")
 endif ()
 
 if (${CMAKE_C_COMPILER_ID} STREQUAL "OPEN64")
-
   if (MIPS64)
-
     if (NOT BINARY64)
       set(CCOMMON_OPT "${CCOMMON_OPT} -n32")
     else ()
@@ -76,9 +72,7 @@ if (${CMAKE_C_COMPILER_ID} STREQUAL "OPEN64")
     if (${CORE} STREQUAL "LOONGSON3B")
       set(CCOMMON_OPT "${CCOMMON_OPT} -loongson3 -static")
     endif ()
-
   else ()
-
     if (BINARY64)
       set(CCOMMON_OPT "${CCOMMON_OPT} -m32")
     else ()

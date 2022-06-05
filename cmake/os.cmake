@@ -19,7 +19,6 @@ endif ()
 
 # TODO: this is probably meant for mingw, not other windows compilers
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-
   set(NEED_PIC 0)
   set(NO_EXPRECISION 1)
 
@@ -35,7 +34,6 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
   endif ()
 
   if (${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
-
     # Test for supporting MS_ABI
     # removed string parsing in favor of CMake's version comparison -hpa
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
@@ -53,13 +51,12 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     endif ()
     set(FCOMMON_OPT "${FCOMMON_OPT} -mincoming-stack-boundary=2")
   endif ()
-  
 endif ()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Interix")
   set(NEED_PIC 0)
   set(NO_EXPRECISION 1)
-  
+
   set(INTERIX_TOOL_DIR STREQUAL "/opt/gcc.3.3/i586-pc-interix3/bin")
 endif ()
 

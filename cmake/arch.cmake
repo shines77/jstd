@@ -4,7 +4,6 @@
 ##              Sets various variables based on architecture.
 
 if (X86 OR X86_64)
-
   if (X86)
     if (NOT BINARY)
       set(NO_BINARY_MODE 1)

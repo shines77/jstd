@@ -1,8 +1,6 @@
-
 # Only generate .def for dll on MSVC
 
 if (MSVC)
-
   set_source_files_properties(${JSTD_DEF_FILE} PROPERTIES GENERATED 1)
 
   if (NOT DEFINED ARCH)
@@ -18,9 +16,8 @@ if (MSVC)
   add_custom_command(
       OUTPUT ${PROJECT_BINARY_DIR}/jstd.def
       # TARGET ${JSTD_LIBNAME} PRE_LINK
-      COMMAND perl 
+      COMMAND perl
       ARGS "${PROJECT_SOURCE_DIR}/exports/gensymbol" "win2k" "${ARCH_IN}" "dummy" "${SYMBOLPREFIX}" "${SYMBOLSUFFIX}" > "${PROJECT_BINARY_DIR}/jstd.def"
       COMMENT "Create jstd.def file"
       VERBATIM)
-
 endif()
