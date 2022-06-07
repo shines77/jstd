@@ -170,17 +170,19 @@ struct allocator_base {
     size_type object_size() const { return kObjectSize; }
     size_type actual_object_size() const { return kActualObjectSize; }
 
-    bool is_ok(bool expression) {
-        derive_type * pThis = static_cast<derive_type *>(this);
+    bool is_ok(bool expression) const noexcept {
+        const derive_type * pThis = const_cast<const derive_type *>(static_cast<derive_type *>(
+                                    const_cast<allocator_base *>(this)));
         return (!pThis->is_nothrow() || expression);
     }
 
-    bool is_ok(pointer ptr) {
-        derive_type * pThis = static_cast<derive_type *>(this);
+    bool is_ok(pointer ptr) const noexcept {
+        const derive_type * pThis = const_cast<const derive_type *>(static_cast<derive_type *>(
+                                    const_cast<allocator_base *>(this)));
         return (!pThis->is_nothrow() || (ptr != nullptr));
     }
 
-    size_type max_size() const {
+    size_type max_size() const noexcept {
         // Estimate maximum array size
         return ((std::numeric_limits<std::size_t>::max)() / kActualObjectSize);
     }
@@ -315,9 +317,9 @@ struct allocator_base {
         static_cast<pointer>(ptr)->~T();
     }
 
-    pointer allocate(void * ptr, size_type count) {
+    pointer allocate(size_type count, const void * = nullptr) {
         derive_type * pThis = static_cast<derive_type *>(this);
-        return pThis->allocate(static_cast<pointer>(ptr), count);
+        return pThis->allocate(count);
     }
 
     pointer reallocate(void * ptr, size_type count) {
@@ -335,7 +337,7 @@ template <class DeriverT, class DeriverU, class T, class U,
           std::size_t AlignmentT, std::size_t AlignmentU,
           std::size_t ObjectSizeT, std::size_t ObjectSizeU>
 inline bool operator == (const allocator_base<DeriverT, T, AlignmentT, ObjectSizeT> & lhs,
-                         const allocator_base<DeriverU, U, AlignmentU, ObjectSizeU> & rhs) {
+                         const allocator_base<DeriverU, U, AlignmentU, ObjectSizeU> & rhs) noexcept {
     return (std::is_same<DeriverT, DeriverU>::value &&
             (AlignmentT == AlignmentU) && (ObjectSizeT == ObjectSizeU));
 }
@@ -344,7 +346,7 @@ template <class DeriverT, class DeriverU, class T, class U,
           std::size_t AlignmentT, std::size_t AlignmentU,
           std::size_t ObjectSizeT, std::size_t ObjectSizeU>
 inline bool operator != (const allocator_base<DeriverT, T, AlignmentT, ObjectSizeT> & lhs,
-                         const allocator_base<DeriverU, U, AlignmentU, ObjectSizeU> & rhs) {
+                         const allocator_base<DeriverU, U, AlignmentU, ObjectSizeU> & rhs) noexcept {
     return !(std::is_same<DeriverT, DeriverU>::value &&
              (AlignmentT == AlignmentU) && (ObjectSizeT == ObjectSizeU));
 }
@@ -412,7 +414,7 @@ struct allocator : public allocator_base<
 #endif
     }
 
-    pointer allocate(size_type count = 1) {
+    pointer allocate(size_type count = 1, const void * = nullptr) {
         pointer ptr;
         if (needAlignedAllocaote())
             ptr = aligned_malloc<T, kAlignment>::malloc(count * sizeof(value_type));
@@ -446,8 +448,8 @@ struct allocator : public allocator_base<
             std::free((void *)ptr);
     }
 
-    bool is_auto_release() { return true; }
-    bool is_nothrow() { return !ThrowEx; }
+    bool is_auto_release() const { return true; }
+    bool is_nothrow() const { return !ThrowEx; }
 
     bool operator == (const allocator &) const { return true;  }
     bool operator != (const allocator &) const { return false; }
@@ -491,7 +493,7 @@ struct new_delete_allocator : public allocator_base<
         typedef new_delete_allocator<Other, Alignment, ObjectSize> type;
     };
 
-    pointer allocate(size_type count = 1) {
+    pointer allocate(size_type count = 1, const void * = nullptr) {
         // ::operator new[](size_type n) maybe throw a std::bad_alloc() exception.
         pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type)));
         return ptr;
@@ -510,8 +512,8 @@ struct new_delete_allocator : public allocator_base<
         ::operator delete[]((void *)ptr, count * sizeof(value_type));
     }
 
-    bool is_auto_release() { return true; }
-    bool is_nothrow() { return !kThrowEx; }
+    bool is_auto_release() const { return true; }
+    bool is_nothrow() const { return !kThrowEx; }
 
     bool operator == (const new_delete_allocator &) const { return true;  }
     bool operator != (const new_delete_allocator &) const { return false; }
@@ -555,7 +557,7 @@ struct nothrow_allocator : public allocator_base<
         typedef nothrow_allocator<Other, Alignment, ObjectSize, ThrowEx> type;
     };
 
-    pointer allocate(size_type count = 1) {
+    pointer allocate(size_type count = 1, const void * = nullptr) {
         pointer ptr = static_cast<pointer>(::operator new[](count * sizeof(value_type), std::nothrow));
         if (ThrowEx && (ptr == nullptr)) {
             throw std::bad_alloc();
@@ -578,8 +580,8 @@ struct nothrow_allocator : public allocator_base<
         ::operator delete[]((void *)ptr, std::nothrow);
     }
 
-    bool is_auto_release() { return true; }
-    bool is_nothrow() { return !ThrowEx; }
+    bool is_auto_release() const { return true; }
+    bool is_nothrow() const { return !ThrowEx; }
 
     bool operator == (const nothrow_allocator &) const { return true;  }
     bool operator != (const nothrow_allocator &) const { return false; }
@@ -623,7 +625,7 @@ struct malloc_allocator : public allocator_base<
         typedef malloc_allocator<Other, Alignment, ObjectSize, ThrowEx> type;
     };
 
-    pointer allocate(size_type count = 1) {
+    pointer allocate(size_type count = 1, const void * = nullptr) {
         pointer ptr = static_cast<pointer>(std::malloc(count * sizeof(value_type)));
         return ptr;
     }
@@ -640,8 +642,8 @@ struct malloc_allocator : public allocator_base<
         std::free((void *)ptr);
     }
 
-    bool is_auto_release() { return true; }
-    bool is_nothrow() { return !ThrowEx; }
+    bool is_auto_release() const { return true; }
+    bool is_nothrow() const { return !ThrowEx; }
 
     bool operator == (const malloc_allocator &) const { return true;  }
     bool operator != (const malloc_allocator &) const { return false; }
@@ -685,7 +687,7 @@ struct dummy_allocator : public allocator_base<
         typedef dummy_allocator<Other, Alignment, ObjectSize> type;
     };
 
-    pointer allocate(size_type count = 1) {
+    pointer allocate(size_type count = 1, const void * = nullptr) {
         return nullptr;
     }
 
@@ -698,8 +700,8 @@ struct dummy_allocator : public allocator_base<
     void deallocate(U * ptr, size_type count = 1) {
     }
 
-    bool is_auto_release() { return false; }
-    bool is_nothrow() { return !kThrowEx; }
+    bool is_auto_release() const { return false; }
+    bool is_nothrow() const { return !kThrowEx; }
 
     bool operator == (const dummy_allocator &) const { return true;  }
     bool operator != (const dummy_allocator &) const { return false; }
