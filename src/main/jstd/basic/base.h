@@ -18,9 +18,9 @@ namespace jstd {
 
 template <typename T>
 struct align_of {
-#if 1
-    static const std::size_t value = (alignof(T) >= alignof(std::max_align_t))
-                                    ? alignof(T) :  alignof(std::max_align_t);
+#if 0
+    static constexpr std::size_t value = (alignof(T) >= alignof(std::max_align_t))
+                                        ? alignof(T) :  alignof(std::max_align_t);
 #else
     static constexpr std::size_t value = std::alignment_of<T>::value;
 #endif

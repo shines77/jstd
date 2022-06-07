@@ -117,11 +117,24 @@ void _AlignedDeallocate(void * p, std::size_t size = 0, std::size_t alignment = 
 
 #endif // USE_JM_ALIGNED_MALLOC
 
+namespace compile_time {
+
+template <std::size_t Size, std::size_t Alignment>
+struct align_to {
+    static constexpr std::size_t kAlignment =
+        std::max(std::size_t(1), compile_time::round_up_to_power2<Alignment>::value);
+
+    static constexpr std::size_t value =
+        (Size + kAlignment - 1) & ~(kAlignment - 1);
+};
+
+} // namespace compile_time
+
 static inline
 std::size_t align_to(std::size_t size, std::size_t alignment)
 {
     assert(size >= 1);
-    if (likely((size & (size - 1)) == 0)) return size;
+    //if (likely((size & (size - 1)) == 0)) return size;
 
     assert((alignment & (alignment - 1)) == 0);
     size = (size + alignment - 1) & ~(alignment - 1);
@@ -129,7 +142,8 @@ std::size_t align_to(std::size_t size, std::size_t alignment)
     return size;
 }
 
-template <class Derive, class T, std::size_t Alignment = align_of<T>::value>
+template <typename Derive, typename T, std::size_t Alignment = std::alignment_of<T>::value,
+                                       std::size_t ObjectSize = sizeof(T)>
 struct allocator_base {
     typedef Derive          derive_type;
     typedef T               value_type;
@@ -138,17 +152,23 @@ struct allocator_base {
     typedef T &             reference;
     typedef const T &       const_reference;
 
-    typedef std::ptrdiff_t  difference_type;
     typedef std::size_t     size_type;
+    typedef std::ptrdiff_t  difference_type;
 
     typedef true_type       propagate_on_container_move_assignment;
     typedef true_type       is_always_equal;
 
-    static const size_type kAlignOf = Alignment;
-    static const size_type kAlignment = compile_time::round_up_to_power2<Alignment>::value;
+    static constexpr size_type kAlignOf = std::max(Alignment, std::alignment_of<T>::value);
+    static constexpr size_type kAlignment = compile_time::round_up_to_power2<kAlignOf>::value;
+
+    static constexpr size_type kObjectSize = std::max(ObjectSize, sizeof(T));
+    static constexpr size_type kActualObjectSize = compile_time::align_to<kObjectSize, kAlignment>::value;
 
     size_type align_of() const { return kAlignOf; }
     size_type alignment() const { return kAlignment; }
+
+    size_type object_size() const { return kObjectSize; }
+    size_type actual_object_size() const { return kActualObjectSize; }
 
     bool is_ok(bool expression) {
         derive_type * pThis = static_cast<derive_type *>(this);
@@ -162,7 +182,7 @@ struct allocator_base {
 
     size_type max_size() const {
         // Estimate maximum array size
-        return ((std::numeric_limits<std::size_t>::max)() / sizeof(T));
+        return ((std::numeric_limits<std::size_t>::max)() / kActualObjectSize);
     }
 
     pointer address(reference value) const noexcept {
@@ -311,23 +331,30 @@ struct allocator_base {
     }
 };
 
-template <class DeriverT, class DeriverU, class T, class U, std::size_t AlignmentT, std::size_t AlignmentU>
-inline bool operator == (const allocator_base<DeriverT, T, AlignmentT> & lhs,
-                         const allocator_base<DeriverU, U, AlignmentU> & rhs) {
-    return (std::is_same<DeriverT, DeriverU>::value && (AlignmentT == AlignmentU));
+template <class DeriverT, class DeriverU, class T, class U,
+          std::size_t AlignmentT, std::size_t AlignmentU,
+          std::size_t ObjectSizeT, std::size_t ObjectSizeU>
+inline bool operator == (const allocator_base<DeriverT, T, AlignmentT, ObjectSizeT> & lhs,
+                         const allocator_base<DeriverU, U, AlignmentU, ObjectSizeU> & rhs) {
+    return (std::is_same<DeriverT, DeriverU>::value &&
+            (AlignmentT == AlignmentU) && (ObjectSizeT == ObjectSizeU));
 }
 
-template <class DeriverT, class DeriverU, class T, class U, std::size_t AlignmentT, std::size_t AlignmentU>
-inline bool operator != (const allocator_base<DeriverT, T, AlignmentT> & lhs,
-                         const allocator_base<DeriverU, U, AlignmentU> & rhs) {
-    return !(std::is_same<DeriverT, DeriverU>::value && (AlignmentT == AlignmentU));
+template <class DeriverT, class DeriverU, class T, class U,
+          std::size_t AlignmentT, std::size_t AlignmentU,
+          std::size_t ObjectSizeT, std::size_t ObjectSizeU>
+inline bool operator != (const allocator_base<DeriverT, T, AlignmentT, ObjectSizeT> & lhs,
+                         const allocator_base<DeriverU, U, AlignmentU, ObjectSizeU> & rhs) {
+    return !(std::is_same<DeriverT, DeriverU>::value &&
+             (AlignmentT == AlignmentU) && (ObjectSizeT == ObjectSizeU));
 }
 
-template <class T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = true>
+template <typename T, std::size_t Alignment = std::alignment_of<T>::value,
+                      std::size_t ObjectSize = sizeof(T), bool ThrowEx = true>
 struct allocator : public allocator_base<
-            allocator<T, Alignment, ThrowEx>, T, Alignment> {
-    typedef allocator<T, Alignment, ThrowEx>        this_type;
-    typedef allocator_base<this_type, T, Alignment> base_type;
+            allocator<T, Alignment, ObjectSize, ThrowEx>, T, Alignment, ObjectSize> {
+    typedef allocator<T, Alignment, ObjectSize, ThrowEx>        this_type;
+    typedef allocator_base<this_type, T, Alignment, ObjectSize> base_type;
 
     typedef typename base_type::value_type          value_type;
     typedef typename base_type::pointer             pointer;
@@ -339,8 +366,13 @@ struct allocator : public allocator_base<
     typedef typename base_type::size_type           size_type;
 
     static const bool kThrowEx = ThrowEx;
+
     static const size_type kAlignOf = base_type::kAlignOf;
     static const size_type kAlignment = base_type::kAlignment;
+
+    static const size_type kObjectSize = base_type::kObjectSize;
+    static const size_type kActualObjectSize = base_type::kActualObjectSize;
+
 #if defined(MALLOC_ALIGNMENT)
     static const size_type kMallocDefaultAlignment = compile_time::round_up_to_pow2<MALLOC_ALIGNMENT>::value;
 #else
@@ -369,10 +401,10 @@ struct allocator : public allocator_base<
 
     template <typename Other>
     struct rebind {
-        typedef allocator<Other, Alignment, ThrowEx> type;
+        typedef allocator<Other, Alignment, ObjectSize, ThrowEx> type;
     };
 
-    bool needAlignedAllocaote() const {
+    constexpr bool needAlignedAllocaote() const {
 #if 1
         return (kAlignment > kMallocDefaultAlignment);
 #else
@@ -416,13 +448,17 @@ struct allocator : public allocator_base<
 
     bool is_auto_release() { return true; }
     bool is_nothrow() { return !ThrowEx; }
+
+    bool operator == (const allocator &) const { return true;  }
+    bool operator != (const allocator &) const { return false; }
 };
 
-template <class T, std::size_t Alignment = align_of<T>::value>
-struct std_new_allocator : public allocator_base<
-            std_new_allocator<T, Alignment>, T, Alignment> {
-    typedef std_new_allocator<T, Alignment>             this_type;
-    typedef allocator_base<this_type, T, Alignment>     base_type;
+template <typename T, std::size_t Alignment = std::alignment_of<T>::value,
+                      std::size_t ObjectSize = sizeof(T)>
+struct new_delete_allocator : public allocator_base<
+            new_delete_allocator<T, Alignment, ObjectSize>, T, Alignment, ObjectSize> {
+    typedef new_delete_allocator<T, Alignment, ObjectSize>          this_type;
+    typedef allocator_base<this_type, T, Alignment, ObjectSize>     base_type;
 
     typedef typename base_type::value_type              value_type;
     typedef typename base_type::pointer                 pointer;
@@ -435,24 +471,24 @@ struct std_new_allocator : public allocator_base<
 
     static const bool kThrowEx = true;
 
-    std_new_allocator() noexcept {}
-    std_new_allocator(const this_type & other) noexcept {}
+    new_delete_allocator() noexcept {}
+    new_delete_allocator(const this_type & other) noexcept {}
     template <typename U>
-    std_new_allocator(const std_new_allocator<U, Alignment> & other) noexcept {}
+    new_delete_allocator(const new_delete_allocator<U, Alignment, ObjectSize> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;
     }
     template <typename U>
-    this_type & operator = (const std_new_allocator<U, Alignment> & other) noexcept {
+    this_type & operator = (const new_delete_allocator<U, Alignment> & other) noexcept {
         return *this;
     }
 
-    ~std_new_allocator() {}
+    ~new_delete_allocator() {}
 
     template <typename Other>
     struct rebind {
-        typedef std_new_allocator<Other, Alignment> type;
+        typedef new_delete_allocator<Other, Alignment, ObjectSize> type;
     };
 
     pointer allocate(size_type count = 1) {
@@ -476,13 +512,17 @@ struct std_new_allocator : public allocator_base<
 
     bool is_auto_release() { return true; }
     bool is_nothrow() { return !kThrowEx; }
+
+    bool operator == (const new_delete_allocator &) const { return true;  }
+    bool operator != (const new_delete_allocator &) const { return false; }
 };
 
-template <class T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = false>
+template <typename T, std::size_t Alignment = std::alignment_of<T>::value,
+                      std::size_t ObjectSize = sizeof(T), bool ThrowEx = false>
 struct nothrow_allocator : public allocator_base<
-            nothrow_allocator<T, Alignment, ThrowEx>, T, Alignment> {
-    typedef nothrow_allocator<T, Alignment, ThrowEx>    this_type;
-    typedef allocator_base<this_type, T, Alignment>     base_type;
+            nothrow_allocator<T, Alignment, ObjectSize, ThrowEx>, T, Alignment, ObjectSize> {
+    typedef nothrow_allocator<T, Alignment, ObjectSize, ThrowEx>    this_type;
+    typedef allocator_base<this_type, T, Alignment, ObjectSize>     base_type;
 
     typedef typename base_type::value_type              value_type;
     typedef typename base_type::pointer                 pointer;
@@ -498,7 +538,7 @@ struct nothrow_allocator : public allocator_base<
     nothrow_allocator() noexcept {}
     nothrow_allocator(const this_type & other) noexcept {}
     template <typename U>
-    nothrow_allocator(const nothrow_allocator<U, Alignment, ThrowEx> & other) noexcept {}
+    nothrow_allocator(const nothrow_allocator<U, Alignment, ObjectSize, ThrowEx> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;
@@ -512,7 +552,7 @@ struct nothrow_allocator : public allocator_base<
 
     template <typename Other>
     struct rebind {
-        typedef nothrow_allocator<Other, Alignment, ThrowEx> type;
+        typedef nothrow_allocator<Other, Alignment, ObjectSize, ThrowEx> type;
     };
 
     pointer allocate(size_type count = 1) {
@@ -540,13 +580,17 @@ struct nothrow_allocator : public allocator_base<
 
     bool is_auto_release() { return true; }
     bool is_nothrow() { return !ThrowEx; }
+
+    bool operator == (const nothrow_allocator &) const { return true;  }
+    bool operator != (const nothrow_allocator &) const { return false; }
 };
 
-template <typename T, std::size_t Alignment = align_of<T>::value, bool ThrowEx = false>
+template <typename T, std::size_t Alignment = std::alignment_of<T>::value,
+                      std::size_t ObjectSize = sizeof(T), bool ThrowEx = false>
 struct malloc_allocator : public allocator_base<
-            malloc_allocator<T, Alignment, ThrowEx>, T, Alignment> {
-    typedef malloc_allocator<T, Alignment, ThrowEx> this_type;
-    typedef allocator_base<this_type, T, Alignment> base_type;
+            malloc_allocator<T, Alignment, ObjectSize, ThrowEx>, T, Alignment, ObjectSize> {
+    typedef malloc_allocator<T, Alignment, ObjectSize, ThrowEx> this_type;
+    typedef allocator_base<this_type, T, Alignment, ObjectSize> base_type;
 
     typedef typename base_type::value_type          value_type;
     typedef typename base_type::pointer             pointer;
@@ -562,7 +606,7 @@ struct malloc_allocator : public allocator_base<
     malloc_allocator() noexcept {}
     malloc_allocator(const this_type & other) noexcept {}
     template <typename U>
-    malloc_allocator(const malloc_allocator<U, Alignment, ThrowEx> & other) noexcept {}
+    malloc_allocator(const malloc_allocator<U, Alignment, ObjectSize, ThrowEx> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;
@@ -576,7 +620,7 @@ struct malloc_allocator : public allocator_base<
 
     template <typename Other>
     struct rebind {
-        typedef malloc_allocator<Other, Alignment, ThrowEx> type;
+        typedef malloc_allocator<Other, Alignment, ObjectSize, ThrowEx> type;
     };
 
     pointer allocate(size_type count = 1) {
@@ -598,13 +642,17 @@ struct malloc_allocator : public allocator_base<
 
     bool is_auto_release() { return true; }
     bool is_nothrow() { return !ThrowEx; }
+
+    bool operator == (const malloc_allocator &) const { return true;  }
+    bool operator != (const malloc_allocator &) const { return false; }
 };
 
-template <class T, std::size_t Alignment = align_of<T>::value>
+template <typename T, std::size_t Alignment = std::alignment_of<T>::value,
+                      std::size_t ObjectSize = sizeof(T)>
 struct dummy_allocator : public allocator_base<
-            dummy_allocator<T, Alignment>, T, Alignment> {
-    typedef dummy_allocator<T, Alignment>           this_type;
-    typedef allocator_base<this_type, T, Alignment> base_type;
+            dummy_allocator<T, Alignment, ObjectSize>, T, Alignment, ObjectSize> {
+    typedef dummy_allocator<T, Alignment, ObjectSize>           this_type;
+    typedef allocator_base<this_type, T, Alignment, ObjectSize> base_type;
 
     typedef typename base_type::value_type          value_type;
     typedef typename base_type::pointer             pointer;
@@ -626,7 +674,7 @@ struct dummy_allocator : public allocator_base<
         return *this;
     }
     template <typename U>
-    this_type & operator = (const dummy_allocator<U, Alignment> & other) noexcept {
+    this_type & operator = (const dummy_allocator<U, Alignment, ObjectSize> & other) noexcept {
         return *this;
     }
 
@@ -634,7 +682,7 @@ struct dummy_allocator : public allocator_base<
 
     template <typename Other>
     struct rebind {
-        typedef dummy_allocator<Other, Alignment> type;
+        typedef dummy_allocator<Other, Alignment, ObjectSize> type;
     };
 
     pointer allocate(size_type count = 1) {
@@ -652,6 +700,9 @@ struct dummy_allocator : public allocator_base<
 
     bool is_auto_release() { return false; }
     bool is_nothrow() { return !kThrowEx; }
+
+    bool operator == (const dummy_allocator &) const { return true;  }
+    bool operator != (const dummy_allocator &) const { return false; }
 };
 
 } // namespace jstd
