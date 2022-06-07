@@ -307,7 +307,7 @@ protected:
     template <typename ...Args>
     JSTD_FORCE_INLINE
     void create_impl(Args && ... args) {
-        this->value_   = this->allocator_.create(std::forward<Args>(args)...);
+        this->value_   = this->allocator_.create_new(std::forward<Args>(args)...);
         this->shifted_ = false;
     }
 

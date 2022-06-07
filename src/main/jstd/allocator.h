@@ -173,12 +173,12 @@ struct allocator_base {
         return std::addressof(value);
     }
 
-    pointer create() {
+    pointer create_new() {
         return this->create_array(1);
     }
 
     template <typename ...Args>
-    pointer create(Args && ... args) {
+    pointer create_new(Args && ... args) {
         return this->create_array(1, std::forward<Args>(args)...);
     }
 
@@ -206,17 +206,17 @@ struct allocator_base {
     }
 
     template <typename U>
-    pointer respawn(U * ptr) {
-        return this->respawn_array(ptr, 1);
+    pointer recreate(U * ptr) {
+        return this->recreate_array(ptr, 1);
     }
 
     template <typename U, typename ...Args>
-    pointer respawn(U * ptr, Args && ... args) {
-        return this->respawn_array(ptr, 1, std::forward<Args>(args)...);
+    pointer recreate(U * ptr, Args && ... args) {
+        return this->recreate_array(ptr, 1, std::forward<Args>(args)...);
     }
 
     template <typename U>
-    pointer respawn_array(U * ptr, size_type count) {
+    pointer recreate_array(U * ptr, size_type count) {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -228,7 +228,7 @@ struct allocator_base {
     }
 
     template <typename U, typename ...Args>
-    pointer respawn_array(U * ptr, size_type count, Args && ... args) {
+    pointer recreate_array(U * ptr, size_type count, Args && ... args) {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
@@ -293,6 +293,11 @@ struct allocator_base {
     void destruct(void * ptr) {
         assert(ptr != nullptr);
         static_cast<pointer>(ptr)->~T();
+    }
+
+    pointer allocate(void * ptr, size_type count) {
+        derive_type * pThis = static_cast<derive_type *>(this);
+        return pThis->allocate(static_cast<pointer>(ptr), count);
     }
 
     pointer reallocate(void * ptr, size_type count) {
