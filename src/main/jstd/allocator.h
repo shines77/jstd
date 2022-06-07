@@ -13,7 +13,7 @@
 #include "jstd/basic/base.h"
 #include "jstd/support/PowerOf2.h"
 #include "jstd/memory/c_aligned_malloc.h"
-#include "jstd/memory/aligned_allocator.h"
+#include "jstd/memory/aligned_malloc.h"
 
 #include <stddef.h>
 #include <malloc.h>
@@ -378,7 +378,7 @@ struct allocator : public allocator_base<
     pointer allocate(size_type count = 1) {
         pointer ptr;
         if (needAlignedAllocaote())
-            ptr = aligned_allocator<T, kAlignment>::malloc(count * sizeof(value_type));
+            ptr = aligned_malloc<T, kAlignment>::malloc(count * sizeof(value_type));
         else
             ptr = static_cast<pointer>(std::malloc(count * sizeof(value_type)));
         if (ThrowEx && (ptr == nullptr)) {
@@ -391,7 +391,7 @@ struct allocator : public allocator_base<
     pointer reallocate(U * ptr, size_type count = 1) {
         pointer new_ptr;
         if (needAlignedAllocaote())
-            new_ptr = aligned_allocator<T, kAlignment>::realloc(ptr, count * sizeof(value_type));
+            new_ptr = aligned_malloc<T, kAlignment>::realloc(ptr, count * sizeof(value_type));
         else
             new_ptr = static_cast<pointer>(std::realloc((void *)ptr, count * sizeof(value_type)));
         if (ThrowEx && (new_ptr == nullptr)) {
@@ -404,7 +404,7 @@ struct allocator : public allocator_base<
     void deallocate(U * ptr, size_type count = 1) {
         assert(ptr != nullptr);
         if (needAlignedAllocaote())
-            aligned_allocator<T, kAlignment>::free((void *)ptr);
+            aligned_malloc<T, kAlignment>::free((void *)ptr);
         else
             std::free((void *)ptr);
     }

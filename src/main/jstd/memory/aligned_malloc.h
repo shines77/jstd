@@ -19,66 +19,28 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include <memory>
-
+#include "jstd/allocator.h"
 #include "jstd/type_traits.h"
 
-/////////////////////////////////////////////////////////////////////////////
-
-#define JM_SUPPORT_ALIGNED_OFFSET_MALLOC    0
-
-#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
- || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
-#  define JM_MALLOC_IS_X64      1
-#else
-#  define JM_MALLOC_IS_X64      0
-#endif
-
-#undef  JM_X86_CDECL
-#if !defined(JM_MALLOC_IS_X64) || (JM_MALLOC_IS_X64 == 0)
-#define JM_X86_CDECL    __cdecl
-#else
-#define JM_X86_CDECL
-#endif
-
-/* The align sign size of aligned_block */
-#define JM_ALIGN_SIGN_SIZE      sizeof(void *)
-#define JM_NO_MANS_LAND_SIZE    sizeof(void *)
-
-#if defined(_MSC_VER)
-#define JM_INLINE               __inline
-#define JM_FORCE_INLINE         __forceinline
-#define JM_NO_INLINE            __declspec(noinline)
-#define JM_RESTRICT             __restrict
-#elif defined(__GNUC__) || defined(__clang__) || defined(__linux__)
-#define JM_INLINE               __inline__
-#define JM_FORCE_INLINE         __inline__ __attribute__((always_inline))
-#define JM_NO_INLINE            __attribute__((noinline))
-#define JM_RESTRICT             __restrict__
-#else
-#define JM_INLINE               inline
-#define JM_FORCE_INLINE         inline
-#define JM_NO_INLINE
-#define JM_RESTRICT
-#endif
-
-#if defined(MALLOC_ALIGNMENT)
-  #define JM_MALLOC_ALIGNMENT       MALLOC_ALIGNMENT
-#else
-  #if JM_MALLOC_IS_X64
-    #define JM_MALLOC_ALIGNMENT     16
-  #else
-    #define JM_MALLOC_ALIGNMENT     8
-  #endif
-#endif // MALLOC_ALIGNMENT
-
-/////////////////////////////////////////////////////////////////////////////
+#include "jstd/memory/basic_aligned_malloc.h"
 
 namespace jstd {
 
+template <typename T, std::size_t Alignment = align_of<T>::value>
 class aligned_malloc {
 public:
-    typedef aligned_malloc this_type;
+    typedef T                               value_type;
+    typedef T *                             pointer;
+    typedef const T *                       const_pointer;
+    typedef T &                             reference;
+    typedef const T &                       const_reference;
+
+    typedef std::ptrdiff_t                  difference_type;
+    typedef std::size_t                     size_type;
+
+    typedef aligned_malloc<T, Alignment> this_type;
+
+    static const std::size_t kAlignment = compile_time::round_up_to_pow2<Alignment>::value;
 
     /*
      * The following values are non-zero, constant, odd, large, and atypical
@@ -198,12 +160,6 @@ private:
         if (sizeof(uintptr_t) > JM_MALLOC_ALIGNMENT) {
             alignment = (alignment >= sizeof(uintptr_t)) ? alignment : sizeof(uintptr_t);
         }
-
-#if JM_ADJUST_ALIGNMENT
-        alignment = this_type::round_up_power_of_2(alignment);
-        assert(alignment > 0);
-        assert(this_type::is_power_of_2(alignment));
-#endif
         return alignment;
     }
 
@@ -289,7 +245,6 @@ private:
         ptrdiff_t headerPaddingSize;
         ptrdiff_t footerPaddingSize;
 #endif
-
         assert(ptr != nullptr);
         assert(alloc_size == sizeof(aligned_block_header) + size + (alignment - 1));
         assert(this_type::is_power_of_2(alignment));
@@ -320,7 +275,6 @@ private:
         assert(headerPaddingSize <= (ptrdiff_t)(sizeof(aligned_block_header) + (alignment - 1)));
         assert(footerPaddingSize >= 0);
 #endif
-
         return (void *)pvData;
     }
 
@@ -336,15 +290,30 @@ public:
         return alloc_size;
     }
 
+    template <typename U>
+    static JM_INLINE
+    size_t JM_X86_CDECL
+    original_usable_size(U * ptr) {
+        void * p = reinterpret_cast<void *>(ptr);
+        return this_type::original_usable_size(p);
+    }
+
     JM_INLINE
     size_t JM_X86_CDECL
-    get_usable_size(void * ptr, size_t alignment) {
+    get_usable_size(void * ptr) {
         ptrdiff_t header_size;  /* Size of the header block */
         size_t alloc_size;      /* Actual alloce size of the allocated block */
         ptrdiff_t usable_size;  /* Aligned alloce size of the user block */
         uintptr_t pvData;
 
-        if (alignment <= JM_MALLOC_ALIGNMENT) {
+        //
+        // The alignment must be a power of 2,
+        // the behavior is undefined if alignment is not a power of 2.
+        //
+        size_t alignment = this_type::adjust_alignment(kAlignment);
+        JSTD_UNUSED_VARS(alignment);
+
+        if (kAlignment <= JM_MALLOC_ALIGNMENT) {
             return this_type::original_usable_size(ptr);
         }
 
@@ -352,19 +321,13 @@ public:
         /* HEADER_SIZE + USER_SIZE + FOOTER_SIZE = TOTAL_SIZE */
 
         // Diagnosing in debug mode
-        check_param(ptr, alignment);
+        check_param(ptr, kAlignment);
 
         assert(ptr != nullptr);
         //
         // The ptr value aligned to sizeof(uintptr_t) bytes if need.
         //
         pvData = (uintptr_t)this_type::adjust_pointer(ptr);
-
-        //
-        // The alignment must be a power of 2,
-        // the behavior is undefined if alignment is not a power of 2.
-        //
-        alignment = this_type::adjust_alignment(alignment);
 
 #if JM_SUPPORT_ALIGNED_OFFSET_MALLOC
         // The ptr value aligned to sizeof(uintptr_t) bytes
@@ -401,29 +364,37 @@ public:
 #endif // NDEBUG
     }
 
+    template <typename U>
     static JM_INLINE
-    void * JM_X86_CDECL
-    malloc(size_t size, size_t alignment) {
+    size_t JM_X86_CDECL
+    get_usable_size(U * ptr) {
+        void * p = reinterpret_cast<void *>(ptr);
+        return this_type::get_usable_size(p);
+    }
+
+    static JM_INLINE
+    pointer JM_X86_CDECL
+    malloc(size_t size) {
         size_t alloc_size;
         uintptr_t pvAlloc, pvData;
-
-        if (alignment <= JM_MALLOC_ALIGNMENT) {
-            return std::malloc(size);
-        }
 
         //
         // The alignment must be a power of 2,
         // the behavior is undefined if alignment is not a power of 2.
         //
-        alignment = this_type::adjust_alignment(alignment);
+        size_t alignment = this_type::adjust_alignment(kAlignment);
+
+        if (kAlignment <= JM_MALLOC_ALIGNMENT) {
+            return static_cast<pointer>(std::malloc(size));
+        }
 
         // Let alloc_size aligned to alignment bytes (isn't must need)
-        alloc_size = sizeof(aligned_block_header) + size + (alignment - 1);
+        alloc_size = sizeof(aligned_block_header) + size + (kAlignment - 1);
 
         pvAlloc = (uintptr_t)std::malloc(alloc_size);
         if (pvAlloc != (uintptr_t)nullptr) {
             // The output data pointer aligned to alignment bytes
-            pvData = (uintptr_t)this_type::aligned_to_addr((void *)pvAlloc, size, alloc_size, alignment);
+            pvData = (uintptr_t)this_type::aligned_to_addr((void *)pvAlloc, size, alloc_size, kAlignment);
 #if 0
             printf("pvAlloc = 0x%p, AllocSize = %" PRIuPTR "\n", (void *)pvAlloc, alloc_size);
             printf("pvData  = 0x%p, Size      = %" PRIuPTR ", alignment = %" PRIuPTR "\n",
@@ -432,11 +403,11 @@ public:
                    this_type::usable_size((void *)pvAlloc),
                    this_type::usable_size((void *)pvData, alignment));
 #endif
-            return (void *)pvData;
+            return static_cast<pointer>(reinterpret_cast<void *>(pvData));
         }
         else {
-            // MSVC: If size bigger than _HEAP_MAXREQ, return ENOMEM.
-            //errno;
+            // MSVC: If size bigger than _HEAP_MAXREQ, (errno) return ENOMEM.
+            // print errno;
             return nullptr;
         }
     }
@@ -471,22 +442,28 @@ public:
     /*****************************************************************************************/
 
     static JM_INLINE
-    void * JM_X86_CDECL
-    realloc(void * ptr, size_t new_size, size_t alignment) {
+    pointer JM_X86_CDECL
+    realloc(void * ptr, size_t new_size) {
         aligned_block_header * pBlockHdr;
         uintptr_t pvData;
         void * pvAlloc, * new_ptr;
         void * newData;
         size_t new_alloc_size;
 
-        if (alignment <= JM_MALLOC_ALIGNMENT) {
-            return std::realloc(ptr, new_size);
+        //
+        // The alignment must be a power of 2,
+        // the behavior is undefined if alignment is not a power of 2.
+        //
+        size_t alignment = this_type::adjust_alignment(kAlignment);
+
+        if (kAlignment <= JM_MALLOC_ALIGNMENT) {
+            return static_cast<pointer>(std::realloc(ptr, new_size));
         }
 
         if (likely(ptr != nullptr)) {
             if (likely(new_size != 0)) {
                 // Diagnosing in debug mode
-                this_type::check_param(ptr, alignment);
+                this_type::check_param(ptr, kAlignment);
 
                 //
                 // The ptr value aligned to sizeof(uintptr_t) bytes if need.
@@ -513,22 +490,22 @@ public:
                 if (new_ptr != nullptr) {
                     newData = this_type::aligned_to_addr(new_ptr, new_size, new_alloc_size, alignment);
                     assert(newData != nullptr);
-                    return newData;
+                    return static_cast<pointer>(newData);;
                 }
                 else {
-                    // Unknown errors (Get errno)
+                    // Unknown errors (error info read from (errno))
                 }
             }
             else {
                 // If ptr is not null and new_size is zero, call free(ptr) and return null.
-                this_type::free(ptr, alignment);
+                this_type::free(ptr);
                 new_ptr = nullptr;
             }
         }
         else {
             if (likely(new_size != 0)) {
                 // If ptr is null and new_size is not zero, return malloc(new_size).
-                new_ptr = this_type::malloc(new_size, alignment);
+                new_ptr = (void *)this_type::malloc(new_size);
             }
             else {
                 // If ptr is null and new_size is zero, return null.
@@ -536,42 +513,58 @@ public:
             }
         }
 
-        return new_ptr;
+        return static_cast<pointer>(new_ptr);
+    }
+
+    template <typename U>
+    static JM_INLINE
+    pointer JM_X86_CDECL
+    realloc(U * ptr, size_t new_size) {
+        void * p = reinterpret_cast<void *>(ptr);
+        return this_type::realloc(p, new_size);
     }
 
     static JM_INLINE
-    void * JM_X86_CDECL
-    calloc(size_t count, size_t size, size_t alignment) {
-        void * pvData = this_type::malloc(count * size, alignment);
+    pointer JM_X86_CDECL
+    calloc(size_t count, size_t size) {
+        void * pvData = this_type::malloc(count * size);
         if (pvData != nullptr) {
             std::memset(pvData, 0, count * size);
         }
-        return pvData;
+        return static_cast<pointer>(pvData);
     }
 
     static JM_INLINE
-    void * JM_X86_CDECL
-    recalloc(void * ptr, size_t count, size_t new_size, size_t alignment) {
-        void * pvData = this_type::realloc(ptr, count * new_size, alignment);
+    pointer JM_X86_CDECL
+    recalloc(void * ptr, size_t count, size_t new_size) {
+        void * pvData = this_type::realloc(ptr, count * new_size);
         if (pvData != nullptr) {
             std::memset(pvData, 0, count * new_size);
         }
-        return pvData;
+        return static_cast<pointer>(pvData);
+    }
+
+    template <typename U>
+    static JM_INLINE
+    pointer JM_X86_CDECL
+    recalloc(U * ptr, size_t count, size_t new_size) {
+        void * p = reinterpret_cast<void *>(ptr);
+        return this_type::recalloc(p, count, new_size);
     }
 
     static JM_INLINE
     void JM_X86_CDECL
-    free(void * ptr, size_t alignment) {
+    free(void * ptr) {
         aligned_block_header * pBlockHdr;
         uintptr_t pvData;
         void * pvAlloc;
 
-        if (alignment <= JM_MALLOC_ALIGNMENT) {
+        if (kAlignment <= JM_MALLOC_ALIGNMENT) {
             return std::free(ptr);
         }
 
         // Diagnosing in debug mode
-        this_type::check_param(ptr, alignment);
+        this_type::check_param(ptr, kAlignment);
 
         //
         // The ptr value aligned to sizeof(uintptr_t) bytes if need.
@@ -602,6 +595,13 @@ public:
 
         // Free memory block if need
         std::free(pvAlloc);
+    }
+
+    template <typename U>
+    static JM_INLINE
+    void JM_X86_CDECL
+    free(U * ptr) {
+        this_type::free(reinterpret_cast<void *>(ptr));
     }
 
 }; // struct aligned_malloc

@@ -200,8 +200,8 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\iterator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\lib.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\math\log10_int.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\memory\aligned_allocator.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\aligned_malloc.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\memory\basic_aligned_malloc.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\c_aligned_malloc.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\defines.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\shiftable_ptr.h" />
