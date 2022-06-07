@@ -1245,7 +1245,7 @@ int main(int argc, char * argv[]) {
             }
         }
 #else
-        get_cpuconfig();
+        get_cpu_config();
 #endif
 
 #ifdef FORCE

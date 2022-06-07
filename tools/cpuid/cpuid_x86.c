@@ -1837,9 +1837,9 @@ int get_cpu_type(void)
     return CPUTYPE_UNKNOWN;
 }
 
-int get_coretype(void)
+int get_core_type(void)
 {
-    int family, exfamily, model, exmodel, vendor;
+    int family, exfamily, model, exmodel, vendor, stepping;
 
     if (!have_cpuid()) return CORE_80486;
 
@@ -1847,6 +1847,7 @@ int get_coretype(void)
     exfamily = get_cpu_info(GET_EXFAMILY);
     model = get_cpu_info(GET_MODEL);
     exmodel = get_cpu_info(GET_EXMODEL);
+    stepping = get_cpu_info(GET_STEPPING);
 
     vendor = get_vendor();
 
@@ -2583,12 +2584,12 @@ const char * get_lower_cpuname(void)
 
 const char * get_corename(void)
 {
-    return corename[get_coretype()];
+    return corename[get_core_type()];
 }
 
 void get_libname(void)
 {
-    printf("%s", corename_lower[get_coretype()]);
+    printf("%s", corename_lower[get_core_type()]);
 }
 
 void get_architecture(void)
@@ -2621,7 +2622,7 @@ void get_cpu_config(void)
 
     printf("#define %s\n", get_cpuname());
 
-    if (get_coretype() != CORE_P5) {
+    if (get_core_type() != CORE_P5) {
         get_cacheinfo(CACHE_INFO_L1_I, &info);
         if (info.size > 0) {
             printf("#define L1_CODE_SIZE %d\n", info.size * 1024);
@@ -2704,7 +2705,7 @@ void get_cpu_config(void)
         printf("#define NUM_SHAREDCACHE %d\n", get_cpu_info(GET_NUMSHARE) + 1);
         printf("#define NUM_CORES %d\n", get_cpu_info(GET_NUMCORES) + 1);
 
-        coretype = get_coretype();
+        coretype = get_core_type();
         if (coretype > 0) printf("#define CORE_%s\n", get_corename());
     }
     else {
