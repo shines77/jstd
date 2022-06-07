@@ -64,19 +64,19 @@ void _Deallocate(void * p, std::size_t size = 0) {
 
 static inline
 void * _AlignedAllocate(std::size_t size, std::size_t alignment) {
-    void * ptr = ::jm_aligned_malloc(size, alignment);
+    void * ptr = jm_aligned_malloc(size, alignment);
     return ptr;
 }
 
 static inline
 void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment) {
-    void * new_ptr = ::jm_aligned_realloc(ptr, size, alignment);
+    void * new_ptr = jm_aligned_realloc(ptr, size, alignment);
     return new_ptr;
 }
 
 static inline
 void _AlignedDeallocate(void * p, std::size_t size = 0, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
-    ::jm_aligned_free(p, alignment);
+    jm_aligned_free(p, alignment);
 }
 
 #else // !USE_JM_ALIGNED_MALLOC
@@ -85,9 +85,9 @@ static inline
 void * _AlignedAllocate(std::size_t size, std::size_t alignment) {
     assert(size != 0);
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
-    void * ptr = ::_aligned_malloc(size, alignment);
+    void * ptr = _aligned_malloc(size, alignment);
 #else
-    void * ptr = ::memalign(alignment, size);
+    void * ptr = memalign(alignment, size);
 #endif
     return ptr;
 }
@@ -96,12 +96,12 @@ static inline
 void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment) {
     assert(size != 0);
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
-    void * new_ptr = ::_aligned_realloc(ptr, size, alignment);
+    void * new_ptr = _aligned_realloc(ptr, size, alignment);
 #else
     // On Unix/Linux, it's have no posix_memalign_realloc() function.
     // See: https://stackoverflow.com/questions/9078259/does-realloc-keep-the-memory-alignment-of-posix-memalign
     // See: https://www.jb51.cc/c/115220.html
-    void * new_ptr = ::memalign(alignment, size);
+    void * new_ptr = memalign(alignment, size);
 #endif
     return new_ptr;
 }
@@ -109,16 +109,16 @@ void * _AlignedReallocate(void * ptr, std::size_t size, std::size_t alignment) {
 static inline
 void _AlignedDeallocate(void * p, std::size_t size = 0, std::size_t alignment = JSTD_DEFAULT_ALIGNMENT) {
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(__WINDOWS__)
-    ::_aligned_free(p);
+    _aligned_free(p);
 #else
-    ::free(p);
+    free(p);
 #endif
 }
 
 #endif // USE_JM_ALIGNED_MALLOC
 
 static inline
-std::size_t aligned_to(std::size_t size, std::size_t alignment)
+std::size_t align_to(std::size_t size, std::size_t alignment)
 {
     assert(size >= 1);
     if (likely((size & (size - 1)) == 0)) return size;
@@ -187,7 +187,7 @@ struct allocator_base {
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
         for (size_type i = count; i != 0; i--) {
-            pThis->constructor(cur);
+            pThis->construct(cur);
             cur++;
         }
         return ptr;
@@ -199,7 +199,7 @@ struct allocator_base {
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
         for (size_type i = count; i != 0; i--) {
-            pThis->constructor(cur, std::forward<Args>(args)...);
+            pThis->construct(cur, std::forward<Args>(args)...);
             cur++;
         }
         return ptr;
@@ -221,7 +221,7 @@ struct allocator_base {
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
         for (size_type i = count; i != 0; i--) {
-            pThis->constructor(cur);
+            pThis->construct(cur);
             cur++;
         }
         return new_ptr;
@@ -233,7 +233,7 @@ struct allocator_base {
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
         for (size_type i = count; i != 0; i--) {
-            pThis->constructor(cur, std::forward<Args>(args)...);
+            pThis->construct(cur, std::forward<Args>(args)...);
             cur++;
         }
         return new_ptr;
@@ -250,14 +250,14 @@ struct allocator_base {
         assert(ptr != nullptr);
         U * cur = ptr;
         for (size_type i = count; i != 0; i--) {
-            pThis->destructor(cur);
+            pThis->destruct(cur);
             cur++;
         }
         pThis->deallocate(ptr, count);
     }
 
     // placement new
-    pointer constructor(pointer ptr) {
+    pointer construct(pointer ptr) {
         assert(ptr != nullptr);
         void * v_ptr = static_cast<void *>(ptr);
         // call ::operator new (size_t size, void * p);
@@ -265,13 +265,13 @@ struct allocator_base {
     }
 
     // placement new
-    pointer constructor(void * ptr) {
-        return this->constructor(static_cast<pointer>(ptr));
+    pointer construct(void * ptr) {
+        return this->construct(static_cast<pointer>(ptr));
     }
 
     // placement new (Args...)
     template <typename ...Args>
-    pointer constructor(pointer ptr, Args && ... args) {
+    pointer construct(pointer ptr, Args && ... args) {
         assert(ptr != nullptr);
         void * v_ptr = static_cast<void *>(ptr);
         // call ::operator new (size_t size, void * p, Args &&... args);
@@ -280,17 +280,17 @@ struct allocator_base {
 
     // placement new (Args...)
     template <typename ...Args>
-    pointer constructor(void * ptr, Args && ... args) {
-        return this->constructor(static_cast<pointer>(ptr), std::forward<Args>(args)...);
+    pointer construct(void * ptr, Args && ... args) {
+        return this->construct(static_cast<pointer>(ptr), std::forward<Args>(args)...);
     }
 
     template <typename U>
-    void destructor(U * ptr) {
+    void destruct(U * ptr) {
         assert(ptr != nullptr);
         ptr->~U();
     }
 
-    void destructor(void * ptr) {
+    void destruct(void * ptr) {
         assert(ptr != nullptr);
         static_cast<pointer>(ptr)->~T();
     }

@@ -245,7 +245,6 @@ private:
         ptrdiff_t headerPaddingSize;
         ptrdiff_t footerPaddingSize;
 #endif
-
         assert(ptr != nullptr);
         assert(alloc_size == sizeof(aligned_block_header) + size + (alignment - 1));
         assert(this_type::is_power_of_2(alignment));
@@ -276,7 +275,6 @@ private:
         assert(headerPaddingSize <= (ptrdiff_t)(sizeof(aligned_block_header) + (alignment - 1)));
         assert(footerPaddingSize >= 0);
 #endif
-
         return (void *)pvData;
     }
 

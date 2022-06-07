@@ -1293,7 +1293,7 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
-            this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
+            this->n_allocator_.construct(reinterpret_cast<n_value_type *>(&new_entry->value),
                                            std::forward<key_type>(key),
                                            std::forward<mapped_type>(value));
         }
@@ -1311,7 +1311,7 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type [by move assignment].
-            this->n_allocator_.constructor(&(new_entry->value),
+            this->n_allocator_.construct(&(new_entry->value),
                                            std::forward<value_type>(value));
         }
         else {
@@ -1328,7 +1328,7 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type [by move assignment].
-            this->n_allocator_.constructor((n_value_type *)&(new_entry->value),
+            this->n_allocator_.construct((n_value_type *)&(new_entry->value),
                                            std::forward<n_value_type>(value));
         }
         else {
@@ -1345,7 +1345,7 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
-            this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
+            this->n_allocator_.construct(reinterpret_cast<n_value_type *>(&new_entry->value),
                                            std::forward<Args>(args)...);
         }
         else {
@@ -1957,7 +1957,7 @@ protected:
 
         entry_type * pre_entry = this->got_a_prepare_entry();
         n_value_type * n_value = reinterpret_cast<n_value_type *>(&pre_entry->value);
-        n_allocator_.constructor(n_value, std::forward<Args>(args)...);
+        n_allocator_.construct(n_value, std::forward<Args>(args)...);
 
         const key_type & key = pre_entry->value.first;
 
@@ -2520,16 +2520,16 @@ protected:
         n_value_type * n_new_value = reinterpret_cast<n_value_type *>(&new_entry->value);
 
         if (is_noexcept_move_constructible<n_value_type>::value) {
-            this->n_allocator_.constructor(n_new_value,
+            this->n_allocator_.construct(n_new_value,
                                            std::move_if_noexcept(*n_old_value));
         }
         else {
-            this->n_allocator_.constructor(n_new_value,
+            this->n_allocator_.construct(n_new_value,
                                            std::move_if_noexcept(n_old_value->first),
                                            std::move_if_noexcept(n_old_value->second));
         }
 
-        this->n_allocator_.destructor(n_old_value);
+        this->n_allocator_.destruct(n_old_value);
     }
 
     void entry_value_move_assignment(entry_type * old_entry, entry_type * new_entry) {

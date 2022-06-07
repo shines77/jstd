@@ -1395,7 +1395,7 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
-            this->allocator_.constructor(&new_entry->value, key, value);
+            this->allocator_.construct(&new_entry->value, key, value);
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
@@ -1412,8 +1412,8 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
-            this->allocator_.constructor(&new_entry->value, key,
-                                         std::forward<mapped_type>(value));
+            this->allocator_.construct(&new_entry->value, key,
+                                       std::forward<mapped_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
@@ -1430,7 +1430,7 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
-            this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
+            this->n_allocator_.construct(reinterpret_cast<n_value_type *>(&new_entry->value),
                                            std::forward<key_type>(key),
                                            std::forward<mapped_type>(value));
         }
@@ -1448,8 +1448,8 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type [by move assignment].
-            this->n_allocator_.constructor(&(new_entry->value),
-                                           std::forward<value_type>(value));
+            this->n_allocator_.construct(&(new_entry->value),
+                                         std::forward<value_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
@@ -1465,8 +1465,8 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type [by move assignment].
-            this->n_allocator_.constructor((n_value_type *)&(new_entry->value),
-                                           std::forward<n_value_type>(value));
+            this->n_allocator_.construct((n_value_type *)&(new_entry->value),
+                                         std::forward<n_value_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
@@ -1482,8 +1482,8 @@ protected:
         if (new_entry->attrib.isFreeEntry()) {
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
-            this->n_allocator_.constructor(reinterpret_cast<n_value_type *>(&new_entry->value),
-                                           std::forward<Args>(args)...);
+            this->n_allocator_.construct(reinterpret_cast<n_value_type *>(&new_entry->value),
+                                         std::forward<Args>(args)...);
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
@@ -1574,7 +1574,7 @@ protected:
         mapped_type second(std::forward<Args>(args)...);
         move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(second));
 #else
-        value_allocator_.destructor(&entry->value.second);
+        value_allocator_.destruct(&entry->value.second);
         value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
 #endif
     }
@@ -1680,7 +1680,7 @@ protected:
         //
         // Call the destructor for entry->value.
         //
-        // this->allocator_.destructor(&entry->value);
+        // this->allocator_.destruct(&entry->value);
         //
     }
 
@@ -1699,7 +1699,7 @@ protected:
         //
         // Call the destructor for entry->value.
         //
-        // this->allocator_.destructor(&entry->value);
+        // this->allocator_.destruct(&entry->value);
         //
     }
 
@@ -2094,7 +2094,7 @@ protected:
 
         entry_type * pre_entry = this->got_a_prepare_entry();
         n_value_type * n_value = reinterpret_cast<n_value_type *>(&pre_entry->value);
-        n_allocator_.constructor(n_value, std::forward<Args>(args)...);
+        n_allocator_.construct(n_value, std::forward<Args>(args)...);
 
         const key_type & key = pre_entry->value.first;
 
@@ -2213,7 +2213,7 @@ protected:
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() == target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
-                this->allocator_.destructor(&entry->value);
+                this->allocator_.destruct(&entry->value);
                 this->freelist_.erase(prev, entry);
             }
             prev = entry;
@@ -2253,7 +2253,7 @@ protected:
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() != target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
-                this->allocator_.destructor(&entry->value);
+                this->allocator_.destruct(&entry->value);
             }
             else {
                 assert(entry->attrib.isReusableEntry());
@@ -2321,7 +2321,7 @@ protected:
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() != target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
-                this->allocator_.destructor(&entry->value);
+                this->allocator_.destruct(&entry->value);
                 this->freelist_.erase(prev, entry);
             }
             else {
@@ -2364,7 +2364,7 @@ protected:
         std::swap(n_src_value->first,  n_dest_value->first);
         std::swap(n_src_value->second, n_dest_value->second);
 
-        this->allocator_.destructor(&src_entry->value);
+        this->allocator_.destruct(&src_entry->value);
     }
 
     void traverse_and_fix_buckets(size_type bucket_capacity) {
@@ -2522,7 +2522,7 @@ protected:
                     entry_type * src_entry_last = src_entry + src_capacity;
                     while (src_entry < src_entry_last) {
                         if (src_entry->attrib.isReusableEntry()) {
-                            this->allocator_.destructor(&src_entry->value);
+                            this->allocator_.destruct(&src_entry->value);
                         }
                         else if (src_entry->attrib.isInUseEntry()) {
                             dest_entry = find_first_free_entry(dest_entry, dest_entry_last);
@@ -2657,16 +2657,16 @@ protected:
         n_value_type * n_new_value = reinterpret_cast<n_value_type *>(&new_entry->value);
 
         if (is_noexcept_move_constructible<n_value_type>::value) {
-            this->n_allocator_.constructor(n_new_value,
+            this->n_allocator_.construct(n_new_value,
                                            std::move_if_noexcept(*n_old_value));
         }
         else {
-            this->n_allocator_.constructor(n_new_value,
+            this->n_allocator_.construct(n_new_value,
                                            std::move_if_noexcept(n_old_value->first),
                                            std::move_if_noexcept(n_old_value->second));
         }
 
-        this->n_allocator_.destructor(n_old_value);
+        this->n_allocator_.destruct(n_old_value);
     }
 
     void entry_value_move_assignment(entry_type * old_entry, entry_type * new_entry) {
