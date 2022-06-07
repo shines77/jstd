@@ -81,7 +81,7 @@
 #if defined(_MSC_VER) || __has_declspec_attribute(dllimport)
   #define DLL_IMPORT        __declspec(dllimport)
 #else
-  #define DLL_EXPORT
+  #define DLL_IMPORT
 #endif
 
 #if __is_identifier(__wchar_t)
@@ -105,7 +105,7 @@
 //      http://www.boost.org/doc/libs/1_60_0/boost/config/compiler/gcc.hpp10
 //      http://www.boost.org/doc/libs/1_60_0/boost/config/compiler/clang.hpp4
 //      http://www.boost.org/doc/libs/1_60_0/boost/config/compiler/intel.hpp2
-// 
+//
 ////////////////////////////////////////////////////////////////////////////////
 
 //
