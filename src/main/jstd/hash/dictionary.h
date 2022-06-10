@@ -781,7 +781,7 @@ protected:
 
 #if USE_CHUNKLIST_ITERATOR
 
-    entry_type * find_first_valid_entry() const {     
+    entry_type * find_first_valid_entry() const {
         entry_type * first_entry = nullptr;
         entry_type * last_entry;
 
@@ -861,7 +861,7 @@ protected:
                                         size_type entry_index = 0) const {
         size_type chunk_list_size = this->chunk_list_.size();
         assert(chunk_index < chunk_list_size);
-        
+
         entry_type * first_entry = nullptr;
         entry_type * last_entry;
         while (chunk_index < chunk_list_size) {
@@ -887,7 +887,7 @@ protected:
 
 #else
 
-    entry_type * find_first_valid_entry() const {        
+    entry_type * find_first_valid_entry() const {
         size_type bucket_capacity = this->bucket_count();
         assert(index < bucket_capacity);
 
@@ -932,7 +932,7 @@ protected:
         return const_cast<const entry_type *>(next_entry);
     }
 
-    entry_type * next_first_valid_entry(index_type index = 0) const {        
+    entry_type * next_first_valid_entry(index_type index = 0) const {
         size_type bucket_capacity = this->bucket_count();
         assert(index < bucket_capacity);
 
@@ -1370,7 +1370,7 @@ protected:
     void move_or_swap_key(key_type * old_key, key_type && new_key) {
         bool has_noexcept_move_assignment = is_noexcept_move_assignable<key_type>::value;
         // Is noexcept move assignment operator ?
-        if (has_noexcept_move_assignment) {   
+        if (has_noexcept_move_assignment) {
             *old_key = std::move(new_key);
         }
         else {

@@ -133,9 +133,7 @@ struct align_to {
 static inline
 std::size_t align_to(std::size_t size, std::size_t alignment)
 {
-    assert(size >= 1);
-    //if (likely((size & (size - 1)) == 0)) return size;
-
+    assert(alignment > 0);
     assert((alignment & (alignment - 1)) == 0);
     size = (size + alignment - 1) & ~(alignment - 1);
     assert((size / alignment * alignment) == size);

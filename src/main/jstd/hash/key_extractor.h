@@ -17,6 +17,7 @@ namespace jstd {
 //
 // Used to get the types from a pair without instantiating it.
 //
+//////////////////////////////////////////////////////////////////////////
 
 template <typename Pair>
 struct pair_traits {
@@ -43,12 +44,13 @@ struct no_key_t {
 //
 // Used to get the type and value from argument list.
 //
+//////////////////////////////////////////////////////////////////////////
 
 template <class ValueType>
 struct key_extractor {
     typedef ValueType   value_type;
     typedef typename std::remove_const<
-            typename pair_traits<ValueType>::first_type>::type
+                typename pair_traits<ValueType>::first_type>::type
                         key_type;
 
     static key_type const & extract(value_type const & val) {
