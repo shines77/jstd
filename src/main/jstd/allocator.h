@@ -387,13 +387,13 @@ struct allocator : public allocator_base<
     allocator() noexcept {}
     allocator(const this_type & other) noexcept {}
     template <typename U>
-    allocator(const allocator<U, Alignment, ThrowEx> & other) noexcept {}
+    allocator(const allocator<U, Alignment, ObjectSize, ThrowEx> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;
     }
     template <typename U>
-    this_type & operator = (const allocator<U, Alignment, ThrowEx> & other) noexcept {
+    this_type & operator = (const allocator<U, Alignment, ObjectSize, ThrowEx> & other) noexcept {
         return *this;
     }
 
@@ -480,7 +480,7 @@ struct new_delete_allocator : public allocator_base<
         return *this;
     }
     template <typename U>
-    this_type & operator = (const new_delete_allocator<U, Alignment> & other) noexcept {
+    this_type & operator = (const new_delete_allocator<U, Alignment, ObjectSize> & other) noexcept {
         return *this;
     }
 
@@ -544,7 +544,7 @@ struct nothrow_allocator : public allocator_base<
         return *this;
     }
     template <typename U>
-    this_type & operator = (const nothrow_allocator<U, Alignment, ThrowEx> & other) noexcept {
+    this_type & operator = (const nothrow_allocator<U, Alignment, ObjectSize, ThrowEx> & other) noexcept {
         return *this;
     }
 
@@ -612,7 +612,7 @@ struct malloc_allocator : public allocator_base<
         return *this;
     }
     template <typename U>
-    this_type & operator = (const malloc_allocator<U, Alignment, ThrowEx> & other) noexcept {
+    this_type & operator = (const malloc_allocator<U, Alignment, ObjectSize, ThrowEx> & other) noexcept {
         return *this;
     }
 
@@ -668,7 +668,7 @@ struct dummy_allocator : public allocator_base<
     dummy_allocator() noexcept {}
     dummy_allocator(const this_type & other) noexcept {}
     template <typename U>
-    dummy_allocator(const dummy_allocator<U, Alignment> & other) noexcept {}
+    dummy_allocator(const dummy_allocator<U, Alignment, ObjectSize> & other) noexcept {}
 
     this_type & operator = (const this_type & other) noexcept {
         return *this;

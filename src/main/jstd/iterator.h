@@ -84,8 +84,7 @@ typedef iterator<output_iterator_tag, void, void, void, void>   OutputIter;
 
 // empty for non-iterators
 template <class T, class = void>
-struct iterator_traits_base
-{	
+struct iterator_traits_base {
 };
 
 // defined if Iter::* types exist
@@ -107,8 +106,7 @@ struct iterator_traits_base< InputIter, jstd::void_t<
 
 // get traits from iterator Iter, if possible
 template <class InputIter>
-struct iterator_traits : iterator_traits_base<InputIter>
-{
+struct iterator_traits : iterator_traits_base<InputIter> {
 };
 
 // get traits from pointer
@@ -298,7 +296,7 @@ public:
     // initialize with compatible base
     template <class other>
     reverse_iterator(const reverse_iterator<other> & right)
-        : iter_(right.base()) {	
+        : iter_(right.base()) {
     }
 
     // assign from compatible base
@@ -605,8 +603,7 @@ rend(std::initializer_list<Element> initList)
 // get beginning of reversed sequence
 template <class Container>
 inline
-auto crbegin(const Container & container)
--> decltype(rbegin(container))
+auto crbegin(const Container & container) -> decltype(rbegin(container))
 {
     return (rbegin(container));
 }
@@ -614,8 +611,7 @@ auto crbegin(const Container & container)
 // get end of reversed sequence
 template <class Container>
 inline
-auto crend(const Container & container)
--> decltype(rend(container))
+auto crend(const Container & container) -> decltype(rend(container))
 {
     return (rend(container));
 }
@@ -627,8 +623,7 @@ auto crend(const Container & container)
 // get size() for container
 template <class Container>
 inline
-constexpr auto size(const Container & container)
--> decltype(container.size())
+constexpr auto size(const Container & container) -> decltype(container.size())
 {
     return (container.size());
 }
@@ -670,8 +665,7 @@ constexpr bool empty(
 // get data() for container
 template <class Container>
 inline
-constexpr auto data(Container & container)
--> decltype(container.data())
+constexpr auto data(Container & container) -> decltype(container.data())
 {
     return (container.data());
 }
@@ -679,8 +673,7 @@ constexpr auto data(Container & container)
 // get pointer to data of const container
 template <class Container>
 inline
-constexpr auto data(const Container & container)
--> decltype(container.data())
+constexpr auto data(const Container & container) -> decltype(container.data())
 {
     return (container.data());
 }

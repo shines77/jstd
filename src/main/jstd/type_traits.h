@@ -212,7 +212,7 @@ struct has_size {
     typedef char True;
     struct False {
         char data[2];
-    }; 
+    };
 
     template <typename U, U>
     struct check_has;
@@ -259,7 +259,7 @@ struct has_entry_count {
     typedef char True;
     struct False {
         char data[2];
-    }; 
+    };
 
     template <typename U>
     static constexpr auto check(void *)
@@ -303,7 +303,7 @@ struct has_name {
     typedef char True;
     struct False {
         char data[2];
-    }; 
+    };
 
     template <typename U>
     static constexpr auto check(void *)
@@ -346,7 +346,7 @@ struct has_static_name {
     typedef char True;
     struct False {
         char data[2];
-    };   
+    };
 
     template <typename U>
     static constexpr auto check(void *)
@@ -389,7 +389,7 @@ struct has_c_str {
     typedef char True;
     struct False {
         char data[2];
-    };   
+    };
 
     template <typename U, U>
     struct check_has;
@@ -451,10 +451,10 @@ struct has_iterator {
     static constexpr std::true_type check(typename U::iterator *);
 
     template <typename U>
-    static constexpr std::false_type check(...); 
+    static constexpr std::false_type check(...);
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
-}; 
+};
 
 template <typename T>
 struct has_const_iterator {
@@ -462,10 +462,10 @@ struct has_const_iterator {
     static constexpr std::true_type check(typename U::const_iterator *);
 
     template <typename U>
-    static constexpr std::false_type check(...); 
+    static constexpr std::false_type check(...);
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
-}; 
+};
 
 template <typename T>
 struct has_mapped_type {

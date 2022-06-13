@@ -12,13 +12,13 @@
  See: http://www.cnblogs.com/gleam/p/5025867.html
 
  ¡ª int __builtin_ctz (unsigned int x);
-   int __builtin_ctzll (unsigned long long x);
+    int __builtin_ctzll (unsigned long long x);
 
     Returns the number of trailing 0-bits in x, starting at the least significant bit position.
     If x is 0, the result is undefined.   (MSB)
 
  ¡ª int __builtin_clz (unsigned int x);
-   int __builtin_clzll (unsigned long long x);
+    int __builtin_clzll (unsigned long long x);
 
     Returns the number of leading 0-bits in x, starting at the most significant bit position.
     If x is 0, the result is undefined.   (LSB)
@@ -26,7 +26,7 @@
  See: https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
 
  ¡ª int __builtin_ffs (int x);
-   int __builtin_ffsll (long long x);
+    int __builtin_ffsll (long long x);
 
     Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero.
 
