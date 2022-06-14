@@ -183,7 +183,7 @@ private:
     int JM_X86_CDECL
     check_param(void * ptr, size_t alignment) {
 #ifndef NDEBUG
-        int malloc_errno;
+        int malloc_errno = 0;
         uintptr_t pvAlloc, pvData;
         aligned_block_header * pBlockHdr;
         ptrdiff_t headerPaddingSize;

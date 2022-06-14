@@ -10,11 +10,6 @@
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 
-#include "jstd/basic/base.h"
-#include "jstd/support/Power2.h"
-#include "jstd/memory/c_aligned_malloc.h"
-#include "jstd/memory/aligned_malloc.h"
-
 #include <stddef.h>
 #include <malloc.h>
 #include <memory.h>
@@ -28,6 +23,11 @@
 #include <type_traits>  // For std::alignment_of<T>
 
 #include <new>          // For ::operator new, ::operator new[], ::operator delete
+
+#include "jstd/type_traits.h"
+#include "jstd/support/Power2.h"
+#include "jstd/memory/c_aligned_malloc.h"
+#include "jstd/memory/aligned_malloc.h"
 
 #define USE_JM_ALIGNED_MALLOC   1
 
@@ -122,7 +122,7 @@ namespace compile_time {
 template <std::size_t Size, std::size_t Alignment>
 struct align_to {
     static constexpr std::size_t kAlignment =
-        (std::max)(std::size_t(1), compile_time::round_up_pow2<Alignment>::value);
+        (jstd::cmax)(std::size_t(1), compile_time::round_up_pow2<Alignment>::value);
 
     static constexpr std::size_t value =
         (Size + kAlignment - 1) & ~(kAlignment - 1);
@@ -162,11 +162,11 @@ struct allocator_base {
     static constexpr size_type kObjectSize = (jstd::cmax)(ObjectSize, sizeof(T));
     static constexpr size_type kActualObjectSize = compile_time::align_to<kObjectSize, kAlignment>::value;
 
-    size_type align_of() const { return kAlignOf; }
-    size_type alignment() const { return kAlignment; }
+    constexpr size_type align_of() const { return kAlignOf; }
+    constexpr size_type alignment() const { return kAlignment; }
 
-    size_type object_size() const { return kObjectSize; }
-    size_type actual_object_size() const { return kActualObjectSize; }
+    constexpr size_type object_size() const { return kObjectSize; }
+    constexpr size_type actual_object_size() const { return kActualObjectSize; }
 
     bool is_ok(bool expression) const noexcept {
         const derive_type * pThis = const_cast<const derive_type *>(static_cast<derive_type *>(
@@ -178,6 +178,19 @@ struct allocator_base {
         const derive_type * pThis = const_cast<const derive_type *>(static_cast<derive_type *>(
                                     const_cast<allocator_base *>(this)));
         return (!pThis->is_nothrow() || (ptr != nullptr));
+    }
+
+    template <size_type nObjectSize>
+    static pointer next_ptr(pointer ptr) {
+        char * next = reinterpret_cast<char *>(ptr) + nObjectSize;
+        assert(next >= (char *)++ptr);
+        return reinterpret_cast<pointer>(next);
+    }
+
+    static pointer next_ptr(pointer ptr, size_type size) {
+        char * next = reinterpret_cast<char *>(ptr) + size;
+        assert(next >= (char *)++ptr);
+        return reinterpret_cast<pointer>(next);
     }
 
     size_type max_size() const noexcept {
@@ -206,9 +219,9 @@ struct allocator_base {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
-        for (size_type i = count; i != 0; i--) {
+        for (size_type i = 0; i < count; i++) {
             pThis->construct(cur);
-            cur++;
+            cur = next_ptr<kActualObjectSize>(cur);
         }
         return ptr;
     }
@@ -218,9 +231,9 @@ struct allocator_base {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer ptr = pThis->allocate(count);
         pointer cur = ptr;
-        for (size_type i = count; i != 0; i--) {
+        for (size_type i = 0; i < count; i++) {
             pThis->construct(cur, std::forward<Args>(args)...);
-            cur++;
+            cur = next_ptr<kActualObjectSize>(cur);
         }
         return ptr;
     }
@@ -240,9 +253,9 @@ struct allocator_base {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
-        for (size_type i = count; i != 0; i--) {
+        for (size_type i = 0; i < count; i++) {
             pThis->construct(cur);
-            cur++;
+            cur = next_ptr<kActualObjectSize>(cur);
         }
         return new_ptr;
     }
@@ -252,9 +265,9 @@ struct allocator_base {
         derive_type * pThis = static_cast<derive_type *>(this);
         pointer new_ptr = pThis->reallocate(ptr, count);
         pointer cur = new_ptr;
-        for (size_type i = count; i != 0; i--) {
+        for (size_type i = 0; i < count; i++) {
             pThis->construct(cur, std::forward<Args>(args)...);
-            cur++;
+            cur = next_ptr<kActualObjectSize>(cur);
         }
         return new_ptr;
     }
@@ -269,9 +282,9 @@ struct allocator_base {
         derive_type * pThis = static_cast<derive_type *>(this);
         assert(ptr != nullptr);
         U * cur = ptr;
-        for (size_type i = count; i != 0; i--) {
+        for (size_type i = 0; i < count; i++) {
             pThis->destruct(cur);
-            cur++;
+            cur = next_ptr<kActualObjectSize>(cur);
         }
         pThis->deallocate(ptr, count);
     }

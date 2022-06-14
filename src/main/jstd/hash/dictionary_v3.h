@@ -696,13 +696,13 @@ protected:
     }
 
     void assert_bucket_capacity(size_type bucket_capacity) {
-        assert(run_time::is_pow2(bucket_capacity));
+        assert(pow2::is_pow2(bucket_capacity));
         assert(bucket_capacity >= this->min_bucket_count(kMinimumCapacity));
         assert(bucket_capacity >= this->min_bucket_count());
     }
 
     void assert_entry_capacity(size_type entry_capacity) {
-        assert(run_time::is_pow2(entry_capacity));
+        assert(pow2::is_pow2(entry_capacity));
         assert(entry_capacity >= kMinimumCapacity);
         assert(entry_capacity >= this->entry_size());
     }
@@ -2345,7 +2345,7 @@ protected:
 
     void rehash_and_fix_buckets(size_type new_bucket_capacity) {
         assert(new_bucket_capacity > 0);
-        assert(run_time::is_pow2(new_bucket_capacity));
+        assert(pow2::is_pow2(new_bucket_capacity));
         assert(this->entry_size_ <= this->bucket_capacity_);
 
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
@@ -3031,12 +3031,12 @@ protected:
         if (this->chunk_list_.size() > 0) {
             size_type first_chunk_capacity = this->chunk_list_[0].capacity;
             if (first_chunk_capacity < kMaxEntryChunkSize) {
-                assert(run_time::is_pow2(first_chunk_capacity));
+                assert(pow2::is_pow2(first_chunk_capacity));
                 if (likely(this->chunk_list_.size() > 1)) {
                     size_type last_chunk_id = this->chunk_list_.size() - 1;
                     const entry_chunk_t & last_chunk = this->chunk_list_[last_chunk_id];
                     size_type last_chunk_capacity = this->chunk_list_[last_chunk_id].capacity;
-                    assert(run_time::is_pow2(last_chunk_capacity));
+                    assert(pow2::is_pow2(last_chunk_capacity));
                     size_type ahead_chunk_size = this->entry_size_ - last_chunk.size;
                     if (ahead_chunk_size != 0) {
                         if (last_chunk.size != 0) {
