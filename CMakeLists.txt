@@ -79,20 +79,21 @@ if (NOT MSVC)
     # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEFAULT} -O3 -DNDEBUG")
     # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEFAULT} -g -pg -D_DEBUG")
 
-    set(CMAKE_CPP_FLAGS_COMMON          "-mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mavx -mavx2 -mavx512vl -mavx512f -Wno-deprecated-declarations -Wno-float-equal -Wno-padded -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-deprecated -fPIC -U__STRICT_ANSI__")
+    # -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mavx -mavx2 -mavx512vl -mavx512f
+    set(CMAKE_CPP_FLAGS_COMMON          "-march=native -mtune=native -Wno-deprecated-declarations -Wno-float-equal -Wno-padded -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unused-parameter -Wno-sign-conversion -Wno-cast-qual -Wno-cast-align -Wno-deprecated -fPIC -U__STRICT_ANSI__")
     set(CMAKE_C_FLAGS_COMMON            "-Wno-missing-prototypes")
     set(CMAKE_CXX_FLAGS_COMMON          "-Wno-old-style-cast -Wno-register")
 
     set(CMAKE_C_FLAGS                   "-std=c99 -march=native -Wall ${CMAKE_CPP_FLAGS_COMMON} ${CMAKE_C_FLAGS_COMMON}")
     set(CMAKE_C_FLAGS_DEBUG             "-g -pg -D_DEBUG")
     set(CMAKE_C_FLAGS_MINSIZEREL        "-Os -DNDEBUG")
-    set(CMAKE_C_FLAGS_RELEASE           "-O3 -DNDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE           "-O3 -g -DNDEBUG")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O2 -g")
 
     set(CMAKE_CXX_FLAGS                 "-std=gnu++11 -march=native -Wall ${CMAKE_CPP_FLAGS_COMMON} ${CMAKE_CXX_FLAGS_COMMON}")
     set(CMAKE_CXX_FLAGS_DEBUG           "-g -pg -D_DEBUG")
     set(CMAKE_CXX_FLAGS_MINSIZEREL      "-Os -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -g -DNDEBUG")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O2 -g")
 endif()
 
