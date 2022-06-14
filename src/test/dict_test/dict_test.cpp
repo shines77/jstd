@@ -2390,6 +2390,7 @@ int main(int argc, char * argv[])
     if (0) hashtable_uinttest();
     if (0) hashtable_benchmark();
 
+    printf("sizeof(long double) = %u\n\n", (uint32_t)sizeof(long double));
     printf("sizeof(std::max_align_t) = %u\n\n", (uint32_t)sizeof(std::max_align_t));
 
     jstd::Console::ReadKey();
