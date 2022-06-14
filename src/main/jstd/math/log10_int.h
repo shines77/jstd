@@ -25,19 +25,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "jstd/support/bitscan_reverse.h"
-
-#if defined(_MSC_VER) || (defined(WIN32) && (defined(__INTEL_COMPILER) || defined(__ICL)))
-#include <intrin.h>     // For _BitScanReverse(), _BitScanReverse64()
-
-#pragma intrinsic(_BitScanReverse)
-
-#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
- || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-#pragma intrinsic(_BitScanReverse64)
-#endif // __amd64__
-
-#endif // _MSC_VER
+#include "jstd/support/BitUtils.h"
 
 namespace jstd {
 
@@ -89,21 +77,7 @@ uint32_t jm_log10_u32(uint32_t val)
     uint32_t exp10;
 
     if (val >= 10) {
-#if defined(_MSC_VER) || (defined(WIN32) && (defined(__INTEL_COMPILER) || defined(__ICL)))
-        //
-        // _BitScanReverse, _BitScanReverse64
-        // Reference: http://msdn.microsoft.com/en-us/library/fbxyd7zd.aspx
-        //
-        _BitScanReverse((unsigned long *)&exponent, (unsigned long)val);
-#else
-#if defined(__has_builtin_clz) || defined(__linux__)
-        // countLeadingZeros()
-        int leading_zeros = __builtin_clz((unsigned int)val);
-#else
-        int leading_zeros = __internal_clz((unsigned int)val);
-#endif
-        exponent = (uint32_t)(leading_zeros ^ 31);
-#endif
+        exponent = BitUtils::bsr32(val);
 
         // must 2,525,222 < 4,194,304 ( 2^32 / 1024)
         // exp10 = exponent * 2525222UL;
@@ -131,21 +105,7 @@ uint32_t jm_log10_u64(uint64_t val)
     uint32_t exp10;
 
     if (val >= 10) {
-#if defined(_MSC_VER) || (defined(WIN32) && (defined(__INTEL_COMPILER) || defined(__ICL)))
-        //
-        // _BitScanReverse, _BitScanReverse64
-        // Reference: http://msdn.microsoft.com/en-us/library/fbxyd7zd.aspx
-        //
-        _BitScanReverse64((unsigned long *)&exponent, (unsigned __int64)val);
-#else
-#if defined(__has_builtin_clzll) || defined(__linux__)
-        // countLeadingZeros64()
-        int leading_zeros = __builtin_clzll((unsigned long long)val);
-#else
-        int leading_zeros = __internal_clzll((uint64_t)val);
-#endif
-        exponent = (uint32_t)(leading_zeros ^ 63);
-#endif
+        exponent = BitUtils::bsr64(val);
 
         // must 2,525,222 < 4,194,304 ( 2^32 / 1024)
         // exp10 = exponent * 2525222UL;
