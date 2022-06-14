@@ -81,7 +81,7 @@
         #define JIMI_PRIVATE
         #define JIMI_EXPIMP_TEMPLATE
     #endif
-#elif defined(JIMI_IS_GNUC)   
+#elif defined(JIMI_IS_GNUC)
     #define JIMI_DLL                    __attribute__ ((visibility ("default")))
     #define JIMI_DLL                    __attribute__ ((visibility ("default")))
     #define JIMI_DLL_TPL                __attribute__ ((visibility ("default")))

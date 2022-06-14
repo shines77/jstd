@@ -83,7 +83,7 @@ public:
         va_start(arg_list, fmt);
         ::vprintf(fmt, arg_list);
         va_end(arg_list);
-        
+
         int result = ::vscanf(fmt, arg_list);
         return result;
     }
