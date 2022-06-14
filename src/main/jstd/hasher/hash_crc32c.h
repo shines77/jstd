@@ -207,6 +207,6 @@ static uint32_t hash_crc32c(const char * data, size_t length)
 } // namespace hasher
 } // namespace jstd
 
-#undef JSTD_IS_X86_64
+//#undef JSTD_IS_X86_64
 
 #endif // JSTD_HASHER_HASH_CRC32C_H
