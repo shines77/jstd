@@ -2379,16 +2379,16 @@ int main(int argc, char * argv[])
     if (0) string_view_test();
     if (0) shiftable_ptr_test();
     if (0) formatter_test();
-    if (0) fnv1a_hash_test();
-    if (0) realloc_test();
+    if (1) fnv1a_hash_test();
+    if (1) realloc_test();
 #ifdef _MSC_VER
     if (0) expand_test();
 #endif
-    if (0) jm_aligned_realloc_test();
+    if (1) jm_aligned_realloc_test();
 
     if (0) formatter_benchmark();
-    if (0) hashtable_uinttest();
-    if (0) hashtable_benchmark();
+    if (1) hashtable_uinttest();
+    if (1) hashtable_benchmark();
 
     printf("sizeof(long double) = %u\n\n", (uint32_t)sizeof(long double));
     printf("sizeof(std::max_align_t) = %u\n\n", (uint32_t)sizeof(std::max_align_t));
