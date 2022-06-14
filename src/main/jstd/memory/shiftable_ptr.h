@@ -246,7 +246,7 @@ public:
     }
 };
 
-template < typename T, std::size_t Alignment = align_of<T>::value,
+template < typename T, std::size_t Alignment = std::alignment_of<T>::value,
                        typename Allocator = allocator<T, Alignment> >
 class custom_shiftable_ptr {
 public:
