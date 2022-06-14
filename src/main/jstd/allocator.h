@@ -156,10 +156,10 @@ struct allocator_base {
     typedef true_type       propagate_on_container_move_assignment;
     typedef true_type       is_always_equal;
 
-    static constexpr size_type kAlignOf = (std::max)(Alignment, std::alignment_of<T>::value);
+    static constexpr size_type kAlignOf = (jstd::cmax)(Alignment, std::alignment_of<T>::value);
     static constexpr size_type kAlignment = compile_time::round_up_pow2<kAlignOf>::value;
 
-    static constexpr size_type kObjectSize = (std::max)(ObjectSize, sizeof(T));
+    static constexpr size_type kObjectSize = (jstd::cmax)(ObjectSize, sizeof(T));
     static constexpr size_type kActualObjectSize = compile_time::align_to<kObjectSize, kAlignment>::value;
 
     size_type align_of() const { return kAlignOf; }

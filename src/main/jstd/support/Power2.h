@@ -326,7 +326,7 @@ struct round_to_pow2_impl {
 
 template <std::size_t N>
 struct round_to_pow2_impl<N, 0> {
-    static const std::size_t value = jstd::integral_traits<size_t>::max_power2;
+    static const std::size_t value = (std::numeric_limits<std::size_t>::max)() / 2 + 1;
 };
 
 template <std::size_t N>
@@ -363,7 +363,7 @@ struct round_up_pow2_impl {
 
 template <std::size_t N>
 struct round_up_pow2_impl<N, 0> {
-    static const std::size_t value = jstd::integral_traits<std::size_t>::max_num;
+    static const std::size_t value = (std::numeric_limits<std::size_t>::max)();
 };
 
 template <std::size_t N>
@@ -391,7 +391,7 @@ struct next_pow2_impl {
 
 template <std::size_t N>
 struct next_pow2_impl<N, 0> {
-    static const std::size_t value = jstd::integral_traits<size_t>::max_num;
+    static const std::size_t value = (std::numeric_limits<std::size_t>::max)();
 };
 
 template <std::size_t N>
