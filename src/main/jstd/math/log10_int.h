@@ -10,20 +10,10 @@
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 
-#include <memory.h>
-#include <string.h>
 #include <assert.h>
 
 #include <cstdint>
 #include <cstddef>
-
-#include <cstring>
-#include <string>
-#include <list>
-#include <vector>
-#include <exception>
-#include <stdexcept>
-#include <type_traits>
 
 #include "jstd/support/BitUtils.h"
 
