@@ -391,9 +391,9 @@ struct allocator : public allocator_base<
 #else
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
-    static constexpr size_type kMallocDefaultAlignment = (jstd::cmax)(size_type(16), sizeof(std::max_align_t));
+    static constexpr size_type kMallocDefaultAlignment = (jstd::cmax)(size_type(16), sizeof(long double));
 #else
-    static constexpr size_type kMallocDefaultAlignment = (jstd::cmax)(size_type(8), sizeof(std::max_align_t));
+    static constexpr size_type kMallocDefaultAlignment = (jstd::cmax)(size_type(8), sizeof(double));
 #endif
 #endif // MALLOC_ALIGNMENT
 

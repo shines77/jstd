@@ -2334,7 +2334,7 @@ void jm_aligned_realloc_test()
 realloc_exit:
     printf("\n");
     if (mem_ptr != nullptr)
-        jm_aligned_free(mem_ptr, 8);
+        jm_aligned_free(mem_ptr, alignment);
 }
 
 bool read_dict_file(const std::string & filename)
