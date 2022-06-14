@@ -282,7 +282,7 @@ private:
 
     static JM_FORCED_INLINE
     void * JM_X86_CDECL
-    aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment) {
+    aligne_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment) {
         uintptr_t pvAlloc, pvData;
         aligned_block_header * pBlockHdr;
 #ifndef NDEBUG
@@ -423,7 +423,7 @@ public:
         pvAlloc = (uintptr_t)std::malloc(alloc_size);
         if (pvAlloc != (uintptr_t)nullptr) {
             // The output data pointer aligned to alignment bytes
-            pvData = (uintptr_t)this_type::aligned_to_addr((void *)pvAlloc, size, alloc_size, alignment);
+            pvData = (uintptr_t)this_type::aligne_to_addr((void *)pvAlloc, size, alloc_size, alignment);
 #if 0
             printf("pvAlloc = 0x%p, AllocSize = %" PRIuPTR "\n", (void *)pvAlloc, alloc_size);
             printf("pvData  = 0x%p, Size      = %" PRIuPTR ", alignment = %" PRIuPTR "\n",
@@ -511,7 +511,7 @@ public:
                 // Use old original memory block pointer to realloc().
                 new_ptr = std::realloc(pvAlloc, new_alloc_size);
                 if (new_ptr != nullptr) {
-                    newData = this_type::aligned_to_addr(new_ptr, new_size, new_alloc_size, alignment);
+                    newData = this_type::aligne_to_addr(new_ptr, new_size, new_alloc_size, alignment);
                     assert(newData != nullptr);
                     return newData;
                 }

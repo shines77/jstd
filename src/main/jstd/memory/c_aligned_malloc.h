@@ -166,7 +166,7 @@ int    JMC_X86_CDECL jm_aligned_check_param(void * ptr, size_t alignment);
 size_t JMC_X86_CDECL jm_adjust_alignment(size_t alignment);
 void * JMC_X86_CDECL jm_adjust_aligned_pointer(void * ptr);
 
-void * JMC_X86_CDECL jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment);
+void * JMC_X86_CDECL jm_aligne_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment);
 
 size_t JMC_X86_CDECL jm_usable_size(void * ptr);
 size_t JMC_X86_CDECL jm_aligned_usable_size(void * ptr, size_t alignment);
@@ -348,7 +348,7 @@ jm_aligned_check_param(void * ptr, size_t alignment)
 
 JMC_FORCE_INLINE
 void * JMC_X86_CDECL
-jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
+jm_aligne_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
 {
     uintptr_t pvAlloc, pvData;
     aligned_block_header_t * pBlockHdr;
@@ -496,7 +496,7 @@ jm_aligned_malloc(size_t size, size_t alignment)
     pvAlloc = (uintptr_t)malloc(alloc_size);
     if (pvAlloc != (uintptr_t)nullptr) {
         // The output data pointer aligned to alignment bytes
-        pvData = (uintptr_t)jm_aligned_to_addr((void *)pvAlloc, size, alloc_size, alignment);
+        pvData = (uintptr_t)jm_aligne_to_addr((void *)pvAlloc, size, alloc_size, alignment);
 #if 0
         printf("pvAlloc = 0x%p, AllocSize = %" PRIuPTR "\n", (void *)pvAlloc, alloc_size);
         printf("pvData  = 0x%p, Size      = %" PRIuPTR ", alignment = %" PRIuPTR "\n",
@@ -585,7 +585,7 @@ jm_aligned_realloc(void * ptr, size_t new_size, size_t alignment)
             // Use old original memory block pointer to realloc().
             new_ptr = realloc(pvAlloc, new_alloc_size);
             if (new_ptr != nullptr) {
-                newData = jm_aligned_to_addr(new_ptr, new_size, new_alloc_size, alignment);
+                newData = jm_aligne_to_addr(new_ptr, new_size, new_alloc_size, alignment);
                 assert(newData != nullptr);
                 return newData;
             }

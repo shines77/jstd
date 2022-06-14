@@ -374,13 +374,13 @@ struct allocator : public allocator_base<
     static const size_type kActualObjectSize = base_type::kActualObjectSize;
 
 #if defined(MALLOC_ALIGNMENT)
-    static const size_type kMallocDefaultAlignment = compile_time::round_up_pow2<MALLOC_ALIGNMENT>::value;
+    static constexpr size_type kMallocDefaultAlignment = compile_time::round_up_pow2<MALLOC_ALIGNMENT>::value;
 #else
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
-    static const size_type kMallocDefaultAlignment = (std::max)(size_type(16), sizeof(std::max_align_t));
+    static constexpr size_type kMallocDefaultAlignment = (std::max)(size_type(16), sizeof(std::max_align_t));
 #else
-    static const size_type kMallocDefaultAlignment = (std::max)(size_type(8), sizeof(std::max_align_t));
+    static constexpr size_type kMallocDefaultAlignment = (std::max)(size_type(8), sizeof(std::max_align_t));
 #endif
 #endif // MALLOC_ALIGNMENT
 
