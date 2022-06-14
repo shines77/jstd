@@ -47,17 +47,17 @@
 
 #if defined(_MSC_VER)
 #define JM_INLINE               __inline
-#define JM_FORCE_INLINE         __forceinline
+#define JM_FORCED_INLINE        __forceinline
 #define JM_NO_INLINE            __declspec(noinline)
 #define JM_RESTRICT             __restrict
 #elif defined(__GNUC__) || defined(__clang__) || defined(__linux__)
 #define JM_INLINE               __inline__
-#define JM_FORCE_INLINE         __inline__ __attribute__((always_inline))
+#define JM_FORCED_INLINE        __inline__ __attribute__((always_inline))
 #define JM_NO_INLINE            __attribute__((noinline))
 #define JM_RESTRICT             __restrict__
 #else
 #define JM_INLINE               inline
-#define JM_FORCE_INLINE         inline
+#define JM_FORCED_INLINE        inline
 #define JM_NO_INLINE
 #define JM_RESTRICT
 #endif
@@ -147,13 +147,13 @@ private:
 
     static JM_INLINE
     bool JM_X86_CDECL
-    is_power_of_2(size_t n) {
+    is_pow2(size_t n) {
         return ((n & (n - 1)) == 0);
     }
 
     static JM_INLINE
     size_t JM_X86_CDECL
-    next_power_of_2(size_t n) {
+    next_pow2(size_t n) {
         if (n != 0) {
             // ms1b
             --n;
@@ -173,15 +173,15 @@ private:
 
     static JM_INLINE
     size_t JM_X86_CDECL
-    round_up_power_of_2(size_t alignment) {
-        if (this_type::is_power_of_2(alignment)) {
+    round_up_pow2(size_t alignment) {
+        if (this_type::is_pow2(alignment)) {
             assert(alignment > 0);
             return alignment;
         }
         else {
-            alignment = this_type::next_power_of_2(alignment);
+            alignment = this_type::next_pow2(alignment);
             assert(alignment > 0);
-            assert(this_type::next_power_of_2(alignment));
+            assert(this_type::next_pow2(alignment));
             return alignment;
         }
     }
@@ -194,15 +194,15 @@ private:
         // Although we will fix the value of alignment,
         // we must also report the assertion in debug mode.
         //
-        assert(this_type::is_power_of_2(alignment));
+        assert(this_type::is_pow2(alignment));
         if (sizeof(uintptr_t) > JM_MALLOC_ALIGNMENT) {
             alignment = (alignment >= sizeof(uintptr_t)) ? alignment : sizeof(uintptr_t);
         }
 
 #if JM_ADJUST_ALIGNMENT
-        alignment = this_type::round_up_power_of_2(alignment);
+        alignment = this_type::round_up_pow2(alignment);
         assert(alignment > 0);
-        assert(this_type::is_power_of_2(alignment));
+        assert(this_type::is_pow2(alignment));
 #endif
         return alignment;
     }
@@ -280,7 +280,7 @@ private:
 
     /////////////////////////////////////////////////////////////////////////////////////////
 
-    static JM_FORCE_INLINE
+    static JM_FORCED_INLINE
     void * JM_X86_CDECL
     aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment) {
         uintptr_t pvAlloc, pvData;
@@ -292,7 +292,7 @@ private:
 
         assert(ptr != nullptr);
         assert(alloc_size == sizeof(aligned_block_header) + size + (alignment - 1));
-        assert(this_type::is_power_of_2(alignment));
+        assert(this_type::is_pow2(alignment));
         assert(alignment >= sizeof(uintptr_t));
 
         pvAlloc = (uintptr_t)ptr;
@@ -329,9 +329,9 @@ public:
     size_t JM_X86_CDECL
     original_usable_size(void * ptr) {
 #ifdef _MSC_VER
-        size_t alloc_size = ::_msize(ptr);
+        size_t alloc_size = _msize(ptr);
 #else
-        size_t alloc_size = ::malloc_usable_size(ptr);
+        size_t alloc_size = malloc_usable_size(ptr);
 #endif
         return alloc_size;
     }

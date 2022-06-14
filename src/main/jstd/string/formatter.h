@@ -59,13 +59,13 @@ enum sprintf_error_code {
 };
 
 template <typename CharTy>
-JSTD_FORCE_INLINE
+JSTD_FORCED_INLINE
 static CharTy to_hex_char(CharTy hex) {
     return ((hex >= 10) ? (hex - 10 + CharTy('A')) : (hex + CharTy('0')));
 }
 
 template <typename CharTy>
-JSTD_FORCE_INLINE
+JSTD_FORCED_INLINE
 static CharTy to_lower_hex_char(CharTy hex) {
     return ((hex >= 10) ? (hex - 10 + CharTy('a')) : (hex + CharTy('0')));
 }
@@ -520,8 +520,8 @@ std::size_t itoa(jstd::basic_string_view<CharTy> & str,
     
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(buf_end);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(buf_end);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -564,8 +564,8 @@ std::size_t itoa_slow(jstd::basic_string_view<CharTy> & str,
 
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(buf_end);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(buf_end);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -586,7 +586,7 @@ std::size_t itoa(jstd::basic_string_view<CharTy> & str,
     }
     std::size_t data_len = itoa(str, u32, digits - sign) + sign;
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -730,8 +730,8 @@ std::size_t itoa(jstd::basic_string_view<CharTy> & str,
 
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(buf_end);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(buf_end);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -752,7 +752,7 @@ std::size_t itoa(jstd::basic_string_view<CharTy> & str,
     }
     std::size_t data_len = itoa(str, u64, digits - sign) + sign;
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -852,8 +852,8 @@ std::size_t itoa(std::basic_string<CharTy> & str,
     
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(buf_end);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(buf_end);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -874,7 +874,7 @@ std::size_t itoa(std::basic_string<CharTy> & str,
     }
     std::size_t data_len = itoa(str, u32, digits - sign) + sign;
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -1018,8 +1018,8 @@ std::size_t itoa(std::basic_string<CharTy> & str,
     
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(buf_end);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(buf_end);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -1040,7 +1040,7 @@ std::size_t itoa(std::basic_string<CharTy> & str,
     }
     std::size_t data_len = itoa(str, u64, digits - sign) + sign;
     assert(data_len == digits);
-    JSTD_UNUSED_VARS(data_len);
+    JSTD_UNUSED_VAR(data_len);
     return digits;
 }
 
@@ -1218,18 +1218,18 @@ struct basic_formatter {
         switch (sp) {
         case uchar_type('\0'):
             {
-                JSTD_UNUSED_VARS(i8);
-                JSTD_UNUSED_VARS(u8);
-                JSTD_UNUSED_VARS(i16);
-                JSTD_UNUSED_VARS(u16);
-                JSTD_UNUSED_VARS(i32);
-                JSTD_UNUSED_VARS(u32);
-                JSTD_UNUSED_VARS(i64);
-                JSTD_UNUSED_VARS(u64);
-                JSTD_UNUSED_VARS(f);
-                JSTD_UNUSED_VARS(d);
-                JSTD_UNUSED_VARS(ld);
-                JSTD_UNUSED_VARS(pvoid);
+                JSTD_UNUSED_VAR(i8);
+                JSTD_UNUSED_VAR(u8);
+                JSTD_UNUSED_VAR(i16);
+                JSTD_UNUSED_VAR(u16);
+                JSTD_UNUSED_VAR(i32);
+                JSTD_UNUSED_VAR(u32);
+                JSTD_UNUSED_VAR(i64);
+                JSTD_UNUSED_VAR(u64);
+                JSTD_UNUSED_VAR(f);
+                JSTD_UNUSED_VAR(d);
+                JSTD_UNUSED_VAR(ld);
+                JSTD_UNUSED_VAR(pvoid);
                 err_code = Sprintf_Reached_Endof;
                 break;
             }
@@ -1457,19 +1457,19 @@ struct basic_formatter {
         switch (sp) {
         case uchar_type('\0'):
             {
-                JSTD_UNUSED_VARS(i8);
-                JSTD_UNUSED_VARS(u8);
-                JSTD_UNUSED_VARS(i16);
-                JSTD_UNUSED_VARS(u16);
-                JSTD_UNUSED_VARS(i32);
-                JSTD_UNUSED_VARS(u32);
-                JSTD_UNUSED_VARS(i64);
-                JSTD_UNUSED_VARS(u64);
-                JSTD_UNUSED_VARS(f);
-                JSTD_UNUSED_VARS(d);
-                JSTD_UNUSED_VARS(ld);
-                JSTD_UNUSED_VARS(pvoid);
-                JSTD_UNUSED_VARS(data_len);
+                JSTD_UNUSED_VAR(i8);
+                JSTD_UNUSED_VAR(u8);
+                JSTD_UNUSED_VAR(i16);
+                JSTD_UNUSED_VAR(u16);
+                JSTD_UNUSED_VAR(i32);
+                JSTD_UNUSED_VAR(u32);
+                JSTD_UNUSED_VAR(i64);
+                JSTD_UNUSED_VAR(u64);
+                JSTD_UNUSED_VAR(f);
+                JSTD_UNUSED_VAR(d);
+                JSTD_UNUSED_VAR(ld);
+                JSTD_UNUSED_VAR(pvoid);
+                JSTD_UNUSED_VAR(data_len);
                 err_code = Sprintf_Reached_Endof;
                 break;
             }

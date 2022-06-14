@@ -1,7 +1,7 @@
 
-#ifdef _MSC_VER
 // Your can edit 'JSTD_ENABLE_VLD' marco in <jstd/basic/vld_def.h> file
 // to switch Visual Leak Detector(vld).
+#ifdef _MSC_VER
 #include <jstd/basic/vld.h>
 #endif
 
@@ -65,7 +65,7 @@
 
 #define STRING_UTILS_MODE       STRING_UTILS_SSE42
 
-// Use in <jstd/support/PowerOf2.h>
+// Use in <jstd/support/Power2.h>
 #define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
 
 #define USE_JSTD_HASH_TABLE     0

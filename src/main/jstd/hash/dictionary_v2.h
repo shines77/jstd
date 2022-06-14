@@ -33,7 +33,7 @@
 #include "jstd/hash/hash_helper.h"
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/allocator.h"
-#include "jstd/support/PowerOf2.h"
+#include "jstd/support/Power2.h"
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -213,7 +213,7 @@ protected:
     static const size_type kMaxEntryChunkBytes = 8 * 1024 * 1024;
     // The entry's block size per chunk (entry_type).
     static const size_type kEntryChunkSize =
-            compile_time::round_up_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
+            compile_time::round_up_pow2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
 
     // The threshold of treeify to red-black tree.
     static const size_type kTreeifyThreshold = 8;
@@ -290,13 +290,13 @@ protected:
     inline size_type calc_capacity(size_type capacity) const {
         capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
         capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-        capacity = run_time::round_up_to_pow2(capacity);
+        capacity = pow2::round_up(capacity);
         return capacity;
     }
 
     inline size_type calc_shrink_capacity(size_type capacity) {
         capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
-        capacity = run_time::round_up_to_pow2(capacity);
+        capacity = pow2::round_up(capacity);
         return capacity;
     }
 
@@ -320,7 +320,7 @@ protected:
     }
 
     void initialize(size_type init_capacity) {
-        size_type entry_capacity = run_time::round_up_to_pow2(init_capacity);
+        size_type entry_capacity = pow2::round_up(init_capacity);
         assert(entry_capacity > 0);
         assert((entry_capacity & (entry_capacity - 1)) == 0);
 

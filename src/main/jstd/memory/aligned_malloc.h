@@ -40,7 +40,7 @@ public:
 
     typedef aligned_malloc<T, Alignment> this_type;
 
-    static const std::size_t kAlignment = compile_time::round_up_to_pow2<Alignment>::value;
+    static const std::size_t kAlignment = compile_time::round_up_pow2<Alignment>::value;
 
     /*
      * The following values are non-zero, constant, odd, large, and atypical
@@ -109,13 +109,13 @@ private:
 
     static JM_INLINE
     bool JM_X86_CDECL
-    is_power_of_2(size_t n) {
+    is_pow2(size_t n) {
         return ((n & (n - 1)) == 0);
     }
 
     static JM_INLINE
     size_t JM_X86_CDECL
-    next_power_of_2(size_t n) {
+    next_pow2(size_t n) {
         if (n != 0) {
             // ms1b
             --n;
@@ -135,15 +135,15 @@ private:
 
     static JM_INLINE
     size_t JM_X86_CDECL
-    round_up_power_of_2(size_t alignment) {
-        if (this_type::is_power_of_2(alignment)) {
+    round_up_pow2(size_t alignment) {
+        if (this_type::is_pow2(alignment)) {
             assert(alignment > 0);
             return alignment;
         }
         else {
-            alignment = this_type::next_power_of_2(alignment);
+            alignment = this_type::next_pow2(alignment);
             assert(alignment > 0);
-            assert(this_type::next_power_of_2(alignment));
+            assert(this_type::next_pow2(alignment));
             return alignment;
         }
     }
@@ -156,7 +156,7 @@ private:
         // Although we will fix the value of alignment,
         // we must also report the assertion in debug mode.
         //
-        assert(this_type::is_power_of_2(alignment));
+        assert(this_type::is_pow2(alignment));
         if (sizeof(uintptr_t) > JM_MALLOC_ALIGNMENT) {
             alignment = (alignment >= sizeof(uintptr_t)) ? alignment : sizeof(uintptr_t);
         }
@@ -236,7 +236,7 @@ private:
 
     /////////////////////////////////////////////////////////////////////////////////////////
 
-    static JM_FORCE_INLINE
+    static JM_FORCED_INLINE
     void * JM_X86_CDECL
     aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment) {
         uintptr_t pvAlloc, pvData;
@@ -247,7 +247,7 @@ private:
 #endif
         assert(ptr != nullptr);
         assert(alloc_size == sizeof(aligned_block_header) + size + (alignment - 1));
-        assert(this_type::is_power_of_2(alignment));
+        assert(this_type::is_pow2(alignment));
         assert(alignment >= sizeof(uintptr_t));
 
         pvAlloc = (uintptr_t)ptr;
@@ -283,9 +283,9 @@ public:
     size_t JM_X86_CDECL
     original_usable_size(void * ptr) {
 #ifdef _MSC_VER
-        size_t alloc_size = ::_msize(ptr);
+        size_t alloc_size = _msize(ptr);
 #else
-        size_t alloc_size = ::malloc_usable_size(ptr);
+        size_t alloc_size = malloc_usable_size(ptr);
 #endif
         return alloc_size;
     }
@@ -311,7 +311,7 @@ public:
         // the behavior is undefined if alignment is not a power of 2.
         //
         size_t alignment = this_type::adjust_alignment(kAlignment);
-        JSTD_UNUSED_VARS(alignment);
+        JSTD_UNUSED_VAR(alignment);
 
         if (kAlignment <= JM_MALLOC_ALIGNMENT) {
             return this_type::original_usable_size(ptr);

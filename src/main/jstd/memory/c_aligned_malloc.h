@@ -152,9 +152,9 @@ typedef struct _aligned_block_header    aligned_block_header_t;
 
 /////////////////////////////////////////////////////////////////////////////
 
-bool   JMC_X86_CDECL jm_is_power_of_2(size_t n);
-size_t JMC_X86_CDECL jm_next_power_of_2(size_t n);
-size_t JMC_X86_CDECL jm_round_up_power_of_2(size_t alignment);
+bool   JMC_X86_CDECL jm_is_pow2(size_t n);
+size_t JMC_X86_CDECL jm_next_pow2(size_t n);
+size_t JMC_X86_CDECL jm_round_up_pow2(size_t alignment);
 
 // For debug
 bool   JMC_X86_CDECL jm_check_bytes(unsigned char * pb,
@@ -207,14 +207,14 @@ jm_check_bytes(unsigned char * pb,
 
 JMC_INLINE
 bool JMC_X86_CDECL
-jm_is_power_of_2(size_t n)
+jm_is_pow2(size_t n)
 {
     return ((n & (n - 1)) == 0);
 }
 
 JMC_INLINE
 size_t JMC_X86_CDECL
-jm_next_power_of_2(size_t n)
+jm_next_pow2(size_t n)
 {
     if (n != 0) {
         // ms1b
@@ -235,16 +235,16 @@ jm_next_power_of_2(size_t n)
 
 JMC_INLINE
 size_t JMC_X86_CDECL
-jm_round_up_power_of_2(size_t alignment)
+jm_round_up_pow2(size_t alignment)
 {
-    if (jm_is_power_of_2(alignment)) {
+    if (jm_is_pow2(alignment)) {
         assert(alignment > 0);
         return alignment;
     }
     else {
-        alignment = jm_next_power_of_2(alignment);
+        alignment = jm_next_pow2(alignment);
         assert(alignment > 0);
-        assert(jm_next_power_of_2(alignment));
+        assert(jm_next_pow2(alignment));
         return alignment;
     }
 }
@@ -258,15 +258,15 @@ jm_adjust_alignment(size_t alignment)
     // Although we will fix the value of alignment,
     // we must also report the assertion in debug mode.
     //
-    assert(jm_is_power_of_2(alignment));
+    assert(jm_is_pow2(alignment));
 #if (JMC_VOID_PTR_SIZE > JMC_MALLOC_ALIGNMENT)
     alignment = (alignment >= sizeof(uintptr_t)) ? alignment : sizeof(uintptr_t);
 #endif
 
 #if JMC_ADJUST_ALIGNMENT
-    alignment = jm_round_up_power_of_2(alignment);
+    alignment = jm_round_up_pow2(alignment);
     assert(alignment > 0);
-    assert(jm_is_power_of_2(alignment));
+    assert(jm_is_pow2(alignment));
 #endif
     return alignment;
 }
@@ -359,7 +359,7 @@ jm_aligned_to_addr(void * ptr, size_t size, size_t alloc_size, size_t alignment)
 
     assert(ptr != nullptr);
     assert(alloc_size == sizeof(aligned_block_header_t) + size + (alignment - 1));
-    assert(jm_is_power_of_2(alignment));
+    assert(jm_is_pow2(alignment));
     assert(alignment >= sizeof(uintptr_t));
 
     pvAlloc = (uintptr_t)ptr;

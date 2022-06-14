@@ -115,18 +115,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_traits.h">
       <Filter>src\hash</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_forward.h">
-      <Filter>src\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\support\bitscan_reverse.h">
-      <Filter>src\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\support\popcnt.h">
-      <Filter>src\support</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\support\PowerOf2.h">
-      <Filter>src\support</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\support\SSEHelper.h">
       <Filter>src\support</Filter>
     </ClInclude>
@@ -327,6 +315,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\aligned_malloc.h">
       <Filter>src\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\BitUtils.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\Power2.h">
+      <Filter>src\support</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

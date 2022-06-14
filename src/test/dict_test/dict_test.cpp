@@ -1,7 +1,7 @@
 
-#ifdef _MSC_VER
 // Your can edit 'JSTD_ENABLE_VLD' marco in <jstd/basic/vld_def.h> file
 // to switch Visual Leak Detector(vld).
+#ifdef _MSC_VER
 #include <jstd/basic/vld.h>
 #endif
 
@@ -55,7 +55,7 @@
 
 #define STRING_UTILS_MODE       STRING_UTILS_SSE42
 
-// Use in <jstd/support/PowerOf2.h>
+// Use in <jstd/support/Power2.h>
 #define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
 
 #define USE_JSTD_HASH_TABLE     0
@@ -1643,7 +1643,7 @@ void formatter_benchmark_sprintf_Integer_1()
                                  "%d, %d, %d, %d, %d.",
                                   12,  1234,  123456,  12345678,  123456789,
                                  -12, -1234, -123456, -12345678, -123456789);
-            JSTD_UNUSED_VARS(fmt_size);
+            JSTD_UNUSED_VAR(fmt_size);
         }
         sw.stop();
         time = sw.getElapsedMillisec();
@@ -1670,7 +1670,7 @@ void formatter_benchmark_sprintf_Integer_1()
                                  "%d, %d, %d, %d, %d.",
                                   12,  1234,  123456,  12345678,  123456789,
                                  -12, -1234, -123456, -12345678, -123456789);
-            JSTD_UNUSED_VARS(fmt_size);
+            JSTD_UNUSED_VAR(fmt_size);
         }
         sw.stop();
         time = sw.getElapsedMillisec();
@@ -1940,7 +1940,7 @@ void formatter_benchmark_sprintf_Integer_1()
         printf("\n");
     }
 
-    JSTD_UNUSED_VARS(fmt_len);
+    JSTD_UNUSED_VAR(fmt_len);
     printf("==========================================================================\n");
     printf("\n");
 }
@@ -2376,19 +2376,21 @@ int main(int argc, char * argv[])
         jtest::CPU::warmup(1000);
     }
 
-    //string_view_test();
-    //shiftable_ptr_test();
-    //formatter_test();
-    //fnv1a_hash_test();
-    realloc_test();
+    if (0) string_view_test();
+    if (0) shiftable_ptr_test();
+    if (0) formatter_test();
+    if (0) fnv1a_hash_test();
+    if (0) realloc_test();
 #ifdef _MSC_VER
-    expand_test();
+    if (0) expand_test();
 #endif
-    jm_aligned_realloc_test();
+    if (0) jm_aligned_realloc_test();
 
-    //formatter_benchmark();
-    //hashtable_uinttest();
-    //hashtable_benchmark();
+    if (0) formatter_benchmark();
+    if (0) hashtable_uinttest();
+    if (0) hashtable_benchmark();
+
+    printf("sizeof(std::max_align_t) = %u\n\n", (uint32_t)sizeof(std::max_align_t));
 
     jstd::Console::ReadKey();
     return 0;

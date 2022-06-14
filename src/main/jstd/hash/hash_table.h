@@ -20,7 +20,7 @@
 #include "jstd/hash/hash_helper.h"
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/string/string_utils.h"
-#include "jstd/support/PowerOf2.h"
+#include "jstd/support/Power2.h"
 
 #ifndef ENABLE_JSTD_HASH_TABLE
 #define ENABLE_JSTD_HASH_TABLE      1
@@ -123,7 +123,7 @@ public:
 
 private:
     void initialize(size_type new_buckets) {
-        new_buckets = run_time::round_up_to_pow2(new_buckets);
+        new_buckets = pow2::round_up(new_buckets);
         assert(new_buckets > 0);
         assert((new_buckets & (new_buckets - 1)) == 0);
         data_type * new_table = new data_type[new_buckets];
@@ -180,7 +180,7 @@ private:
         // The maximum bucket is kMaximumCapacity = 1 << 30.
         new_buckets = (new_buckets <= kMaximumCapacity) ? new_buckets : kMaximumCapacity;
         // Round up the new_buckets to power 2.
-        new_buckets = run_time::round_up_to_pow2(new_buckets);
+        new_buckets = pow2::round_up(new_buckets);
         return new_buckets;
     }
 
@@ -191,7 +191,7 @@ private:
         // The maximum bucket is kMaximumCapacity = 1 << 30.
         new_buckets = (new_buckets <= kMaximumCapacity) ? new_buckets : kMaximumCapacity;
         // Round up the new_buckets to power 2.
-        new_buckets = run_time::round_up_to_pow2(new_buckets);
+        new_buckets = pow2::round_up(new_buckets);
         return new_buckets;
     }
 

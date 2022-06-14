@@ -11,7 +11,7 @@
 #include "jstd/basic/stdsize.h"
 
 #include "jstd/basic/base.h"
-#include "jstd/support/PowerOf2.h"
+#include "jstd/support/Power2.h"
 #include "jstd/memory/c_aligned_malloc.h"
 #include "jstd/memory/aligned_malloc.h"
 
@@ -122,7 +122,7 @@ namespace compile_time {
 template <std::size_t Size, std::size_t Alignment>
 struct align_to {
     static constexpr std::size_t kAlignment =
-        std::max(std::size_t(1), compile_time::round_up_to_power2<Alignment>::value);
+        (std::max)(std::size_t(1), compile_time::round_up_pow2<Alignment>::value);
 
     static constexpr std::size_t value =
         (Size + kAlignment - 1) & ~(kAlignment - 1);
@@ -156,10 +156,10 @@ struct allocator_base {
     typedef true_type       propagate_on_container_move_assignment;
     typedef true_type       is_always_equal;
 
-    static constexpr size_type kAlignOf = std::max(Alignment, std::alignment_of<T>::value);
-    static constexpr size_type kAlignment = compile_time::round_up_to_power2<kAlignOf>::value;
+    static constexpr size_type kAlignOf = (std::max)(Alignment, std::alignment_of<T>::value);
+    static constexpr size_type kAlignment = compile_time::round_up_pow2<kAlignOf>::value;
 
-    static constexpr size_type kObjectSize = std::max(ObjectSize, sizeof(T));
+    static constexpr size_type kObjectSize = (std::max)(ObjectSize, sizeof(T));
     static constexpr size_type kActualObjectSize = compile_time::align_to<kObjectSize, kAlignment>::value;
 
     size_type align_of() const { return kAlignOf; }
@@ -374,13 +374,13 @@ struct allocator : public allocator_base<
     static const size_type kActualObjectSize = base_type::kActualObjectSize;
 
 #if defined(MALLOC_ALIGNMENT)
-    static const size_type kMallocDefaultAlignment = compile_time::round_up_to_pow2<MALLOC_ALIGNMENT>::value;
+    static const size_type kMallocDefaultAlignment = compile_time::round_up_pow2<MALLOC_ALIGNMENT>::value;
 #else
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) || defined(_M_ARM64)
-    static const size_type kMallocDefaultAlignment = 16;
+    static const size_type kMallocDefaultAlignment = (std::max)(size_type(16), sizeof(std::max_align_t));
 #else
-    static const size_type kMallocDefaultAlignment = 8;
+    static const size_type kMallocDefaultAlignment = (std::max)(size_type(8), sizeof(std::max_align_t));
 #endif
 #endif // MALLOC_ALIGNMENT
 
