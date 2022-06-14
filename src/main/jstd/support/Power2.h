@@ -78,11 +78,11 @@ std::uint32_t countTrailingZeros(SizeType N)
     unsigned_type n = static_cast<unsigned_type>(N);
     assert(n != 0);
     if (sizeof(SizeType) <= 4) {
-        return BitUtils::bsr32((std::uint32_t)n);
+        return BitUtils::bsf32((std::uint32_t)n);
     } if (sizeof(SizeType) == 8) {
-        return BitUtils::bsr64(n);
+        return BitUtils::bsf64(n);
     } else {
-        return BitUtils::bsr64((std::uint64_t)n);
+        return BitUtils::bsf64((std::uint64_t)n);
     }
 }
 
@@ -96,11 +96,11 @@ std::uint32_t countLeadingZeros(SizeType N)
     unsigned_type n = static_cast<unsigned_type>(N);
     assert(n != 0);
     if (sizeof(SizeType) <= 4) {
-        return BitUtils::bsf32((std::uint32_t)n);
+        return BitUtils::bsr32((std::uint32_t)n);
     } if (sizeof(SizeType) == 8) {
-        return BitUtils::bsf64(n);
+        return BitUtils::bsr64(n);
     } else {
-        return BitUtils::bsf64((std::uint64_t)n);
+        return BitUtils::bsr64((std::uint64_t)n);
     }
 }
 
