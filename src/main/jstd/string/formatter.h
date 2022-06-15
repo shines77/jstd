@@ -517,7 +517,7 @@ std::size_t itoa(jstd::basic_string_view<CharTy> & str,
     assert(buf_end > buf_last);
 
     str.commit(digits);
-    
+
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
     JSTD_UNUSED_VAR(buf_end);
@@ -849,7 +849,7 @@ std::size_t itoa(std::basic_string<CharTy> & str,
     assert(buf_last < buf_end);
 
     str.append(buf_last, buf_end);
-    
+
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
     JSTD_UNUSED_VAR(buf_end);
@@ -1015,7 +1015,7 @@ std::size_t itoa(std::basic_string<CharTy> & str,
     assert(buf_last < buf_end);
 
     str.append(buf_last, buf_end);
-    
+
     std::size_t data_len = std::size_t(buf_end - buf_last);
     assert(data_len == digits);
     JSTD_UNUSED_VAR(buf_end);
@@ -1206,7 +1206,7 @@ struct basic_formatter {
         int32_t i32;
         int64_t i64;
         uint8_t  u8;
-        uint16_t u16;        
+        uint16_t u16;
         uint32_t u32;
         uint64_t u64;
         float f;
@@ -1445,7 +1445,7 @@ struct basic_formatter {
         int32_t i32;
         int64_t i64;
         uint8_t  u8;
-        uint16_t u16;        
+        uint16_t u16;
         uint32_t u32;
         uint64_t u64;
         float f;

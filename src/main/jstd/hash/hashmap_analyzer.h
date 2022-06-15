@@ -156,7 +156,7 @@ private:
 
         this->bucket_counts_.clear();
         this->bucket_counts_.resize(bucket_capacity);
-        
+
         size_type total_count = 0;
         for (size_type i = 0; i < bucket_capacity; i++) {
             size_type count = this->bucket_size(i);
@@ -244,7 +244,7 @@ private:
             size_type count = this->bucket_counts_[i];
             if (count > 0)
                 usage_count++;
-        } 
+        }
 
         return usage_count;
     }
@@ -398,7 +398,7 @@ public:
         printf("  bucket_capacity  = %" PRIuPTR "\n", this->result_.base.bucket_capacity);
         printf("\n");
         printf("  std_deviation    = %0.6f\n", this->result_.std_deviation);
-        printf("  std_errors       = %0.6f\n", this->result_.std_errors);        
+        printf("  std_errors       = %0.6f\n", this->result_.std_errors);
         printf("  max_bucket_count = %" PRIuPTR "\n", this->result_.max_bucket_count);
         printf("  coverage_rate    = %6.2f %%  - size() / bucket_count()\n",
                                      this->result_.coverage_rate);

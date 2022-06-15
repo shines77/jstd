@@ -1,6 +1,6 @@
 
-#ifndef JSTD_STRING_STRINF_VIEW_ARRAY_H
-#define JSTD_STRING_STRINF_VIEW_ARRAY_H
+#ifndef JSTD_STRING_STRING_VIEW_ARRAY_H
+#define JSTD_STRING_STRING_VIEW_ARRAY_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -76,7 +76,7 @@ public:
     typedef typename vector_type::const_reference   const_reference;
     typedef typename vector_type::size_type         size_type;
 
-    typedef typename std::make_signed<size_type>::type  ssize_type;    
+    typedef typename std::make_signed<size_type>::type  ssize_type;
 
 private:
     vector_type array_;
@@ -165,4 +165,4 @@ public:
 
 } // namespace jstd
 
-#endif // JSTD_STRING_STRINF_VIEW_ARRAY_H
+#endif // JSTD_STRING_STRING_VIEW_ARRAY_H
