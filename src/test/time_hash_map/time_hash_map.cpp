@@ -205,13 +205,13 @@ private:
 
 public:
     HashObject() : key_(0) {
-        ::memset(this->buffer_, 0, sizeof(this->buffer_));
+        std::memset(this->buffer_, 0, sizeof(char) * kBufLen);
 #if USE_CTOR_COUNTER
         g_num_constructor++;
 #endif
     }
     HashObject(key_type key) : key_(key) {
-        ::memset(this->buffer_, (int)(key & 0xFFUL), sizeof(this->buffer_));   // a "random" char
+        std::memset(this->buffer_, (int)(key & 0xFFUL), sizeof(char) * kBufLen);   // a "random" char
 #if USE_CTOR_COUNTER
         g_num_constructor++;
 #endif
@@ -223,7 +223,11 @@ public:
     void operator = (const this_type & that) {
         g_num_copies++;
         this->key_ = that.key_;
-        ::memcpy(this->buffer_, that.buffer_, sizeof(this->buffer_));
+        std::memcpy(this->buffer_, that.buffer_, sizeof(char) * kBufLen);
+    }
+
+    key_type key() const {
+        return this->key_;
     }
 
     std::size_t Hash() const {
@@ -282,6 +286,10 @@ public:
         this->key_ = that.key_;
     }
 
+    key_type key() const {
+        return this->key_;
+    }
+
     std::size_t Hash() const {
         g_num_hashes++;
         return static_cast<std::size_t>(
@@ -333,6 +341,10 @@ public:
         this->key_ = that.key_;
     }
 
+    key_type key() const {
+        return this->key_;
+    }
+
     std::size_t Hash() const {
         g_num_hashes++;
         return static_cast<std::size_t>(
@@ -354,10 +366,11 @@ public:
 #endif // _WIN64 || __amd64__
 
 template <typename Key>
-class HashFn {
-public:
+struct HashFn {
     //typedef HashObj   hash_object_t;
-    typedef Key key_type;
+    typedef Key                             key_type;
+    //typedef HashObject<Key, Size, HashSize> argument_type;
+    typedef std::size_t                     result_type;
 
     // These two public members are required by msvc.  4 and 8 are defaults.
     static const std::size_t bucket_size = 4;
@@ -384,14 +397,14 @@ public:
     //}
 
     template <std::size_t Size, std::size_t HashSize>
-    std::size_t operator () (const HashObject<key_type, Size, HashSize> & obj) const {
-        return static_cast<std::size_t>(obj.Hash());
+    result_type operator () (const HashObject<key_type, Size, HashSize> & obj) const {
+        return static_cast<result_type>(obj.Hash());
     }
 
     // Do the identity hash for pointers.
     template <std::size_t Size, std::size_t HashSize>
-    std::size_t operator () (const HashObject<key_type, Size, HashSize> * obj) const {
-        return reinterpret_cast<std::size_t>(obj);
+    result_type operator () (const HashObject<key_type, Size, HashSize> * obj) const {
+        return reinterpret_cast<result_type>(obj);
     }
 
     // Less operator for MSVC's hash containers.
