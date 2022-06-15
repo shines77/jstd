@@ -74,12 +74,7 @@
 #include <jstd/test/CPUWarmUp.h>
 #include <jstd/test/ProcessMemInfo.h>
 
-//#include <jstd/all.h>
-
 #include "BenchmarkResult.h"
-
-using namespace jstd;
-using namespace jtest;
 
 static std::vector<std::string> dict_words;
 
@@ -182,11 +177,12 @@ namespace std {
 
 template <>
 struct hash<jstd::StringRef> {
+    typedef jstd::StringRef argument_type;
     typedef std::uint32_t   result_type;
 
-    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<argument_type, std::uint32_t, jstd::HashFunc_CRC32C> hash_helper_;
 
-    result_type operator()(const jstd::StringRef & key) const {
+    result_type operator()(const argument_type & key) const {
         return hash_helper_.getHashCode(key);
     }
 };
@@ -197,11 +193,12 @@ namespace jstd {
 
 template <>
 struct hash<jstd::StringRef> {
+    typedef jstd::StringRef argument_type;
     typedef std::uint32_t   result_type;
 
-    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<argument_type, std::uint32_t, jstd::HashFunc_CRC32C> hash_helper_;
 
-    result_type operator()(const jstd::StringRef & key) const {
+    result_type operator()(const argument_type & key) const {
         return hash_helper_.getHashCode(key);
     }
 };
@@ -263,10 +260,10 @@ void copy_and_shuffle_vector(Vector & dest_list, const Vector & src_list) {
 }
 
 template <>
-void copy_and_shuffle_vector(string_view_array<string_view, string_view> & dest_list,
-                             const string_view_array<string_view, string_view> & src_list) {
-    typedef typename string_view_array<string_view, string_view>::value_type    value_type;
-    typedef typename std::remove_pointer<value_type>::type                      element_type;
+void copy_and_shuffle_vector(jstd::string_view_array<jstd::string_view, jstd::string_view> & dest_list,
+                             const jstd::string_view_array<jstd::string_view, jstd::string_view> & src_list) {
+    typedef typename jstd::string_view_array<jstd::string_view, jstd::string_view>::value_type  value_type;
+    typedef typename std::remove_pointer<value_type>::type                                      element_type;
 
     // copy
     dest_list.clear();
@@ -356,7 +353,7 @@ void test_hashmap_find_sequential(const Vector & test_data,
             if (iter != container.end()) {
                 checksum++;
             }
-#ifndef NDEBUG
+#ifdef _DEBUG
             else {
                 static int err_count = 0;
                 err_count++;
@@ -727,7 +724,7 @@ void test_hashmap_erase_sequential(const Vector & test_data,
         sw.stop();
 
         assert(container.size() == 0);
-#ifndef NDEBUG
+#ifdef _DEBUG
         if (container.size() != 0) {
             static int err_count = 0;
             err_count++;
@@ -852,7 +849,7 @@ void test_hashmap_rehash(const Vector & test_data,
         bucket_counts = 128;
         container.rehash(bucket_counts);
         checksum += container.bucket_count();
-#ifndef NDEBUG
+#ifdef _DEBUG
         static size_t rehash_cnt1 = 0;
         if (rehash_cnt1 < 20) {
             if (container.bucket_count() != bucket_counts) {
@@ -867,7 +864,7 @@ void test_hashmap_rehash(const Vector & test_data,
             bucket_counts *= 2;
             container.rehash(bucket_counts);
             checksum += container.bucket_count();
-#ifndef NDEBUG
+#ifdef _DEBUG
             static size_t rehash_cnt2 = 0;
             if (rehash_cnt2 < 20) {
                 if (container.bucket_count() != bucket_counts) {
@@ -918,7 +915,7 @@ void test_hashmap_rehash2(const Vector & test_data,
         bucket_counts = 128;
         container.rehash(bucket_counts);
         checksum += container.bucket_count();
-#ifndef NDEBUG
+#ifdef _DEBUG
         static size_t rehash_cnt1 = 0;
         if (rehash_cnt1 < 20) {
             if (container.bucket_count() != bucket_counts) {
@@ -933,7 +930,7 @@ void test_hashmap_rehash2(const Vector & test_data,
             bucket_counts *= 2;
             container.rehash(bucket_counts);
             checksum += container.bucket_count();
-#ifndef NDEBUG
+#ifdef _DEBUG
             static size_t rehash_cnt2 = 0;
             if (rehash_cnt2 < 20) {
                 if (container.bucket_count() != bucket_counts) {
@@ -960,7 +957,7 @@ template <typename Container1, typename Container2, typename Vector>
 void hashmap_benchmark_simple(const std::string & cat_name,
                               Container1 & container1, Container2 & container2,
                               const Vector & test_data, const Vector & reverse_data,
-                              BenchmarkResult & result)
+                              jtest::BenchmarkResult & result)
 {
     std::size_t cat_id = result.addCategory(cat_name);
 
@@ -1101,7 +1098,7 @@ void hashmap_benchmark_simple(const std::string & cat_name,
 
 void hashmap_benchmark_all()
 {
-    BenchmarkResult test_result;
+    jtest::BenchmarkResult test_result;
     test_result.setName("std::unordered_map", "jstd::Dictionary");
 
     jtest::StopWatch sw;
@@ -1198,8 +1195,8 @@ void hashmap_benchmark_all()
             //
             // std::unordered_map<jstd::string_view, jstd::string_view>
             //
-            typedef string_view_array<jstd::string_view, jstd::string_view> string_view_array_t;
-            typedef typename string_view_array_t::element_type              element_type;
+            typedef jstd::string_view_array<jstd::string_view, jstd::string_view> string_view_array_t;
+            typedef typename string_view_array_t::element_type                    element_type;
 
             string_view_array_t test_data_svsv;
             string_view_array_t reverse_data_svsv;
