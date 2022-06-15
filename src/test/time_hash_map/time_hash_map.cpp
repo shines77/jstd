@@ -987,6 +987,7 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
         printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " byte EntryType, %" PRIuPTR " iterations):\n",
                name, obj_size, entry_size, iters);
     }
+    if (1) printf("\n");
 
     if (1) time_map_find_sequential<MapType>(iters);
     if (1) time_map_find_random<MapType>(iters);
@@ -1006,7 +1007,6 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
 
     if (1) time_map_erase<MapType>(iters);
     if (1) time_map_erase_failed<MapType>(iters);
-
     if (1) time_map_toggle<MapType>(iters);
     if (1) time_map_iterate<MapType>(iters);
 
@@ -1497,6 +1497,7 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
         printf("%s (%" PRIuPTR " byte objects, %" PRIuPTR " byte EntryType, %" PRIuPTR " iterations):\n",
                name, obj_size, entry_size, iters);
     }
+    if (1) printf("\n");
 
     if (1) time_map_find_sequential<MapType>(iters);
     if (1) time_map_find_random<MapType>(iters);
@@ -1516,7 +1517,6 @@ static void measure_hashmap(const char * name, std::size_t obj_size, std::size_t
 
     if (1) time_map_erase<MapType>(iters);
     if (1) time_map_erase_failed<MapType>(iters);
-
     if (1) time_map_toggle<MapType>(iters);
     if (1) time_map_iterate<MapType>(iters);
 
