@@ -96,8 +96,9 @@
 #define MODE_FAST_SIMPLE_HASH       0   // test::hash<T>()
 #define MODE_STD_HASH_FUNCTION      1   // std::hash<T>()
 #define MODE_STDEXT_HASH_FUNCTION   2   // stdext::hash_compare<T>() or __gnu_cxx::hash<T>()
+#define MODE_INTEGAL_HASH_FUNCTION  3   // test::IntegalHash
 
-#define HASH_FUNCTION_MODE          MODE_STD_HASH_FUNCTION
+#define HASH_FUNCTION_MODE          MODE_INTEGAL_HASH_FUNCTION
 
 #if (HASH_FUNCTION_MODE == MODE_STD_HASH_FUNCTION)
   #define HASH_MAP_FUNCTION     std::hash
@@ -107,6 +108,8 @@
   #else
     #define HASH_MAP_FUNCTION   STDEXT_HASH_NAMESPACE::hash
   #endif
+#elif (HASH_FUNCTION_MODE == MODE_INTEGAL_HASH_FUNCTION)
+  #define HASH_MAP_FUNCTION     test::IntegalHash
 #else
   #define HASH_MAP_FUNCTION     test::hash
 #endif // HASH_FUNCTION_MODE
@@ -177,6 +180,39 @@ template <typename Key>
 struct hash {
     std::size_t operator () (const Key & key) const {
         return static_cast<std::size_t>(key);
+    }
+};
+
+template <typename T>
+struct IntegalHash
+{
+    typedef T           argument_type;
+    typedef std::size_t result_type;
+
+    template <typename UInt32, typename std::enable_if<
+                                (std::is_integral<UInt32>::value &&
+                                (sizeof(UInt32) <= 4))>::type * = nullptr>
+    result_type operator () (UInt32 value) const noexcept {
+        //std::uint32_t hash = value * 16777619ul ^ 2166136261ul;
+        result_type hash = (result_type)((std::uint32_t)value * 2654435761ul + 16777619ul);
+        return hash;
+    }
+
+    template <typename UInt64, typename std::enable_if<
+                                (std::is_integral<UInt64>::value &&
+                                (sizeof(UInt64) > 4 && sizeof(UInt64) <= 8))>::type * = nullptr>  
+    result_type operator () (UInt64 value) const noexcept {
+        //std::uint64_t hash = value * 1099511628211ull ^ 14695981039346656037ull;
+        result_type hash = (result_type)((std::uint64_t)value * 14695981039346656037ull + 1099511628211ull);
+        return hash;
+    }
+
+    template <typename Argument, typename std::enable_if<
+                                  (!std::is_integral<Argument>::value ||
+                                  sizeof(Argument) > 8)>::type * = nullptr>  
+    result_type operator () (const Argument & value) const noexcept {
+        std::hash<Argument> hasher;
+        return static_cast<result_type>(hasher(value));
     }
 };
 
@@ -293,7 +329,7 @@ public:
     std::size_t Hash() const {
         g_num_hashes++;
         return static_cast<std::size_t>(
-            HASH_MAP_FUNCTION<std::size_t>()(this->key_)
+            HASH_MAP_FUNCTION<std::uint32_t>()(this->key_)
         );
     }
 
