@@ -15,5 +15,8 @@
     <ClInclude Include="..\..\..\..\src\test\time_hash_map\BenchmarkResult.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\test\time_hash_map\time_hash_map_v1.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
