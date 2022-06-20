@@ -154,31 +154,6 @@ if (MSVC)
   	set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 endif()
 
-##
-## libjstd
-##
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-
-set(JSTD_SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
-    src/main/jstd/basic/assert-c.c
-    )
-
-# add_subdirectory(main EXCLUDE_FROM_ALL src/main/asm)
-
-# add objects to the jstd lib
-add_library(${JSTD_LIBNAME} ${JSTD_SOURCE_FILES} ${TARGET_OBJS} ${JSTD_DEF_FILE})
-target_include_directories(${JSTD_LIBNAME} INTERFACE $<INSTALL_INTERFACE:jstd/all${SUFFIX64}>)
-
-# Android needs to explicitly link against libm
-if (ANDROID)
-    target_link_libraries(${JSTD_LIBNAME} m)
-endif()
-
 # Handle MSVC exports
 if (MSVC AND BUILD_SHARED_LIBS)
   	if (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_LESS 3.4)
@@ -214,6 +189,35 @@ if (UNIX)
     endif()
 else()
     set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+##
+## libjstd
+##
+include_directories(include)
+include_directories(src)
+include_directories(src/main)
+
+set(JSTD_SOURCE_FILES
+    src/main/jstd/system/getchar.c
+    src/main/jstd/system/sleep.c
+    src/main/jstd/system/crtdbg_env.c
+    src/main/jstd/basic/assert-c.c
+    )
+
+# add_subdirectory(main EXCLUDE_FROM_ALL src/main/asm)
+
+# add objects to the jstd lib
+add_library(${JSTD_LIBNAME} ${JSTD_SOURCE_FILES} ${TARGET_OBJS} ${JSTD_DEF_FILE})
+
+target_include_directories(${JSTD_LIBNAME}
+INTERFACE
+    $<INSTALL_INTERFACE:jstd/all${SUFFIX64}>
+)
+
+# Android needs to explicitly link against libm
+if (ANDROID)
+    target_link_libraries(${JSTD_LIBNAME} m)
 endif()
 
 target_link_libraries(${JSTD_LIBNAME} ${EXTRA_LIBS})
@@ -261,14 +265,19 @@ set(DICT_TEST_SOURCE_FILES
     src/test/dict_test/dict_test.cpp
     )
 
+add_executable(dict-test ${DICT_TEST_SOURCE_FILES})
+
 target_include_directories(dict-test
     src/test/dict_test
     src/test
     src/main
 )
 
-add_executable(dict-test ${DICT_TEST_SOURCE_FILES})
-target_link_libraries(dict-test ${EXTRA_LIBS} ${JSTD_LIBNAME})
+target_link_libraries(dict-test
+PRIVATE
+    ${EXTRA_LIBS}
+    ${JSTD_LIBNAME}
+)
 
 ##
 ## benchmark
@@ -277,14 +286,20 @@ set(BENCHMARK_SOURCE_FILES
     src/test/benchmark/benchmark.cpp
     )
 
+add_executable(benchmark ${BENCHMARK_SOURCE_FILES})
+
 target_include_directories(benchmark
+PRIVATE
     src/test/benchmark
     src/test
     src/main
 )
 
-add_executable(benchmark ${BENCHMARK_SOURCE_FILES})
-target_link_libraries(benchmark ${EXTRA_LIBS} ${JSTD_LIBNAME})
+target_link_libraries(benchmark
+PRIVATE
+    ${EXTRA_LIBS}
+    ${JSTD_LIBNAME}
+)
 
 ##
 ## time_hash_map
@@ -293,14 +308,20 @@ set(TIME_HASH_MAP_SOURCE_FILES
     src/test/time_hash_map/time_hash_map.cpp
     )
 
+add_executable(time_hash_map ${TIME_HASH_MAP_SOURCE_FILES})
+
 target_include_directories(time_hash_map
+PRIVATE
     src/test/time_hash_map
     src/test
     src/main
 )
 
-add_executable(time_hash_map ${TIME_HASH_MAP_SOURCE_FILES})
-target_link_libraries(time_hash_map ${EXTRA_LIBS} ${JSTD_LIBNAME})
+target_link_libraries(time_hash_map
+PRIVATE
+    ${EXTRA_LIBS}
+    ${JSTD_LIBNAME}
+)
 
 ##
 ## cardinal_bench
@@ -309,11 +330,17 @@ set(CARDINAL_BENCH_SOURCE_FILES
     src/test/cardinal_bench/cardinal_bench.cpp
     )
 
+add_executable(cardinal_bench ${CARDINAL_BENCH_SOURCE_FILES})
+
 target_include_directories(cardinal_bench
+PRIVATE
     src/test/cardinal_bench
     src/test
     src/main
 )
 
-add_executable(cardinal_bench ${CARDINAL_BENCH_SOURCE_FILES})
-target_link_libraries(cardinal_bench ${EXTRA_LIBS} ${JSTD_LIBNAME})
+target_link_libraries(cardinal_bench
+PRIVATE
+    ${EXTRA_LIBS}
+    ${JSTD_LIBNAME}
+)
