@@ -31,15 +31,10 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <unordered_map>
-#if defined(_MSC_VER)
-#include <hash_map>
-#define STDEXT_HASH_NAMESPACE stdext
-#else
-#include <ext/hash_map>
-#define STDEXT_HASH_NAMESPACE __gnu_cxx
-#endif
 #include <algorithm>
+
+#define USE_JSTD_HASH_TABLE     0
+#define USE_JSTD_DICTIONARY     0
 
 /* SIMD support features */
 #define JSTD_HAVE_MMX           1
@@ -70,13 +65,18 @@
 
 #define STRING_UTILS_MODE       STRING_UTILS_SSE42
 
-#define USE_JSTD_HASH_TABLE     0
-#define USE_JSTD_DICTIONARY     0
-
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
 #include <jstd/basic/inttypes.h>
 
+#include <unordered_map>
+#if defined(_MSC_VER)
+#include <hash_map>
+#define STDEXT_HASH_NAMESPACE stdext
+#else
+#include <ext/hash_map>
+#define STDEXT_HASH_NAMESPACE __gnu_cxx
+#endif
 #include <jstd/hash/dictionary.h>
 #include <jstd/hash/hashmap_analyzer.h>
 #include <jstd/string/string_view.h>
@@ -1323,6 +1323,6 @@ int main(int argc, char * argv[])
 
     printf("------------------------------------------------------------------------------------\n\n");
 
-    jstd::Console::ReadKey();
+    //jstd::Console::ReadKey();
     return 0;
 }

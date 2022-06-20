@@ -154,6 +154,9 @@ if (MSVC)
   	set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 endif()
 
+##
+## libjstd
+##
 include_directories(include)
 include_directories(src)
 include_directories(src/main)
@@ -251,50 +254,66 @@ add_custom_target(release
     COMMENT "Switch CMAKE_BUILD_TYPE to Release"
 )
 
-project(dict-test)
-
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/dict_test)
-
-set(SOURCE_FILES
+##
+## dict-test
+##
+set(DICT_TEST_SOURCE_FILES
     src/test/dict_test/dict_test.cpp
     )
 
-add_executable(dict-test ${SOURCE_FILES})
+target_include_directories(dict-test
+    src/test/dict_test
+    src/test
+    src/main
+)
+
+add_executable(dict-test ${DICT_TEST_SOURCE_FILES})
 target_link_libraries(dict-test ${EXTRA_LIBS} ${JSTD_LIBNAME})
 
-project(benchmark)
-
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/benchmark)
-
-set(SOURCE_FILES
+##
+## benchmark
+##
+set(BENCHMARK_SOURCE_FILES
     src/test/benchmark/benchmark.cpp
     )
 
-add_executable(benchmark ${SOURCE_FILES})
+target_include_directories(benchmark
+    src/test/benchmark
+    src/test
+    src/main
+)
+
+add_executable(benchmark ${BENCHMARK_SOURCE_FILES})
 target_link_libraries(benchmark ${EXTRA_LIBS} ${JSTD_LIBNAME})
 
-project(time_hash_map)
-
-include_directories(include)
-include_directories(src)
-include_directories(src/main)
-include_directories(src/test)
-include_directories(src/unittest)
-include_directories(src/test/time_hash_map)
-
-set(SOURCE_FILES
+##
+## time_hash_map
+##
+set(TIME_HASH_MAP_SOURCE_FILES
     src/test/time_hash_map/time_hash_map.cpp
     )
 
-add_executable(time_hash_map ${SOURCE_FILES})
+target_include_directories(time_hash_map
+    src/test/time_hash_map
+    src/test
+    src/main
+)
+
+add_executable(time_hash_map ${TIME_HASH_MAP_SOURCE_FILES})
 target_link_libraries(time_hash_map ${EXTRA_LIBS} ${JSTD_LIBNAME})
+
+##
+## cardinal_bench
+##
+set(CARDINAL_BENCH_SOURCE_FILES
+    src/test/cardinal_bench/cardinal_bench.cpp
+    )
+
+target_include_directories(cardinal_bench
+    src/test/cardinal_bench
+    src/test
+    src/main
+)
+
+add_executable(cardinal_bench ${CARDINAL_BENCH_SOURCE_FILES})
+target_link_libraries(cardinal_bench ${EXTRA_LIBS} ${JSTD_LIBNAME})

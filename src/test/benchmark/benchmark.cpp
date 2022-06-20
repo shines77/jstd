@@ -23,7 +23,9 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include <unordered_map>
+
+#define USE_JSTD_HASH_TABLE     0
+#define USE_JSTD_DICTIONARY     0
 
 /* SIMD support features */
 #define JSTD_HAVE_MMX           1
@@ -54,16 +56,11 @@
 
 #define STRING_UTILS_MODE       STRING_UTILS_SSE42
 
-// Use in <jstd/support/Power2.h>
-#define JSTD_SUPPORT_X86_BITSCAN_INSTRUCTION    1
-
-#define USE_JSTD_HASH_TABLE     0
-#define USE_JSTD_DICTIONARY     0
-
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
 #include <jstd/basic/inttypes.h>
 
+#include <unordered_map>
 #include <jstd/hash/dictionary.h>
 #include <jstd/hash/hashmap_analyzer.h>
 #include <jstd/string/string_view.h>
@@ -1256,7 +1253,7 @@ bool read_dict_words(const std::string & filename)
 void RandomGenerator_test()
 {
     jstd::LibcRandom    random(20200831);
-    jstd::MT19937       mt_random(20200831);
+    jstd::MT19937_32    mt32_random(20200831);
     jstd::MT19937_64    mt64_random(20200831);
     jstd::RandomGen     RandomGen(20200831);
     jstd::MtRandomGen   mtRandomGen(20200831);
@@ -1289,6 +1286,6 @@ int main(int argc, char * argv[])
 
     hashmap_benchmark_all();
 
-    jstd::Console::ReadKey();
+    //jstd::Console::ReadKey();
     return 0;
 }
