@@ -268,6 +268,7 @@ set(DICT_TEST_SOURCE_FILES
 add_executable(dict-test ${DICT_TEST_SOURCE_FILES})
 
 target_include_directories(dict-test
+PRIVATE
     src/test/dict_test
     src/test
     src/main
