@@ -75,12 +75,12 @@ public:
     }
 
     // test for iterator equality
-    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ != rhs.node_);
     }
 
@@ -186,12 +186,12 @@ public:
     }
 
     // test for iterator equality
-    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ != rhs.node_);
     }
 
@@ -283,12 +283,12 @@ public:
     }
 
     // test for iterator equality
-    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ != rhs.node_);
     }
 
@@ -394,12 +394,12 @@ public:
     }
 
     // test for iterator equality
-    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) noexcept {
         return (lhs.node_ != rhs.node_);
     }
 
