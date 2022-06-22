@@ -106,8 +106,8 @@ public:
         uint32_t value;
 
         entry_attr_t(uint32_t value = 0) : value(value) {}
-        entry_attr_t(uint32_t _entry_type, uint32_t chunk_id)
-            : value(makeAttr(_entry_type, chunk_id)) {}
+        entry_attr_t(uint32_t type, uint32_t chunk_id)
+            : value(makeAttr(type, chunk_id)) {}
         entry_attr_t(const entry_attr_t & src) : value(src.value) {}
         ~entry_attr_t() {}
 
@@ -121,8 +121,8 @@ public:
             return *this;
         }
 
-        uint32_t makeAttr(uint32_t _entry_type, uint32_t chunk_id) {
-            return ((_entry_type & kEntryTypeMask) | (chunk_id & kEntryIndexMask));
+        uint32_t makeAttr(uint32_t type, uint32_t chunk_id) {
+            return ((type & kEntryTypeMask) | (chunk_id & kEntryIndexMask));
         }
 
         uint32_t getEntryType() const {
@@ -133,14 +133,14 @@ public:
             return (this->value & kEntryIndexMask);
         }
 
-        void setValue(uint32_t _entry_type, uint32_t chunk_id) {
-            this->value = this->makeAttr(_entry_type, chunk_id);
+        void setValue(uint32_t type, uint32_t chunk_id) {
+            this->value = this->makeAttr(type, chunk_id);
         }
 
-        void setEntryType(uint32_t _entry_type) {
+        void setEntryType(uint32_t type) {
             // Here is a small optimization.
-            // this->value = (_entry_type & kEntryAttrMask) | this->chunk_id();
-            this->value = _entry_type | this->getChunkId();
+            // this->value = (type & kEntryAttrMask) | this->chunk_id();
+            this->value = type | this->getChunkId();
         }
 
         void setChunkId(uint32_t chunk_id) {
@@ -229,6 +229,8 @@ public:
         entry_list() : entries(nullptr), capacity(0) {}
         entry_list(entry_type * entries, size_type capacity)
             : entries(entries), capacity(capacity) {}
+        entry_list(const entry_list & src)
+            : entries(src.entries), capacity(src.capacity) {}
         ~entry_list() {}
     };
 
