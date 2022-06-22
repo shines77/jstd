@@ -15,7 +15,7 @@
 #ifdef _MSC_VER
 #ifndef __SSE4_1__
 // Just for coding in msvc or test, please comment it in the release version.
-#define __SSE4_1__      1
+#define __SSE4_1__
 #endif
 #endif
 
