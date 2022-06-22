@@ -42,7 +42,7 @@
 #define DICTIONARY_SUPPORT_VERSION      0
 
 #undef  USE_FAST_FIND_ENTRY
-#define USE_FAST_FIND_ENTRY             1
+#define USE_FAST_FIND_ENTRY             0
 
 #define USE_CHUNKLIST_ITERATOR          1
 
@@ -396,7 +396,7 @@ protected:
     entry_chunk_list_t      chunk_list_;
 
     hasher_type             hasher_;
-    key_equal               key_is_equal_;
+    key_equal               key_equal_;
     allocator_type          allocator_;
 
     bucket_allocator_type   bucket_allocator_;
@@ -1769,7 +1769,7 @@ protected:
         entry_type * first = this->buckets_[index];
         if (likely(first != nullptr)) {
             if (likely(first->hash_code == hash_code &&
-                       this->key_is_equal_(key, first->value.first))) {
+                       this->key_equal_(key, first->value.first))) {
                 return first;
             }
 
@@ -1779,7 +1779,7 @@ protected:
                     // Do nothing, Continue
                 }
                 else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    if (likely(this->key_equal_(key, entry->value.first))) {
                         return entry;
                     }
                 }
@@ -1796,7 +1796,7 @@ protected:
         entry_type * first = this->buckets_[index];
         if (likely(first != nullptr)) {
             if (likely(first->hash_code == hash_code &&
-                       this->key_is_equal_(key, first->value.first))) {
+                       this->key_equal_(key, first->value.first))) {
                 return first;
             }
 
@@ -1806,7 +1806,7 @@ protected:
                     // Do nothing, Continue
                 }
                 else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    if (likely(this->key_equal_(key, entry->value.first))) {
                         return entry;
                     }
                 }
@@ -1830,10 +1830,10 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(!this->key_equal_(key, entry->value.first)))
+                    entry = entry->next;
+                else
                     return entry;
-                }
-                entry = entry->next;
             }
         }
 
@@ -1849,10 +1849,10 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(!this->key_equal_(key, entry->value.first)))
+                    entry = entry->next;
+                else
                     return entry;
-                }
-                entry = entry->next;
             }
         }
 
@@ -1875,7 +1875,7 @@ protected:
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_is_equal_(key, entry->value.first))) {
+                if (likely(this->key_equal_(key, entry->value.first))) {
                     before = prev;
                     return entry;
                 }
@@ -2170,7 +2170,7 @@ protected:
                     entry = entry->next;
                 }
                 else {
-                    if (likely(this->key_is_equal_(key, entry->value.first))) {
+                    if (likely(this->key_equal_(key, entry->value.first))) {
                         if (likely(prev != nullptr))
                             prev->next = entry->next;
                         else
