@@ -188,12 +188,12 @@ static const size_t kHeaderFieldSize = sizeof(header_fields) / sizeof(char *);
 namespace std {
 
 template <>
-struct hash<jstd::StringRef> {
+struct hash<jstd::string_view> {
     typedef std::uint32_t   result_type;
 
-    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<jstd::string_view, std::uint32_t, HashFunc_CRC32C> hash_helper_;
 
-    result_type operator()(const jstd::StringRef & key) const {
+    result_type operator()(const jstd::string_view & key) const {
         return hash_helper_.getHashCode(key);
     }
 };
@@ -203,34 +203,34 @@ struct hash<jstd::StringRef> {
 namespace jstd {
 
 template <>
-struct hash<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> {
+struct hash<jstd::string_view, std::uint32_t, HashFunc_CRC32C> {
     typedef std::uint32_t   result_type;
 
-    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_CRC32C> hash_helper_;
+    jstd::string_hash_helper<jstd::string_view, std::uint32_t, HashFunc_CRC32C> hash_helper_;
 
-    result_type operator()(const jstd::StringRef & key) const {
+    result_type operator()(const jstd::string_view & key) const {
         return hash_helper_.getHashCode(key);
     }
 };
 
 template <>
-struct hash<jstd::StringRef, std::uint32_t, HashFunc_Time31> {
+struct hash<jstd::string_view, std::uint32_t, HashFunc_Time31> {
     typedef std::uint32_t   result_type;
 
-    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_Time31> hash_helper_;
+    jstd::string_hash_helper<jstd::string_view, std::uint32_t, HashFunc_Time31> hash_helper_;
 
-    result_type operator()(const jstd::StringRef & key) const {
+    result_type operator()(const jstd::string_view & key) const {
         return hash_helper_.getHashCode(key);
     }
 };
 
 template <>
-struct hash<jstd::StringRef, std::uint32_t, HashFunc_Time31Std> {
+struct hash<jstd::string_view, std::uint32_t, HashFunc_Time31Std> {
     typedef std::uint32_t   result_type;
 
-    jstd::string_hash_helper<jstd::StringRef, std::uint32_t, HashFunc_Time31Std> hash_helper_;
+    jstd::string_hash_helper<jstd::string_view, std::uint32_t, HashFunc_Time31Std> hash_helper_;
 
-    result_type operator()(const jstd::StringRef & key) const {
+    result_type operator()(const jstd::string_view & key) const {
         return hash_helper_.getHashCode(key);
     }
 };
@@ -858,8 +858,8 @@ void hashtable_ref_find_benchmark()
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
 
     std::string index_buf[kHeaderFieldSize];
-    StringRef field_str[kHeaderFieldSize];
-    StringRef index_str[kHeaderFieldSize];
+    string_view field_str[kHeaderFieldSize];
+    string_view index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].attach(header_fields[i]);
         index_buf[i] = std::to_string(i);
@@ -898,21 +898,21 @@ void hashtable_ref_find_benchmark()
     std::cout << "  hashtable_ref_find_benchmark()" << std::endl;
     std::cout << std::endl;
 
-    //hashtable_ref_find_benchmark<test::std_map<StringRef, StringRef>>();
-    hashtable_ref_find_benchmark<test::std_unordered_map<StringRef, StringRef>>();
+    //hashtable_ref_find_benchmark<test::std_map<string_view, string_view>>();
+    hashtable_ref_find_benchmark<test::std_unordered_map<string_view, string_view>>();
 
 #if USE_JSTD_HASH_TABLE
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
+    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table<string_view, string_view>>>();
+    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table_time31<string_view, string_view>>>();
+    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::hash_table_time31_std<string_view, string_view>>>();
 #endif
 
 #if USE_JSTD_DICTIONARY
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
+    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
+    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31<string_view, string_view>>>();
+    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary_Time31Std<string_view, string_view>>>();
 #else
-    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
+    hashtable_ref_find_benchmark<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -925,8 +925,8 @@ void hashtable_ref_insert_benchmark_impl()
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
 
     std::string index_buf[kHeaderFieldSize];
-    StringRef field_str[kHeaderFieldSize];
-    StringRef index_str[kHeaderFieldSize];
+    string_view field_str[kHeaderFieldSize];
+    string_view index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].attach(header_fields[i]);
         index_buf[i] = std::to_string(i);
@@ -961,21 +961,21 @@ void hashtable_ref_insert_benchmark()
     std::cout << "  hashtable_ref_insert_benchmark()" << std::endl;
     std::cout << std::endl;
 
-    //hashtable_ref_emplace_benchmark_impl<test::std_map<StringRef, StringRef>>();
-    hashtable_ref_insert_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
+    //hashtable_ref_emplace_benchmark_impl<test::std_map<string_view, string_view>>();
+    hashtable_ref_insert_benchmark_impl<test::std_unordered_map<string_view, string_view>>();
 
 #if USE_JSTD_HASH_TABLE
-    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
-    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
-    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
+    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table<string_view, string_view>>>();
+    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<string_view, string_view>>>();
+    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<string_view, string_view>>>();
 #endif
 
 #if USE_JSTD_DICTIONARY
-    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
-    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
-    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
+    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
+    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<string_view, string_view>>>();
+    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<string_view, string_view>>>();
 #else
-    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
+    hashtable_ref_insert_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -988,8 +988,8 @@ void hashtable_ref_emplace_benchmark_impl()
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
 
     std::string index_buf[kHeaderFieldSize];
-    StringRef field_str[kHeaderFieldSize];
-    StringRef index_str[kHeaderFieldSize];
+    string_view field_str[kHeaderFieldSize];
+    string_view index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].attach(header_fields[i]);
         index_buf[i] = std::to_string(i);
@@ -1024,21 +1024,21 @@ void hashtable_ref_emplace_benchmark()
     std::cout << "  hashtable_ref_emplace_benchmark()" << std::endl;
     std::cout << std::endl;
 
-    //hashtable_ref_emplace_benchmark_impl<test::std_map<StringRef, StringRef>>();
-    hashtable_ref_emplace_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
+    //hashtable_ref_emplace_benchmark_impl<test::std_map<string_view, string_view>>();
+    hashtable_ref_emplace_benchmark_impl<test::std_unordered_map<string_view, string_view>>();
 
 #if USE_JSTD_HASH_TABLE
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
+    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table<string_view, string_view>>>();
+    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<string_view, string_view>>>();
+    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<string_view, string_view>>>();
 #endif
 
 #if USE_JSTD_DICTIONARY
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
+    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
+    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<string_view, string_view>>>();
+    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<string_view, string_view>>>();
 #else
-    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
+    hashtable_ref_emplace_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1093,21 +1093,21 @@ void hashtable_ref_erase_benchmark()
     std::cout << "  hashtable_ref_erase_benchmark()" << std::endl;
     std::cout << std::endl;
 
-    //hashtable_ref_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
-    hashtable_ref_erase_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
+    //hashtable_ref_erase_benchmark_impl<test::std_map<string_view, string_view>>();
+    hashtable_ref_erase_benchmark_impl<test::std_unordered_map<string_view, string_view>>();
 
 #if USE_JSTD_HASH_TABLE
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
+    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<string_view, string_view>>>();
+    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<string_view, string_view>>>();
+    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<string_view, string_view>>>();
 #endif
 
 #if USE_JSTD_DICTIONARY
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
+    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
+    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<string_view, string_view>>>();
+    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<string_view, string_view>>>();
 #else
-    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
+    hashtable_ref_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
@@ -1120,8 +1120,8 @@ void hashtable_ref_insert_erase_benchmark_impl()
     static const size_t kRepeatTimes = (kIterations / kHeaderFieldSize);
 
     std::string index_buf[kHeaderFieldSize];
-    StringRef field_str[kHeaderFieldSize];
-    StringRef index_str[kHeaderFieldSize];
+    string_view field_str[kHeaderFieldSize];
+    string_view index_str[kHeaderFieldSize];
     for (size_t i = 0; i < kHeaderFieldSize; ++i) {
         field_str[i].attach(header_fields[i]);
         index_buf[i] = std::to_string(i);
@@ -1166,21 +1166,21 @@ void hashtable_ref_insert_erase_benchmark()
     std::cout << "  hashtable_ref_insert_erase_benchmark()" << std::endl;
     std::cout << std::endl;
 
-    //hashtable_ref_insert_erase_benchmark_impl<test::std_map<StringRef, StringRef>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::std_unordered_map<StringRef, StringRef>>();
+    //hashtable_ref_insert_erase_benchmark_impl<test::std_map<string_view, string_view>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::std_unordered_map<string_view, string_view>>();
 
 #if USE_JSTD_HASH_TABLE
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<StringRef, StringRef>>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table<string_view, string_view>>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31<string_view, string_view>>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::hash_table_time31_std<string_view, string_view>>>();
 #endif
 
 #if USE_JSTD_DICTIONARY
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<StringRef, StringRef>>>();
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<StringRef, StringRef>>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31<string_view, string_view>>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary_Time31Std<string_view, string_view>>>();
 #else
-    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<StringRef, StringRef>>>();
+    hashtable_ref_insert_erase_benchmark_impl<test::hash_table_impl<jstd::Dictionary<string_view, string_view>>>();
 #endif
 
     printf("---------------------------------------------------------------------------\n");
