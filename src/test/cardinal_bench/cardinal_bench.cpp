@@ -178,7 +178,7 @@ struct SimpleHash {
 
     template <typename Integer, typename std::enable_if<
                                 (std::is_integral<Integer>::value &&
-                                (sizeof(Integer) <= 8))>::type * = nullptr>  
+                                (sizeof(Integer) <= 8))>::type * = nullptr>
     result_type operator () (Integer value) const noexcept {
         result_type hash = static_cast<result_type>(value);
         return hash;
@@ -186,7 +186,7 @@ struct SimpleHash {
 
     template <typename Argument, typename std::enable_if<
                                   (!std::is_integral<Argument>::value ||
-                                  sizeof(Argument) > 8)>::type * = nullptr>  
+                                  sizeof(Argument) > 8)>::type * = nullptr>
     result_type operator () (const Argument & value) const {
         std::hash<Argument> hasher;
         return static_cast<result_type>(hasher(value));
@@ -209,7 +209,7 @@ struct IntegalHash
 
     template <typename UInt64, typename std::enable_if<
                                 (std::is_integral<UInt64>::value &&
-                                (sizeof(UInt64) > 4 && sizeof(UInt64) <= 8))>::type * = nullptr>  
+                                (sizeof(UInt64) > 4 && sizeof(UInt64) <= 8))>::type * = nullptr>
     result_type operator () (UInt64 value) const noexcept {
         result_type hash = (result_type)((std::uint64_t)value * 14695981039346656037ull + 1099511628211ull);
         return hash;
@@ -217,7 +217,7 @@ struct IntegalHash
 
     template <typename Argument, typename std::enable_if<
                                   (!std::is_integral<Argument>::value ||
-                                  sizeof(Argument) > 8)>::type * = nullptr>  
+                                  sizeof(Argument) > 8)>::type * = nullptr>
     result_type operator () (const Argument & value) const {
         std::hash<Argument> hasher;
         return static_cast<result_type>(hasher(value));
@@ -304,20 +304,20 @@ struct type_name<std::uint64_t> {
 std::string formatMsTime(double fMillisec) {
     char time_buf[256];
 
-    if (fMillisec >= 1000.0 * 1000.0 * 10.0) {
-        snprintf(time_buf, sizeof(time_buf), "%7.2f Min", fMillisec / (60 * 1000.0));
+    if (fMillisec >= 1000.0 * 60.0 * 30.0) {
+        snprintf(time_buf, sizeof(time_buf), "%7.2f Min", fMillisec / (60.0 * 1000.0));
     }
     else if (fMillisec >= 1000.0 * 10.0) {
         snprintf(time_buf, sizeof(time_buf), "%7.2f Sec", fMillisec / 1000.0);
     }
-    else if (fMillisec >= 1.0 * 10.0) {
-        snprintf(time_buf, sizeof(time_buf), "%7.2f ms", fMillisec);
+    else if (fMillisec >= 1.0 * 1.0) {
+        snprintf(time_buf, sizeof(time_buf), "%7.2f ms ", fMillisec);
     }
     else if (fMillisec >= 0.001 * 10.0) {
-        snprintf(time_buf, sizeof(time_buf), "%7.2f us", fMillisec * 1000.0);
+        snprintf(time_buf, sizeof(time_buf), "%7.2f us ", fMillisec * 1000.0);
     }
     else {
-        snprintf(time_buf, sizeof(time_buf), "%7.2f ns", fMillisec * 1000000.0);
+        snprintf(time_buf, sizeof(time_buf), "%7.2f ns ", fMillisec * 1000000.0);
     }
 
     return std::string(time_buf);
