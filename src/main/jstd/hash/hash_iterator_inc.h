@@ -37,12 +37,12 @@ public:
 #endif
 
     iterator_t(const iterator_t & src)
-        : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(src.get_owner()) {}
+        : node_(const_cast<node_pointer>(src.node())),
+          owner_(src.owner()) {}
 
     iterator_t & operator = (const iterator_t & rhs) {
-        this->node_ = rhs.get_node();
-        this->owner_ = rhs.get_owner();
+        this->node_ = rhs.node();
+        this->owner_ = rhs.owner();
         return *this;
     }
 
@@ -69,35 +69,34 @@ public:
 
     // post-increment
     this_iter_t & operator ++ (int) {
-        this_iter_t tmp(this->owner_, this->node_);
-        const owner_type * owner = this->owner_;
-        this->node_ = static_cast<node_pointer>(owner->next_link_entry(this->node_));
-        return tmp;
+        this_iter_t copy(*this);
+        ++*this;
+        return copy;
     }
 
     // test for iterator equality
-    bool operator == (const this_iter_t & rhs) const noexcept {
-        return (this->node_ == rhs.node_);
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    bool operator != (const this_iter_t & rhs) const noexcept {
-        return (this->node_ != rhs.node_);
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ != rhs.node_);
     }
 
-    owner_type * get_owner() {
+    owner_type * owner() {
         return this->owner_;
     }
 
-    const owner_type * get_owner() const {
+    const owner_type * owner() const {
         return const_cast<const owner_type *>(this->owner_);
     }
 
-    node_pointer get_node()  {
+    node_pointer node()  {
         return this->node_;
     }
 
-    const node_pointer get_node() const {
+    const node_pointer node() const {
         return const_cast<const node_pointer>(this->node_);
     }
 };
@@ -139,22 +138,22 @@ public:
 #endif
 
     const_iterator_t(const const_iterator_t & src)
-        : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(src.get_owner()) {}
+        : node_(const_cast<node_pointer>(src.node())),
+          owner_(src.owner()) {}
 
     const_iterator_t(const normal_iterator & src)
-        : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(src.get_owner()) {}
+        : node_(const_cast<node_pointer>(src.node())),
+          owner_(src.owner()) {}
 
     const_iterator_t & operator = (const const_iterator_t & rhs) {
-        this->node_ = rhs.get_node();
-        this->owner_ = rhs.get_owner();
+        this->node_ = rhs.node();
+        this->owner_ = rhs.owner();
         return *this;
     }
 
     const_iterator_t & operator = (const normal_iterator & rhs) {
-        this->node_ = rhs.get_node();
-        this->owner_ = rhs.get_owner();
+        this->node_ = rhs.node();
+        this->owner_ = rhs.owner();
         return *this;
     }
 
@@ -181,35 +180,34 @@ public:
 
     // post-increment
     this_iter_t & operator ++ (int) {
-        this_iter_t tmp(this->owner_, this->node_);
-        const owner_type * owner = this->owner_;
-        this->node_ = owner->next_link_entry(this->node_);
-        return tmp;
+        this_iter_t copy(*this);
+        ++*this;
+        return copy;
     }
 
     // test for iterator equality
-    bool operator == (const this_iter_t & rhs) const noexcept {
-        return (this->node_ == rhs.node_);
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    bool operator != (const this_iter_t & rhs) const noexcept {
-        return (this->node_ != rhs.node_);
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ != rhs.node_);
     }
 
-    owner_type * get_owner() {
+    owner_type * owner() {
         return this->owner_;
     }
 
-    const owner_type * get_owner() const {
+    const owner_type * owner() const {
         return const_cast<const owner_type *>(this->owner_);
     }
 
-    node_pointer get_node()  {
+    node_pointer node()  {
         return this->node_;
     }
 
-    const node_pointer get_node() const {
+    const node_pointer node() const {
         return const_cast<const node_pointer>(this->node_);
     }
 };
@@ -247,12 +245,12 @@ public:
 #endif
 
     local_iterator_t(const local_iterator_t & src)
-        : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(src.get_owner()) {}
+        : node_(const_cast<node_pointer>(src.node())),
+          owner_(src.owner()) {}
 
     local_iterator_t & operator = (const local_iterator_t & rhs) {
-        this->node_ = rhs.get_node();
-        this->owner_ = rhs.get_owner();
+        this->node_ = rhs.node();
+        this->owner_ = rhs.owner();
         return *this;
     }
 
@@ -279,35 +277,34 @@ public:
 
     // post-increment
     this_iter_t & operator ++ (int) {
-        this_iter_t tmp(this->owner_, this->node_);
-        owner_type * owner = this->owner_;
-        this->node_ = static_cast<node_pointer>(owner->next_link_entry(this->node_));
-        return tmp;
+        this_iter_t copy(*this);
+        ++*this;
+        return copy;
     }
 
     // test for iterator equality
-    bool operator == (const this_iter_t & rhs) const noexcept {
-        return (this->node_ == rhs.node_);
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    bool operator != (const this_iter_t & rhs) const noexcept {
-        return (this->node_ != rhs.node_);
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ != rhs.node_);
     }
 
-    owner_type * get_owner() {
+    owner_type * owner() {
         return this->owner_;
     }
 
-    const owner_type * get_owner() const {
+    const owner_type * owner() const {
         return const_cast<const owner_type *>(this->owner_);
     }
 
-    node_pointer get_node()  {
+    node_pointer node()  {
         return this->node_;
     }
 
-    const node_pointer get_node() const {
+    const node_pointer node() const {
         return const_cast<const node_pointer>(this->node_);
     }
 };
@@ -349,22 +346,22 @@ public:
 #endif
 
     const_local_iterator_t(const const_local_iterator_t & src)
-        : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(src.get_owner()) {}
+        : node_(const_cast<node_pointer>(src.node())),
+          owner_(src.owner()) {}
 
     const_local_iterator_t(const normal_iterator & src)
-        : node_(const_cast<node_pointer>(src.get_node())),
-          owner_(src.get_owner()) {}
+        : node_(const_cast<node_pointer>(src.node())),
+          owner_(src.owner()) {}
 
     const_local_iterator_t & operator = (const const_local_iterator_t & rhs) {
-        this->node_ = rhs.get_node();
-        this->owner_ = rhs.get_owner();
+        this->node_ = rhs.node();
+        this->owner_ = rhs.owner();
         return *this;
     }
 
     const_local_iterator_t & operator = (const normal_iterator & rhs) {
-        this->node_ = rhs.get_node();
-        this->owner_ = rhs.get_owner();
+        this->node_ = rhs.node();
+        this->owner_ = rhs.owner();
         return *this;
     }
 
@@ -391,35 +388,34 @@ public:
 
     // post-increment
     this_iter_t & operator ++ (int) {
-        this_iter_t tmp(this->owner_, this->node_);
-        const owner_type * owner = this->owner_;
-        this->node_ = owner->next_link_entry(this->node_);
-        return tmp;
+        this_iter_t copy(*this);
+        ++*this;
+        return copy;
     }
 
     // test for iterator equality
-    bool operator == (const this_iter_t & rhs) const noexcept {
-        return (this->node_ == rhs.node_);
+    friend bool operator == (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ == rhs.node_);
     }
 
     // test for iterator inequality
-    bool operator != (const this_iter_t & rhs) const noexcept {
-        return (this->node_ != rhs.node_);
+    friend bool operator != (const this_iter_t & lhs, const this_iter_t & rhs) const noexcept {
+        return (lhs.node_ != rhs.node_);
     }
 
-    owner_type * get_owner() {
+    owner_type * owner() {
         return this->owner_;
     }
 
-    const owner_type * get_owner() const {
+    const owner_type * owner() const {
         return const_cast<const owner_type *>(this->owner_);
     }
 
-    node_pointer get_node()  {
+    node_pointer node()  {
         return this->node_;
     }
 
-    const node_pointer get_node() const {
+    const node_pointer node() const {
         return const_cast<const node_pointer>(this->node_);
     }
 };
