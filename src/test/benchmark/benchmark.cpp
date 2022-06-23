@@ -57,7 +57,7 @@
 #define STRING_UTILS_SSE42      2
 #define STRING_UTILS_LIBC       3
 
-#define STRING_UTILS_MODE       STRING_UTILS_STL
+#define STRING_UTILS_MODE       STRING_UTILS_SSE42
 
 #include <jstd/basic/stddef.h>
 #include <jstd/basic/stdint.h>
@@ -83,7 +83,7 @@ static bool dict_words_is_ready = false;
 
 static const std::size_t kInitCapacity = 16;
 
-#ifdef NDEBUG
+#ifndef _DEBUG
 static const std::size_t kIterations = 3000000;
 #else
 static const std::size_t kIterations = 1000;

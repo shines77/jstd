@@ -176,7 +176,7 @@ bool is_equal(const CharTy * str1, const CharTy * str2, std::size_t length)
     return true;
 }
 
-#elif (STRING_UTILS_MODE == STRING_UTILS_SSE42)
+#elif (defined(__SSE4_2__) && (STRING_UTILS_MODE == STRING_UTILS_SSE42))
 
 template <typename CharTy>
 static inline
@@ -418,7 +418,7 @@ template <typename CharTy>
 static inline
 int compare(const CharTy * str1, const CharTy * str2, std::size_t count)
 {
-#if (STRING_UTILS_MODE == STRING_UTILS_SSE42)
+#if (defined(__SSE4_2__) && (STRING_UTILS_MODE == STRING_UTILS_SSE42))
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
@@ -481,7 +481,7 @@ template <typename CharTy>
 static inline
 int compare(const CharTy * str1, std::size_t len1, const CharTy * str2, std::size_t len2)
 {
-#if (STRING_UTILS_MODE == STRING_UTILS_SSE42)
+#if (defined(__SSE4_2__) && (STRING_UTILS_MODE == STRING_UTILS_SSE42))
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
