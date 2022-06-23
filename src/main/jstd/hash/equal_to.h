@@ -20,9 +20,6 @@ template <typename Key>
 struct equal_to {
     typedef Key key_type;
 
-    equal_to() {}
-    ~equal_to() {}
-
     bool operator () (const key_type & key1, const key_type & key2) const {
         return (key1 == key2);
     }
@@ -32,11 +29,8 @@ template <>
 struct equal_to<std::string> {
     typedef std::string key_type;
 
-    equal_to() {}
-    ~equal_to() {}
-
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return str_utils::is_equal_safe(key1, key2);
+        return str_utils::is_equal_unsafe(key1, key2);
     }
 };
 
@@ -44,11 +38,8 @@ template <>
 struct equal_to<std::wstring> {
     typedef std::wstring key_type;
 
-    equal_to() {}
-    ~equal_to() {}
-
     bool operator () (const key_type & key1, const key_type & key2) const {
-        return str_utils::is_equal_safe(key1, key2);
+        return str_utils::is_equal_unsafe(key1, key2);
     }
 };
 

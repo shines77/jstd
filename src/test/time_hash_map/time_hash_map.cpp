@@ -64,6 +64,7 @@
 #define STRING_UTILS_STL        0
 #define STRING_UTILS_U64        1
 #define STRING_UTILS_SSE42      2
+#define STRING_UTILS_LIBC       3
 
 #define STRING_UTILS_MODE       STRING_UTILS_STL
 

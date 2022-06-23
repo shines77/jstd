@@ -57,7 +57,6 @@ constexpr bool cValueIsInline()
 
 template < typename Key, typename Value,
            std::size_t HashFunc = HashFunc_Default,
-           bool ValueIsInline = cValueIsInline<Key, Value>,
            std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value,
            typename Hasher = hash<Key, std::uint32_t, HashFunc>,
            typename KeyEqual = equal_to<Key>,
@@ -81,7 +80,7 @@ public:
     typedef std::size_t                     index_type;
     //typedef typename Hasher::result_type    hash_code_t;
     typedef std::uint32_t                   hash_code_t;
-    typedef BasicDictionary<Key, Value, HashFunc, ValueIsInline, Alignment, Hasher, KeyEqual, Allocator>
+    typedef BasicDictionary<Key, Value, HashFunc, Alignment, Hasher, KeyEqual, Allocator>
                                             this_type;
 
     struct ArrangeType {
@@ -3439,23 +3438,23 @@ public:
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment, Hasher>;
+using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, Alignment, Hasher>;
 
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31Std>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, false, Alignment, Hasher>;
+using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, Alignment, Hasher>;
 
 #if JSTD_HAVE_SSE42_CRC32C
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_CRC32C>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, false, Alignment, Hasher>;
+using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment, Hasher>;
 #else
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, false, Alignment, Hasher>;
+using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, Alignment, Hasher>;
 #endif // JSTD_HAVE_SSE42_CRC32C
 
 } // namespace jstd
