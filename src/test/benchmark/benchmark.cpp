@@ -396,7 +396,7 @@ void test_hashmap_find_random(const Vector & test_data, const Vector & rand_data
     sw.start();
     for (std::size_t n = 0; n < repeat_times; n++) {
         for (std::size_t i = 0; i < data_length; i++) {
-            const_iterator iter = container.find(test_data[i].first);
+            const_iterator iter = container.find(rand_data[i].first);
             if (iter != container.end()) {
                 checksum++;
             }
