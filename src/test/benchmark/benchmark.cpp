@@ -1267,7 +1267,8 @@ void hashmap_benchmark_same_hash_all()
         copy_vector_and_reverse_item(reverse_data_ii, test_data_ii);
 
         std::unordered_map<int, int, std::hash<int>> std_map_ii;
-        jstd::Dictionary<int, int, std::hash<int>>   jstd_dict_ii;
+        jstd::Dictionary<int, int, std::hash<int>, std::equal_to<int>>
+                                                     jstd_dict_ii;
 
         printf(" hash_map<int, int>\n\n");
 
@@ -1292,7 +1293,8 @@ void hashmap_benchmark_same_hash_all()
         copy_vector_and_reverse_item(reverse_data_uu, test_data_uu);
 
         std::unordered_map<std::size_t, std::size_t, std::hash<std::size_t>> std_map_uu;
-        jstd::Dictionary<std::size_t, std::size_t, std::hash<std::size_t>>   jstd_dict_uu;
+        jstd::Dictionary<std::size_t, std::size_t, std::hash<std::size_t>, std::equal_to<std::size_t>>
+                                                                             jstd_dict_uu;
 
         printf(" hash_map<std::size_t, std::size_t>\n\n");
 
@@ -1305,7 +1307,8 @@ void hashmap_benchmark_same_hash_all()
 
     {
         std::unordered_map<std::string, std::string, std::hash<std::string>> std_map_ss;
-        jstd::Dictionary<std::string, std::string, std::hash<std::string>>   jstd_dict_ss;
+        jstd::Dictionary<std::string, std::string, std::hash<std::string>, std::equal_to<std::string>>
+                                                                             jstd_dict_ss;
 
         std::vector<std::pair<std::string, std::string>> reverse_data_ss;
         copy_vector_and_reverse_item(reverse_data_ss, test_data_ss);
@@ -1340,7 +1343,8 @@ void hashmap_benchmark_same_hash_all()
             }
 
             std::unordered_map<jstd::string_view, jstd::string_view, std::hash<jstd::string_view>> std_map_svsv;
-            jstd::Dictionary<jstd::string_view, jstd::string_view, std::hash<jstd::string_view>>   jstd_dict_svsv;
+            jstd::Dictionary<jstd::string_view, jstd::string_view, std::hash<jstd::string_view>, std::equal_to<jstd::string_view>>
+                                                                                                   jstd_dict_svsv;
 
             printf(" hash_map<jstd::string_view, jstd::string_view>\n\n");
 

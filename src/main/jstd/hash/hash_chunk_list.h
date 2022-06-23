@@ -236,7 +236,7 @@ public:
                     assert(entry != nullptr);
                     for (size_type j = 0; j < capacity; j++) {
                         if (likely(entry->attrib.isInUseEntry() || entry->attrib.isReusableEntry())) {
-                            this->allocator_.destruct(&entry->value);
+                            this->allocator_.destroy(&entry->value);
                         }
                         ++entry;
                     }
@@ -257,7 +257,7 @@ public:
                     assert(entry != nullptr);
                     for (size_type j = 0; j < last_size; j++) {
                         if (likely(entry->attrib.isInUseEntry() || entry->attrib.isReusableEntry())) {
-                            this->allocator_.destruct(&entry->value);
+                            this->allocator_.destroy(&entry->value);
                         }
                         ++entry;
                     }

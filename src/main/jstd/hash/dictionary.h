@@ -17,7 +17,7 @@
 
 #include <cstdint>
 #include <cstddef>      // For std::ptrdiff_t, std::size_t
-#include <memory>       // For std::swap(), std::pointer_traits<T>
+#include <memory>       // For std::swap(), std::allocator<T>, std::pointer_traits<T>
 #include <limits>       // For std::numeric_limits<T>
 #include <cstring>      // For std::memset()
 #include <vector>
@@ -60,8 +60,13 @@ template < typename Key, typename Value,
            std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value,
            typename Hasher = hash<Key, std::uint32_t, HashFunc>,
            typename KeyEqual = equal_to<Key>,
+#if 0
            typename Allocator = allocator<std::pair<const Key, Value>, Alignment,
-                                          sizeof(std::pair<Key, Value>), true> >
+                                          sizeof(std::pair<Key, Value>), true>
+#else
+           typename Allocator = std::allocator<std::pair<const Key, Value>>
+#endif
+        >
 class BasicDictionary {
 public:
     typedef Key                             key_type;
@@ -201,7 +206,7 @@ public:
         hash_entry * next;
         hash_code_t  hash_code;
         entry_attr_t attrib;
-        alignas(Alignment)
+        //alignas(Alignment)
         value_type   value;
 
         hash_entry() : next(nullptr), hash_code(0), attrib(0) {}
@@ -358,6 +363,26 @@ public:
         lhs.swap(rhs);
     }
 
+#if 0
+    typedef allocator<std::pair<Key, Value>, Alignment, sizeof(std::pair<Key, Value>), allocator_type::kThrowEx>
+                                        nc_allocator_type;
+#else
+    typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<nc_value_type>
+                                        nc_allocator_type;
+#endif
+
+    typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<entry_type *>
+                                        bucket_allocator_type;
+
+    typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<entry_type>
+                                        entry_allocator_type;
+
+    typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<mapped_type>
+                                        mapped_allocator_type;
+
+    typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<value_type>
+                                        value_allocator_type;
+
     #define JSTD_HASH_DICTIONARY_HEADER_ONLY_H
     #include "jstd/hash/hash_iterator_inc.h"
     #undef  JSTD_HASH_DICTIONARY_HEADER_ONLY_H
@@ -369,9 +394,6 @@ public:
     typedef const_local_iterator_t<this_type, entry_type>   const_local_iterator;
 
     typedef std::pair<iterator, bool>   insert_return_type;
-
-    typedef allocator<entry_type *>     bucket_allocator_type;
-    typedef allocator<entry_type>       entry_allocator_type;
 
     typedef free_list<entry_type>       free_list_t;
     typedef hash_entry_chunk_list<entry_type, allocator_type, entry_allocator_type>
@@ -396,16 +418,15 @@ protected:
 
     hasher_type             hasher_;
     key_equal               key_equal_;
+
     allocator_type          allocator_;
+    nc_allocator_type       n_allocator_;
 
     bucket_allocator_type   bucket_allocator_;
     entry_allocator_type    entry_allocator_;
 
-    allocator<std::pair<Key, Value>, Alignment, sizeof(std::pair<Key, Value>), allocator_type::kThrowEx>
-                                                    n_allocator_;
-
-    std::allocator<mapped_type>                     mapped_allocator_;
-    std::allocator<value_type>                      value_allocator_;
+    mapped_allocator_type   mapped_allocator_;
+    value_allocator_type    value_allocator_;
 
     // Default initial capacity is 8, must be >= kMinimumCapacity.
     static const size_type kDefaultInitialCapacity = 8;
@@ -1008,7 +1029,8 @@ protected:
 
         // The the array of bucket's first entry.
         entry_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
-        if (likely(bucket_allocator_.is_ok(new_buckets))) {
+        //if (likely(bucket_allocator_.is_ok(new_buckets)))
+        {
             // Initialize the buckets list.
             std::memset((void *)new_buckets, 0, bucket_capacity * sizeof(entry_type *));
 
@@ -1018,7 +1040,8 @@ protected:
 
             // The array of entries.
             entry_type * new_entries = entry_allocator_.allocate(entry_capacity);
-            if (likely(entry_allocator_.is_ok(new_entries))) {
+            //if (likely(entry_allocator_.is_ok(new_entries)))
+            {
                 this->entries_ = new_entries;
                 this->entry_size_ = 0;
                 this->entry_capacity_ = entry_capacity;
@@ -1238,7 +1261,8 @@ protected:
         assert(new_bucket_capacity != this->bucket_capacity_);
 
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
-        if (likely(this->bucket_allocator_.is_ok(new_buckets))) {
+        //if (likely(this->bucket_allocator_.is_ok(new_buckets)))
+        {
             // Here, we do not need to initialize the bucket list.
             if (likely(this->entry_size_ != 0)) {
                 if (likely(new_bucket_capacity >= this->entry_size_ * 2 ||
@@ -1279,7 +1303,8 @@ protected:
         size_type actual_entry_capacity = this->entry_size_ + new_chunk_capacity;
         if (likely(actual_entry_capacity > this->entry_capacity_)) {
             entry_type * new_entries = entry_allocator_.allocate(new_chunk_capacity);
-            if (likely(entry_allocator_.is_ok(new_entries))) {
+            //if (likely(entry_allocator_.is_ok(new_entries)))
+            {
                 // Needn't change the entry_size_.
                 this->entries_ = new_entries;
                 this->entry_capacity_ += new_chunk_capacity;
@@ -1578,7 +1603,7 @@ protected:
         mapped_type second(std::forward<Args>(args)...);
         move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(second));
 #else
-        value_allocator_.destruct(&entry->value.second);
+        value_allocator_.destroy(&entry->value.second);
         value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
 #endif
     }
@@ -1684,7 +1709,7 @@ protected:
         //
         // Call the destructor for entry->value.
         //
-        // this->allocator_.destruct(&entry->value);
+        // this->allocator_.destroy(&entry->value);
         //
     }
 
@@ -1703,7 +1728,7 @@ protected:
         //
         // Call the destructor for entry->value.
         //
-        // this->allocator_.destruct(&entry->value);
+        // this->allocator_.destroy(&entry->value);
         //
     }
 
@@ -2217,7 +2242,7 @@ protected:
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() == target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
-                this->allocator_.destruct(&entry->value);
+                this->allocator_.destroy(&entry->value);
                 this->freelist_.erase(prev, entry);
             }
             prev = entry;
@@ -2257,7 +2282,7 @@ protected:
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() != target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
-                this->allocator_.destruct(&entry->value);
+                this->allocator_.destroy(&entry->value);
             }
             else {
                 assert(entry->attrib.isReusableEntry());
@@ -2325,7 +2350,7 @@ protected:
         while (entry != nullptr) {
             if (entry->attrib.getChunkId() != target_chunk_id) {
                 assert(entry->attrib.isReusableEntry());
-                this->allocator_.destruct(&entry->value);
+                this->allocator_.destroy(&entry->value);
                 this->freelist_.erase(prev, entry);
             }
             else {
@@ -2368,7 +2393,7 @@ protected:
         std::swap(n_src_value->first,  n_dest_value->first);
         std::swap(n_src_value->second, n_dest_value->second);
 
-        this->allocator_.destruct(&src_entry->value);
+        this->allocator_.destroy(&src_entry->value);
     }
 
     void traverse_and_fix_buckets(size_type bucket_capacity) {
@@ -2489,7 +2514,8 @@ protected:
         assert(this->entry_size_ <= this->bucket_capacity_);
 
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
-        if (likely(bucket_allocator_.is_ok(new_buckets))) {
+        //if (likely(bucket_allocator_.is_ok(new_buckets)))
+        {
             // Here, we do not need to initialize the bucket list.
             copy_and_fix_buckets(new_buckets, new_bucket_capacity);
 
@@ -2526,7 +2552,7 @@ protected:
                     entry_type * src_entry_last = src_entry + src_capacity;
                     while (src_entry < src_entry_last) {
                         if (src_entry->attrib.isReusableEntry()) {
-                            this->allocator_.destruct(&src_entry->value);
+                            this->allocator_.destroy(&src_entry->value);
                         }
                         else if (src_entry->attrib.isInUseEntry()) {
                             dest_entry = find_first_free_entry(dest_entry, dest_entry_last);
@@ -2670,7 +2696,7 @@ protected:
                                            std::move_if_noexcept(n_old_value->second));
         }
 
-        this->n_allocator_.destruct(n_old_value);
+        this->n_allocator_.destroy(n_old_value);
     }
 
     void entry_value_move_assignment(entry_type * old_entry, entry_type * new_entry) {
@@ -3058,9 +3084,12 @@ protected:
         assert(new_bucket_capacity != this->bucket_capacity_);
 
         entry_type ** new_buckets = bucket_allocator_.allocate(new_bucket_capacity);
-        if (likely(bucket_allocator_.is_ok(new_buckets))) {
+        //if (likely(bucket_allocator_.is_ok(new_buckets)))
+        {
             entry_type * new_entries = entry_allocator_.allocate(new_entry_capacity);
-            if (likely(entry_allocator_.is_ok(new_entries))) {
+            //if (likely(entry_allocator_.is_ok(new_entries)))
+            if (1)
+            {
                 if (likely(this->entry_size_ != 0)) {
                     size_type old_bucket_capacity = this->bucket_capacity_;
                     if (likely(new_bucket_capacity == (old_bucket_capacity * 2))) {
@@ -3106,7 +3135,8 @@ protected:
         assert_entry_capacity(new_entry_capacity);
 
         entry_type * new_entries = entry_allocator_.allocate(new_entry_capacity);
-        if (likely(entry_allocator_.is_ok(new_entries))) {
+        //if (likely(entry_allocator_.is_ok(new_entries)))
+        {
             if (likely(this->entry_size_ != 0)) {
                 realloc_all_entries(new_entries, new_entry_capacity);
             }
@@ -3437,24 +3467,28 @@ public:
 
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31>,
+          typename KeyEqual = equal_to<Key>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, Alignment, Hasher>;
+using Dictionary_Time31 = BasicDictionary<Key, Value, HashFunc_Time31, Alignment, Hasher, KeyEqual>;
 
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31Std>,
+          typename KeyEqual = equal_to<Key>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, Alignment, Hasher>;
+using Dictionary_Time31Std = BasicDictionary<Key, Value, HashFunc_Time31Std, Alignment, Hasher, KeyEqual>;
 
 #if JSTD_HAVE_SSE42_CRC32C
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_CRC32C>,
+          typename KeyEqual = equal_to<Key>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment, Hasher>;
+using Dictionary = BasicDictionary<Key, Value, HashFunc_CRC32C, Alignment, Hasher, KeyEqual>;
 #else
 template <typename Key, typename Value,
           typename Hasher = hash<Key, std::uint32_t, HashFunc_Time31>,
+          typename KeyEqual = equal_to<Key>,
           std::size_t Alignment = std::alignment_of<std::pair<const Key, Value>>::value>
-using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, Alignment, Hasher>;
+using Dictionary = BasicDictionary<Key, Value, HashFunc_Time31, Alignment, Hasher, KeyEqual>;
 #endif // JSTD_HAVE_SSE42_CRC32C
 
 } // namespace jstd
