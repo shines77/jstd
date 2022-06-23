@@ -188,7 +188,7 @@ bool is_equal(const CharTy * str1, const CharTy * str2, std::size_t length)
     static constexpr uint8_t _SIDD_CHAR_OPS = jstd::SSEHelper<CharTy>::_SIDD_CHAR_OPS;
     static constexpr uint8_t kEqualEach = _SIDD_CHAR_OPS | _SIDD_CMP_EQUAL_EACH
                                 | _SIDD_NEGATIVE_POLARITY | _SIDD_LEAST_SIGNIFICANT;
-    
+
     int slength = (int)length;
     while (likely(slength > 0)) {
         __m128i __str1 = _mm_loadu_si128((const __m128i *)str1);
@@ -317,7 +317,7 @@ static inline
 bool is_equal_flat(const StringType & str1, const StringType & str2)
 {
     assert(str1.size() == str2.size());
-    return str_utils::is_equal(str1.c_str(), str2.c_str(), str1.size());   
+    return str_utils::is_equal(str1.c_str(), str2.c_str(), str1.size());
 }
 
 template <typename CharTy>
@@ -372,7 +372,7 @@ static inline
 bool is_equal_flat_safe(const StringType & str1, const StringType & str2)
 {
     assert(str1.size() == str2.size());
-    return str_utils::is_equal_safe(str1.c_str(), str2.c_str(), str1.size());   
+    return str_utils::is_equal_safe(str1.c_str(), str2.c_str(), str1.size());
 }
 
 template <typename CharTy>
