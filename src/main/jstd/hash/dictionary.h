@@ -1944,7 +1944,7 @@ protected:
         return entry;
     }
 
-    template <bool always_update, typename ReturnType>
+    template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(const key_type & key, const mapped_type & value) {
         assert(this->buckets() != nullptr);
@@ -1959,7 +1959,7 @@ protected:
             inserted = true;
         }
         else {
-            if (always_update) {
+            if (AlwaysUpdate) {
                 this->update_mapped_value(entry, value);
             }
             inserted = false;
@@ -1970,7 +1970,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool always_update, typename ReturnType>
+    template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(const key_type & key, mapped_type && value) {
         assert(this->buckets() != nullptr);
@@ -1986,7 +1986,7 @@ protected:
             inserted = true;
         }
         else {
-            if (always_update) {
+            if (AlwaysUpdate) {
                 this->update_mapped_value(entry, std::forward<mapped_type>(value));
             }
             inserted = false;
@@ -1997,7 +1997,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool always_update, typename ReturnType>
+    template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(key_type && key, mapped_type && value) {
         assert(this->buckets() != nullptr);
@@ -2014,7 +2014,7 @@ protected:
             inserted = true;
         }
         else {
-            if (always_update) {
+            if (AlwaysUpdate) {
                 // If key is a rvalue, we move it.
                 //key_type key_tmp = std::forward<key_type>(key);
                 //(void)key_tmp;
@@ -2028,7 +2028,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool always_update, typename ReturnType>
+    template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(nc_value_type && value) {
         assert(this->buckets() != nullptr);
@@ -2044,7 +2044,7 @@ protected:
             inserted = true;
         }
         else {
-            if (always_update) {
+            if (AlwaysUpdate) {
                 // If key is a rvalue, we move it.
                 //key_type key_tmp = std::forward<key_type>(value.first);
                 //(void)key_tmp;
@@ -2088,7 +2088,7 @@ protected:
         return pre_entry;
     }
 
-    template <bool always_update, typename ReturnType, typename ...Args>
+    template <bool AlwaysUpdate, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
     ReturnType emplace_unique(const key_type & key, Args && ... args) {
         assert(this->buckets() != nullptr);
@@ -2104,7 +2104,7 @@ protected:
             inserted = true;
         }
         else {
-            if (always_update) {
+            if (AlwaysUpdate) {
                 this->update_value_args(entry, std::forward<Args>(args)...);
             }
             inserted = false;
@@ -2115,7 +2115,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool always_update, typename ReturnType, typename ...Args>
+    template <bool AlwaysUpdate, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
     ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
@@ -2136,7 +2136,7 @@ protected:
             inserted = true;
         }
         else {
-            if (always_update) {
+            if (AlwaysUpdate) {
                 this->update_mapped_value(entry, std::move(n_value->second));
             }
             this->destroy_prepare_entry(pre_entry);
@@ -2148,7 +2148,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool always_update, typename ReturnType, typename ...Args>
+    template <bool AlwaysUpdate, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
     ReturnType emplace_unique_no_prepare(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
@@ -2167,7 +2167,7 @@ protected:
             inserted = true;
         }
         else {
-            if (always_update) {
+            if (AlwaysUpdate) {
                 this->update_mapped_value(entry, std::move(value_tmp.second));
             }
             inserted = false;
