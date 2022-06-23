@@ -1944,7 +1944,7 @@ protected:
         return entry;
     }
 
-    template <bool OnlyIfAbsent, typename ReturnType>
+    template <bool always_update, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(const key_type & key, const mapped_type & value) {
         assert(this->buckets() != nullptr);
@@ -1959,7 +1959,7 @@ protected:
             inserted = true;
         }
         else {
-            if (!OnlyIfAbsent) {
+            if (always_update) {
                 this->update_mapped_value(entry, value);
             }
             inserted = false;
@@ -1970,7 +1970,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool OnlyIfAbsent, typename ReturnType>
+    template <bool always_update, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(const key_type & key, mapped_type && value) {
         assert(this->buckets() != nullptr);
@@ -1986,7 +1986,7 @@ protected:
             inserted = true;
         }
         else {
-            if (!OnlyIfAbsent) {
+            if (always_update) {
                 this->update_mapped_value(entry, std::forward<mapped_type>(value));
             }
             inserted = false;
@@ -1997,7 +1997,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool OnlyIfAbsent, typename ReturnType>
+    template <bool always_update, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(key_type && key, mapped_type && value) {
         assert(this->buckets() != nullptr);
@@ -2014,7 +2014,7 @@ protected:
             inserted = true;
         }
         else {
-            if (!OnlyIfAbsent) {
+            if (always_update) {
                 // If key is a rvalue, we move it.
                 //key_type key_tmp = std::forward<key_type>(key);
                 //(void)key_tmp;
@@ -2028,7 +2028,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool OnlyIfAbsent, typename ReturnType>
+    template <bool always_update, typename ReturnType>
     JSTD_FORCED_INLINE
     ReturnType insert_unique(nc_value_type && value) {
         assert(this->buckets() != nullptr);
@@ -2044,7 +2044,7 @@ protected:
             inserted = true;
         }
         else {
-            if (!OnlyIfAbsent) {
+            if (always_update) {
                 // If key is a rvalue, we move it.
                 //key_type key_tmp = std::forward<key_type>(value.first);
                 //(void)key_tmp;
@@ -2088,7 +2088,7 @@ protected:
         return pre_entry;
     }
 
-    template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    template <bool always_update, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
     ReturnType emplace_unique(const key_type & key, Args && ... args) {
         assert(this->buckets() != nullptr);
@@ -2104,7 +2104,7 @@ protected:
             inserted = true;
         }
         else {
-            if (!OnlyIfAbsent) {
+            if (always_update) {
                 this->update_value_args(entry, std::forward<Args>(args)...);
             }
             inserted = false;
@@ -2115,7 +2115,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    template <bool always_update, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
     ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
@@ -2136,8 +2136,8 @@ protected:
             inserted = true;
         }
         else {
-            if (!OnlyIfAbsent) {
-                this->update_mapped_value(entry, std::move_if_noexcept(n_value->second));
+            if (always_update) {
+                this->update_mapped_value(entry, std::move(n_value->second));
             }
             this->destroy_prepare_entry(pre_entry);
             inserted = false;
@@ -2148,7 +2148,7 @@ protected:
         return ReturnType(iterator(this, entry), inserted);
     }
 
-    template <bool OnlyIfAbsent, typename ReturnType, typename ...Args>
+    template <bool always_update, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
     ReturnType emplace_unique_no_prepare(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
@@ -2167,8 +2167,8 @@ protected:
             inserted = true;
         }
         else {
-            if (!OnlyIfAbsent) {
-                this->update_mapped_value(entry, std::move_if_noexcept(value_tmp.second));
+            if (always_update) {
+                this->update_mapped_value(entry, std::move(value_tmp.second));
             }
             inserted = false;
         }
@@ -2688,12 +2688,12 @@ protected:
 
         if (is_noexcept_move_constructible<nc_value_type>::value) {
             this->n_allocator_.construct(n_new_value,
-                                           std::move_if_noexcept(*n_old_value));
+                                         std::move(*n_old_value));
         }
         else {
             this->n_allocator_.construct(n_new_value,
-                                           std::move_if_noexcept(n_old_value->first),
-                                           std::move_if_noexcept(n_old_value->second));
+                                         std::move(n_old_value->first),
+                                         std::move(n_old_value->second));
         }
 
         this->n_allocator_.destroy(n_old_value);
@@ -2706,11 +2706,11 @@ protected:
         nc_value_type * n_new_value = reinterpret_cast<nc_value_type *>(&new_entry->value);
 
         if (is_noexcept_move_assignable<nc_value_type>::value) {
-            *n_new_value = std::move_if_noexcept(*n_old_value);
+            *n_new_value = std::move(*n_old_value);
         }
         else {
-            n_new_value->first = std::move_if_noexcept(n_old_value->first);
-            n_new_value->second = std::move_if_noexcept(n_old_value->second);
+            n_new_value->first = std::move(n_old_value->first);
+            n_new_value->second = std::move(n_old_value->second);
         }
     }
 
@@ -3337,9 +3337,19 @@ public:
         return entry->value.second;
     }
 
-#if 0
+    const mapped_type & operator [] (const key_type & key) const {
+        entry_type * entry = this->find_or_insert(key);
+        return entry->value.second;
+    }
+
+#if 1
     mapped_type & operator [] (key_type && key) {
-        entry_type * entry = this->find_or_insert(std::move_if_noexcept(key));
+        entry_type * entry = this->find_or_insert(std::move(key));
+        return entry->value.second;
+    }
+
+    const mapped_type & operator [] (key_type && key) const {
+        entry_type * entry = this->find_or_insert(std::move(key));
         return entry->value.second;
     }
 #endif
@@ -3366,8 +3376,8 @@ public:
 
     insert_return_type insert(value_type && value) {
         nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&value);
-        return this->insert_unique<false, insert_return_type>(std::move_if_noexcept(n_value->first),
-                                                              std::move_if_noexcept(n_value->second));
+        return this->insert_unique<false, insert_return_type>(std::move(n_value->first),
+                                                              std::move(n_value->second));
     }
 
     /*
@@ -3398,8 +3408,8 @@ public:
 
     void insert_no_return(value_type && value) {
         nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&value);
-        this->insert_no_return(std::move_if_noexcept(n_value->first),
-                               std::move_if_noexcept(n_value->second));
+        this->insert_no_return(std::move(n_value->first),
+                               std::move(n_value->second));
     }
 
     /***************************************************************************/
