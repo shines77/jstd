@@ -363,6 +363,38 @@ public:
         lhs.swap(rhs);
     }
 
+    // Default initial capacity is 8, must be >= kMinimumCapacity.
+    static const size_type kDefaultInitialCapacity = 8;
+    // Minimum capacity is 8.
+    static const size_type kMinimumCapacity = 8;
+    // Maximum capacity is 1 << (sizeof(std::size_t) - 1).
+    static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2 + 1;
+
+    // The maximum entry's chunk bytes, default is 4 MB bytes.
+    static const size_type kMaxEntryChunkBytes = 4 * 1024 * 1024;
+    // The entry's block size per chunk (entry_type).
+    static const size_type kMaxEntryChunkSize =
+            compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
+
+    // The threshold of treeify to red-black tree.
+    static const size_type kTreeifyThreshold = 8;
+
+    //
+    // The maximum load factor: maxLoadFactor = A / B,
+    // default value is: 3 / 4 = 0.75
+    // Only use in rehash() function.
+    //
+
+    //
+    // The default maximum load factor (For efficiency, use integer).
+    // Use in all functions, except the rehash() function.
+    //
+    static constexpr float kMinLoadFactor = 0.2f;
+    static constexpr float kMaxLoadFactor = 0.8f;
+
+    // Must be kMinLoadFactor <= loadFactor <= kMaxLoadFactor
+    static constexpr float kDefaultLoadFactor = 0.75f;
+
 #if 0
     typedef allocator<std::pair<Key, Value>, Alignment, sizeof(std::pair<Key, Value>), allocator_type::kThrowEx>
                                         nc_allocator_type;
@@ -401,13 +433,14 @@ public:
     typedef typename entry_chunk_list_t::entry_chunk_t
                                         entry_chunk_t;
 
-protected:
+private:
     entry_type **           buckets_;
     entry_type *            entries_;
     size_type               bucket_mask_;
     size_type               bucket_capacity_;
     size_type               entry_size_;
     size_type               entry_capacity_;
+    size_type               entry_threshold_;
 #if DICTIONARY_SUPPORT_VERSION
     size_type               version_;
 #endif
@@ -415,6 +448,7 @@ protected:
 
     mutable
     entry_chunk_list_t      chunk_list_;
+    float                   load_factor_;
 
     hasher_type             hasher_;
     key_equal               key_equal_;
@@ -428,59 +462,28 @@ protected:
     mapped_allocator_type   mapped_allocator_;
     value_allocator_type    value_allocator_;
 
-    // Default initial capacity is 8, must be >= kMinimumCapacity.
-    static const size_type kDefaultInitialCapacity = 8;
-    // Minimum capacity is 8.
-    static const size_type kMinimumCapacity = 8;
-    // Maximum capacity is 1 << (sizeof(std::size_t) - 1).
-    static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2 + 1;
-
-    // The maximum entry's chunk bytes, default is 4 MB bytes.
-    static const size_type kMaxEntryChunkBytes = 4 * 1024 * 1024;
-    // The entry's block size per chunk (entry_type).
-    static const size_type kMaxEntryChunkSize =
-            compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
-
-    // The threshold of treeify to red-black tree.
-    static const size_type kTreeifyThreshold = 8;
-
-    //
-    // The maximum load factor: maxLoadFactor = A / B,
-    // default value is: 3 / 4 = 0.75
-    // Only use in rehash() function.
-    //
-
-    // The default maximum load factor coefficient of A.
-    static const size_type kMaxLoadFactorA = 3;
-    // The default maximum load factor coefficient of B.
-    static const size_type kMaxLoadFactorB = 4;
-
-    //
-    // The default maximum load factor (For efficiency, use integer).
-    // Use in all functions, except the rehash() function.
-    //
-    static const size_type kMaxLoadFactor = 1;
-
 public:
     explicit BasicDictionary(size_type initialCapacity = kDefaultInitialCapacity)
         : buckets_(nullptr), entries_(nullptr),
-          bucket_mask_(0), bucket_capacity_(0), entry_size_(0), entry_capacity_(0)
+          bucket_mask_(0), bucket_capacity_(0),
+          entry_size_(0), entry_capacity_(0), entry_threshold_(0),
 #if DICTIONARY_SUPPORT_VERSION
-          , version_(1) /* Since 0 means that the version attribute is not supported,
+          version_(1),  /* Since 0 means that the version attribute is not supported,
                            the initial value of version starts from 1. */
 #endif
-    {
+          load_factor_(kDefaultLoadFactor) {
         this->init(initialCapacity);
     }
 
     BasicDictionary(const this_type & other)
         : buckets_(nullptr), entries_(nullptr),
-          bucket_mask_(0), bucket_capacity_(0), entry_size_(0), entry_capacity_(0)
+          bucket_mask_(0), bucket_capacity_(0),
+          entry_size_(0), entry_capacity_(0), entry_threshold_(0),
 #if DICTIONARY_SUPPORT_VERSION
-          , version_(1) /* Since 0 means that the version attribute is not supported,
+          version_(1),  /* Since 0 means that the version attribute is not supported,
                            the initial value of version starts from 1. */
 #endif
-    {
+          load_factor_(kDefaultLoadFactor) {
         size_type initialSize = other.size();
         this->init(initialSize);
 
@@ -491,12 +494,13 @@ public:
 
     BasicDictionary(this_type && other)
         : buckets_(nullptr), entries_(nullptr),
-          bucket_mask_(0), bucket_capacity_(0), entry_size_(0), entry_capacity_(0)
+          bucket_mask_(0), bucket_capacity_(0),
+          entry_size_(0), entry_capacity_(0), entry_threshold_(0),
 #if DICTIONARY_SUPPORT_VERSION
-          , version_(1) /* Since 0 means that the version attribute is not supported,
+          version_(1),  /* Since 0 means that the version attribute is not supported,
                            the initial value of version starts from 1. */
 #endif
-    {
+          load_factor_(kDefaultLoadFactor) {
         this->swap(other);
     }
 
@@ -573,17 +577,31 @@ public:
     size_type entry_size() const { return this->size(); }
     size_type entry_count() const { return this->entry_capacity_; }
     size_type entry_capacity() const { return this->entry_capacity_; }
+    size_type entry_threshold() const { return this->entry_threshold_; }
+
+    size_type max_chunk_size() const { return kMaxEntryChunkSize; }
+    size_type max_chunk_bytes() const { return kMaxEntryChunkBytes; }
+    size_type actual_chunk_bytes() const { return (kMaxEntryChunkSize * sizeof(entry_type)); }
 
     float load_factor() const {
         return (static_cast<float>(this->size()) / this->bucket_count());
     }
 
     float max_load_factor() const {
-        return static_cast<float>(kMaxLoadFactor);
+        return this->load_factor_;
     }
 
-    void max_load_factor(float ml) {
-        // Do nothing !!
+    void max_load_factor(float mlf) {
+        if (mlf < kMinLoadFactor)
+            mlf = kMinLoadFactor;
+        if (mlf > kMaxLoadFactor)
+            mlf = kMaxLoadFactor;
+        this->load_factor_ = mlf;
+        this->entry_threshold_ = (size_type)((float)this->entry_capacity() * mlf);
+    }
+
+    float default_load_factor() const {
+        return static_cast<float>(kMaxLoadFactor);
     }
 
     size_type max_bucket_capacity() const {
@@ -595,31 +613,11 @@ public:
     }
 
     size_type min_bucket_count() const {
-        return (this->entry_size() / kMaxLoadFactor);
+        return (size_type)std::ceil((float)this->entry_size() / this->max_load_factor());
     }
 
     size_type min_bucket_count(size_type entry_size) const {
-        return (entry_size / kMaxLoadFactor);
-    }
-
-    size_type min_bucket_countf() const {
-        return (this->entry_size() * kMaxLoadFactorB / kMaxLoadFactorA);
-    }
-
-    size_type min_bucket_countf(size_type entry_size) const {
-        return (entry_size * kMaxLoadFactorB / kMaxLoadFactorA);
-    }
-
-    size_type max_chunk_size() const {
-        return kMaxEntryChunkSize;
-    }
-
-    size_type max_chunk_bytes() const {
-        return kMaxEntryChunkBytes;
-    }
-
-    size_type actual_chunk_bytes() const {
-        return (kMaxEntryChunkSize * sizeof(entry_type));
+        return (size_type)std::ceil((float)entry_size / this->max_load_factor());
     }
 
     size_type bucket_size(size_type index) const {
@@ -642,12 +640,259 @@ public:
 #endif
     }
 
-protected:
+    void clear() {
+        this->destroy();
+        this->init(kDefaultInitialCapacity);
+
+        this->update_version();
+    }
+
+    void rehash(size_type bucket_count) {
+        assert(bucket_count > 0);
+        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
+        this->rehash_impl<false>(new_bucket_capacity);
+    }
+
+#if 1
+    void reserve(size_type new_size) {
+        this->resize_impl(new_size);
+    }
+#else
+    void reserve(size_type bucket_count) {
+        this->rehash(bucket_count);
+    }
+#endif
+
+    void resize(size_type new_size) {
+        this->resize_impl(new_size);
+    }
+
+    void shrink_to_fit(size_type bucket_count = 0) {
+        size_type entry_capacity = pow2::round_up(this->entry_size_);
+
+        // Choose the maximum size of new bucket capacity and now entry capacity.
+        bucket_count = (entry_capacity >= bucket_count) ? entry_capacity : bucket_count;
+
+        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
+        this->rehash_impl<true>(new_bucket_capacity);
+    }
+
+    JSTD_FORCED_INLINE
+    void rearrange(size_type arrangeType) {
+        if (arrangeType == ArrangeType::Reorder) {
+            rearrange_reorder();
+        }
+        else if (arrangeType == ArrangeType::Realloc) {
+            realloc_to_fit();
+        }
+        else {
+            assert(false);
+        }
+    }
+
+    size_type count(const key_type & key) const {
+        entry_type * entry = this->find_entry(key);
+        return (entry != nullptr) ? 1 : 0;
+    }
+
+    bool contains(const key_type & key) const {
+        entry_type * entry = this->find_entry(key);
+        return (iter != nullptr);
+    }
+
+    //
+    // find(key)
+    //
+    iterator find(const key_type & key) {
+        if (likely(this->buckets() != nullptr)) {
+            entry_type * entry = this->find_entry(key);
+            return iterator(this, entry);
+        }
+
+        return iterator(this, nullptr);
+    }
+
+    const_iterator find(const key_type & key) const {
+        if (likely(this->buckets() != nullptr)) {
+            entry_type * entry = this->find_entry(key);
+            return const_iterator(this, entry);
+        }
+
+        return const_iterator(this, nullptr);
+    }
+
+    // For operator [].
+    struct DefaultValue {
+        std::pair<const key_type, mapped_type> operator()(const key_type & key) {
+            return std::make_pair(key, mapped_type());
+        }
+    };
+
+    struct RValueDefaultValue {
+        std::pair<key_type, mapped_type> operator()(key_type && key) {
+            return std::make_pair(std::forward<key_type>(key), mapped_type());
+        }
+    };
+
+    //
+    // operator []
+    //
+    mapped_type & operator [] (const key_type & key) {
+        entry_type * entry = this->find_or_insert(key);
+        return entry->value.second;
+    }
+
+    const mapped_type & operator [] (const key_type & key) const {
+        entry_type * entry = this->find_or_insert(key);
+        return entry->value.second;
+    }
+
+#if 1
+    mapped_type & operator [] (key_type && key) {
+        entry_type * entry = this->find_or_insert(std::move(key));
+        return entry->value.second;
+    }
+
+    const mapped_type & operator [] (key_type && key) const {
+        entry_type * entry = this->find_or_insert(std::move(key));
+        return entry->value.second;
+    }
+#endif
+
+    //
+    // insert(key, value)
+    //
+    insert_return_type insert(const key_type & key, const mapped_type & value) {
+        return this->insert_impl<false, insert_return_type>(key, value);
+    }
+
+    insert_return_type insert(const key_type & key, mapped_type && value) {
+        return this->insert_impl<false, insert_return_type>(key, std::forward<mapped_type>(value));
+    }
+
+    insert_return_type insert(key_type && key, mapped_type && value) {
+        return this->insert_impl<false, insert_return_type>(std::forward<key_type>(key),
+                                                            std::forward<mapped_type>(value));
+    }
+
+    insert_return_type insert(const value_type & value) {
+        return this->insert(value.first, value.second);
+    }
+
+    insert_return_type insert(value_type && value) {
+        nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&value);
+        return this->insert_impl<false, insert_return_type>(std::move(n_value->first),
+                                                            std::move(n_value->second));
+    }
+
+    /*
+    insert_return_type insert(nc_value_type && value) {
+        return this->insert_impl<false, insert_return_type>(std::forward<nc_value_type>(value));
+    }
+    //*/
+
+    //
+    // insert_no_return(key, value)
+    //
+    void insert_no_return(const key_type & key, const mapped_type & value) {
+        this->insert_impl<false, void_warpper>(key, value);
+    }
+
+    void insert_no_return(const key_type & key, mapped_type && value) {
+        this->insert_impl<false, void_warpper>(key, std::forward<mapped_type>(value));
+    }
+
+    void insert_no_return(key_type && key, mapped_type && value) {
+        this->insert_impl<false, void_warpper>(std::forward<key_type>(key),
+                                               std::forward<mapped_type>(value));
+    }
+
+    void insert_no_return(const value_type & value) {
+        this->insert_no_return(value.first, value.second);
+    }
+
+    void insert_no_return(value_type && value) {
+        nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&value);
+        this->insert_no_return(std::move(n_value->first),
+                               std::move(n_value->second));
+    }
+
+    /***************************************************************************/
+    /*                                                                         */
+    /* See: https://en.cppreference.com/w/cpp/container/unordered_map/emplace  */
+    /*                                                                         */
+    /*   emplace() don't support this interface:                               */
+    /*                                                                         */
+    /*   // uses pair's piecewise constructor                                  */
+    /*   m.emplace(std::piecewise_construct,                                   */
+    /*             std::forward_as_tuple("c"),                                 */
+    /*             std::forward_as_tuple(10, 'c'));                            */
+    /*   // as of C++17, m.try_emplace("c", 10, 'c'); can be used              */
+    /*                                                                         */
+    /***************************************************************************/
+
+    template <typename ...Args>
+    insert_return_type emplace(Args && ... args) {
+        return this->emplace_impl<false, insert_return_type>(
+            key_extractor<value_type>::extract(std::forward<Args>(args)...),
+            std::forward<Args>(args)...);
+    }
+
+    template <typename ...Args>
+    void emplace_no_return(Args && ... args) {
+        this->emplace_impl<false, void_warpper>(
+            key_extractor<value_type>::extract(std::forward<Args>(args)...),
+            std::forward<Args>(args)...);
+    }
+
+    size_type erase(const key_type & key) {
+        return this->erase_key(key);
+    }
+
+    void swap(this_type & other) {
+        if (&other != this) {
+            std::swap(this->buckets_,           other.buckets_);
+            std::swap(this->entries_,           other.entries_);
+            std::swap(this->bucket_mask_,       other.bucket_mask_);
+            std::swap(this->bucket_capacity_,   other.bucket_capacity_);
+
+            std::swap(this->entry_size_,        other.entry_size_);
+            std::swap(this->entry_capacity_,    other.entry_capacity_);
+            std::swap(this->entry_threshold_,   other.entry_threshold_);
+#if DICTIONARY_SUPPORT_VERSION
+            std::swap(this->version_,           other.version_);
+#endif
+            this->freelist_.swap(other.freelist_);
+            this->chunk_list_.swap(other.chunk_list_);
+            this->load_factor_.swap(other.load_factor_);
+        }
+    }
+
+    static const char * name() {
+        switch (HashFunc) {
+        case HashFunc_CRC32C:
+            return "jstd::Dictionary<K, V> (CRC32c)";
+        case HashFunc_Time31:
+            return "jstd::Dictionary<K, V> (Time31)";
+        case HashFunc_Time31Std:
+            return "jstd::Dictionary<K, V> (Time31Std)";
+        default:
+            return "jstd::Dictionary<K, V> (Unknown)";
+        }
+    }
+
+private:
     inline size_type calc_capacity(size_type capacity) const {
         capacity = (capacity >= kMinimumCapacity) ? capacity : kMinimumCapacity;
         capacity = (capacity <= kMaximumCapacity) ? capacity : kMaximumCapacity;
         capacity = pow2::round_up(capacity);
         return capacity;
+    }
+
+    inline hash_code_t get_hash(const key_type & key) const {
+        hash_code_t hash_code = static_cast<hash_code_t>(this->hasher_(key));
+        //hash_code = hash_code ^ (hash_code >> 16);
+        return hash_code;
     }
 
     inline index_type index_for(hash_code_t hash_code) const {
@@ -1025,7 +1270,7 @@ protected:
         size_type entry_capacity = pow2::round_up(init_capacity);
         assert_entry_capacity(entry_capacity);
 
-        size_type bucket_capacity = entry_capacity / kMaxLoadFactor;
+        size_type bucket_capacity = entry_capacity * 1;
 
         // The the array of bucket's first entry.
         entry_type ** new_buckets = bucket_allocator_.allocate(bucket_capacity);
@@ -1328,7 +1573,7 @@ protected:
         add_new_entry_chunk(new_entry_capacity);
 
         // Most of the time, we don't need to reallocate the buckets list.
-        size_type new_bucket_capacity = new_entry_capacity / kMaxLoadFactor;
+        size_type new_bucket_capacity = new_entry_capacity * 1;
         if (unlikely(new_bucket_capacity > this->bucket_capacity_)) {
             rehash_buckets(new_bucket_capacity);
         }
@@ -1946,7 +2191,7 @@ protected:
 
     template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
-    ReturnType insert_unique(const key_type & key, const mapped_type & value) {
+    ReturnType insert_impl(const key_type & key, const mapped_type & value) {
         assert(this->buckets() != nullptr);
         bool inserted;
 
@@ -1972,7 +2217,7 @@ protected:
 
     template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
-    ReturnType insert_unique(const key_type & key, mapped_type && value) {
+    ReturnType insert_impl(const key_type & key, mapped_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
 
@@ -1999,7 +2244,7 @@ protected:
 
     template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
-    ReturnType insert_unique(key_type && key, mapped_type && value) {
+    ReturnType insert_impl(key_type && key, mapped_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
 
@@ -2030,7 +2275,7 @@ protected:
 
     template <bool AlwaysUpdate, typename ReturnType>
     JSTD_FORCED_INLINE
-    ReturnType insert_unique(nc_value_type && value) {
+    ReturnType insert_impl(nc_value_type && value) {
         assert(this->buckets() != nullptr);
         bool inserted;
 
@@ -2090,7 +2335,7 @@ protected:
 
     template <bool AlwaysUpdate, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
-    ReturnType emplace_unique(const key_type & key, Args && ... args) {
+    ReturnType emplace_impl(const key_type & key, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
 
@@ -2117,7 +2362,7 @@ protected:
 
     template <bool AlwaysUpdate, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
-    ReturnType emplace_unique(no_key_t nokey, Args && ... args) {
+    ReturnType emplace_impl(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
 
@@ -2150,7 +2395,7 @@ protected:
 
     template <bool AlwaysUpdate, typename ReturnType, typename ...Args>
     JSTD_FORCED_INLINE
-    ReturnType emplace_unique_no_prepare(no_key_t nokey, Args && ... args) {
+    ReturnType emplace_no_prepare(no_key_t nokey, Args && ... args) {
         assert(this->buckets() != nullptr);
         bool inserted;
 
@@ -3160,7 +3405,7 @@ protected:
         new_entry_capacity = (std::max)(new_entry_capacity, kMinimumCapacity);
         assert(this->entry_size_ <= new_entry_capacity);
 
-        size_type new_bucket_capacity = new_entry_capacity / kMaxLoadFactor;
+        size_type new_bucket_capacity = new_entry_capacity * 1;
         if (new_entry_capacity != this->entry_capacity_) {
             if (likely(new_bucket_capacity != this->bucket_capacity_)) {
                 realloc_buckets_and_entries(new_entry_capacity, new_bucket_capacity);
@@ -3232,247 +3477,6 @@ protected:
         }
     }
 #endif
-
-public:
-    inline hash_code_t get_hash(const key_type & key) const {
-        hash_code_t hash_code = static_cast<hash_code_t>(this->hasher_(key));
-        //hash_code = hash_code ^ (hash_code >> 16);
-        return hash_code;
-    }
-
-    void clear() {
-        this->destroy();
-        this->init(kDefaultInitialCapacity);
-
-        this->update_version();
-    }
-
-    void rehash(size_type bucket_count) {
-        assert(bucket_count > 0);
-        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
-        this->rehash_impl<false>(new_bucket_capacity);
-    }
-
-#if 1
-    void reserve(size_type new_size) {
-        this->resize_impl(new_size);
-    }
-#else
-    void reserve(size_type bucket_count) {
-        this->rehash(bucket_count);
-    }
-#endif
-
-    void resize(size_type new_size) {
-        this->resize_impl(new_size);
-    }
-
-    void shrink_to_fit(size_type bucket_count = 0) {
-        size_type entry_capacity = pow2::round_up(this->entry_size_);
-
-        // Choose the maximum size of new bucket capacity and now entry capacity.
-        bucket_count = (entry_capacity >= bucket_count) ? entry_capacity : bucket_count;
-
-        size_type new_bucket_capacity = this->calc_capacity(bucket_count);
-        this->rehash_impl<true>(new_bucket_capacity);
-    }
-
-    JSTD_FORCED_INLINE
-    void rearrange(size_type arrangeType) {
-        if (arrangeType == ArrangeType::Reorder) {
-            rearrange_reorder();
-        }
-        else if (arrangeType == ArrangeType::Realloc) {
-            realloc_to_fit();
-        }
-        else {
-            assert(false);
-        }
-    }
-
-    bool contains(const key_type & key) const {
-        iterator iter = this->find(key);
-        return (iter != this->end());
-    }
-
-    //
-    // find(key)
-    //
-    iterator find(const key_type & key) {
-        if (likely(this->buckets() != nullptr)) {
-            entry_type * entry = this->find_entry(key);
-            return iterator(this, entry);
-        }
-
-        return iterator(this, nullptr);   // Error: buckets data is invalid
-    }
-
-    const_iterator find(const key_type & key) const {
-        if (likely(this->buckets() != nullptr)) {
-            entry_type * entry = this->find_entry(key);
-            return const_iterator(this, entry);
-        }
-
-        return const_iterator(this, nullptr);   // Error: buckets data is invalid
-    }
-
-    // For operator [].
-    struct DefaultValue {
-        std::pair<const key_type, mapped_type> operator()(const key_type & key) {
-            return std::make_pair(key, mapped_type());
-        }
-    };
-
-    struct RValueDefaultValue {
-        std::pair<key_type, mapped_type> operator()(key_type && key) {
-            return std::make_pair(std::forward<key_type>(key), mapped_type());
-        }
-    };
-
-    //
-    // operator []
-    //
-    mapped_type & operator [] (const key_type & key) {
-        entry_type * entry = this->find_or_insert(key);
-        return entry->value.second;
-    }
-
-    const mapped_type & operator [] (const key_type & key) const {
-        entry_type * entry = this->find_or_insert(key);
-        return entry->value.second;
-    }
-
-#if 1
-    mapped_type & operator [] (key_type && key) {
-        entry_type * entry = this->find_or_insert(std::move(key));
-        return entry->value.second;
-    }
-
-    const mapped_type & operator [] (key_type && key) const {
-        entry_type * entry = this->find_or_insert(std::move(key));
-        return entry->value.second;
-    }
-#endif
-
-    //
-    // insert(key, value)
-    //
-    insert_return_type insert(const key_type & key, const mapped_type & value) {
-        return this->insert_unique<false, insert_return_type>(key, value);
-    }
-
-    insert_return_type insert(const key_type & key, mapped_type && value) {
-        return this->insert_unique<false, insert_return_type>(key, std::forward<mapped_type>(value));
-    }
-
-    insert_return_type insert(key_type && key, mapped_type && value) {
-        return this->insert_unique<false, insert_return_type>(std::forward<key_type>(key),
-                                                              std::forward<mapped_type>(value));
-    }
-
-    insert_return_type insert(const value_type & value) {
-        return this->insert(value.first, value.second);
-    }
-
-    insert_return_type insert(value_type && value) {
-        nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&value);
-        return this->insert_unique<false, insert_return_type>(std::move(n_value->first),
-                                                              std::move(n_value->second));
-    }
-
-    /*
-    insert_return_type insert(nc_value_type && value) {
-        return this->insert_unique<false, insert_return_type>(std::forward<nc_value_type>(value));
-    }
-    //*/
-
-    //
-    // insert_no_return(key, value)
-    //
-    void insert_no_return(const key_type & key, const mapped_type & value) {
-        this->insert_unique<false, void_warpper>(key, value);
-    }
-
-    void insert_no_return(const key_type & key, mapped_type && value) {
-        this->insert_unique<false, void_warpper>(key, std::forward<mapped_type>(value));
-    }
-
-    void insert_no_return(key_type && key, mapped_type && value) {
-        this->insert_unique<false, void_warpper>(std::forward<key_type>(key),
-                                                 std::forward<mapped_type>(value));
-    }
-
-    void insert_no_return(const value_type & value) {
-        this->insert_no_return(value.first, value.second);
-    }
-
-    void insert_no_return(value_type && value) {
-        nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&value);
-        this->insert_no_return(std::move(n_value->first),
-                               std::move(n_value->second));
-    }
-
-    /***************************************************************************/
-    /*                                                                         */
-    /* See: https://en.cppreference.com/w/cpp/container/unordered_map/emplace  */
-    /*                                                                         */
-    /*   emplace() don't support this interface:                               */
-    /*                                                                         */
-    /*   // uses pair's piecewise constructor                                  */
-    /*   m.emplace(std::piecewise_construct,                                   */
-    /*             std::forward_as_tuple("c"),                                 */
-    /*             std::forward_as_tuple(10, 'c'));                            */
-    /*   // as of C++17, m.try_emplace("c", 10, 'c'); can be used              */
-    /*                                                                         */
-    /***************************************************************************/
-
-    template <typename ...Args>
-    insert_return_type emplace(Args && ... args) {
-        return this->emplace_unique<false, insert_return_type>(
-            key_extractor<value_type>::extract(std::forward<Args>(args)...),
-            std::forward<Args>(args)...);
-    }
-
-    template <typename ...Args>
-    void emplace_no_return(Args && ... args) {
-        this->emplace_unique<false, void_warpper>(
-            key_extractor<value_type>::extract(std::forward<Args>(args)...),
-            std::forward<Args>(args)...);
-    }
-
-    size_type erase(const key_type & key) {
-        return this->erase_key(key);
-    }
-
-    void swap(this_type & other) {
-        if (&other != this) {
-            std::swap(this->buckets_,           other.buckets_);
-            std::swap(this->entries_,           other.entries_);
-            std::swap(this->bucket_mask_,       other.bucket_mask_);
-            std::swap(this->bucket_capacity_,   other.bucket_capacity_);
-
-            std::swap(this->entry_size_,        other.entry_size_);
-            std::swap(this->entry_capacity_,    other.entry_capacity_);
-#if DICTIONARY_SUPPORT_VERSION
-            std::swap(this->version_,           other.version_);
-#endif
-            this->freelist_.swap(other.freelist_);
-            this->chunk_list_.swap(other.chunk_list_);
-        }
-    }
-
-    static const char * name() {
-        switch (HashFunc) {
-        case HashFunc_CRC32C:
-            return "jstd::Dictionary<K, V> (CRC32c)";
-        case HashFunc_Time31:
-            return "jstd::Dictionary<K, V> (Time31)";
-        case HashFunc_Time31Std:
-            return "jstd::Dictionary<K, V> (Time31Std)";
-        default:
-            return "jstd::Dictionary<K, V> (Unknown)";
-        }
-    }
 }; // BasicDictionary<K, V>
 
 template <typename Key, typename Value,
