@@ -297,11 +297,11 @@ public:
             --(this->size_);
         }
 
-        void inflate(size_type size) {
+        void expand(size_type size) {
             this->size_ += size;
         }
 
-        void deflate(size_type size) {
+        void shrink(size_type size) {
             assert(this->size_ >= size);
             this->size_ -= size;
         }
@@ -368,8 +368,8 @@ public:
     // Maximum capacity is 1 << (sizeof(std::size_t) - 1).
     static const size_type kMaximumCapacity = (std::numeric_limits<size_type>::max)() / 2 + 1;
 
-    // The maximum entry's chunk bytes, default is 4 MB bytes.
-    static const size_type kMaxEntryChunkBytes = 4 * 1024 * 1024;
+    // The maximum entry's chunk bytes, default is 16 MB bytes.
+    static const size_type kMaxEntryChunkBytes = 16 * 1024 * 1024;
     // The entry's block size per chunk (entry_type).
     static const size_type kMaxEntryChunkSize =
             compile_time::round_to_power2<kMaxEntryChunkBytes / sizeof(entry_type)>::value;
@@ -698,27 +698,6 @@ public:
         return (entry != nullptr);
     }
 
-    //
-    // find(key)
-    //
-    iterator find(const key_type & key) {
-        if (likely(this->buckets() != nullptr)) {
-            entry_type * entry = this->find_entry(key);
-            return iterator(this, entry);
-        }
-
-        return iterator(this, nullptr);
-    }
-
-    const_iterator find(const key_type & key) const {
-        if (likely(this->buckets() != nullptr)) {
-            entry_type * entry = this->find_entry(key);
-            return const_iterator(this, entry);
-        }
-
-        return const_iterator(this, nullptr);
-    }
-
     // For operator [].
     struct DefaultValue {
         std::pair<const key_type, mapped_type> operator()(const key_type & key) {
@@ -745,7 +724,6 @@ public:
         return entry->value.second;
     }
 
-#if 1
     mapped_type & operator [] (key_type && key) {
         entry_type * entry = this->find_or_insert(std::move(key));
         return entry->value.second;
@@ -755,7 +733,27 @@ public:
         entry_type * entry = this->find_or_insert(std::move(key));
         return entry->value.second;
     }
-#endif
+
+    //
+    // find(key)
+    //
+    iterator find(const key_type & key) {
+        if (likely(this->buckets() != nullptr)) {
+            entry_type * entry = this->find_entry(key);
+            return iterator(this, entry);
+        }
+
+        return iterator(this, nullptr);
+    }
+
+    const_iterator find(const key_type & key) const {
+        if (likely(this->buckets() != nullptr)) {
+            entry_type * entry = this->find_entry(key);
+            return const_iterator(this, entry);
+        }
+
+        return const_iterator(this, nullptr);
+    }
 
     //
     // insert(key, value)
@@ -1244,7 +1242,7 @@ private:
         entry_type * last_entry = entries + capacity - 1;
         last_entry->next = this->freelist_.next();
         this->freelist_.set_next(entries);
-        this->freelist_.inflate(capacity);
+        this->freelist_.expand(capacity);
     }
 
     size_type count_entries_size() {
