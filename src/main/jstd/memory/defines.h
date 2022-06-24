@@ -7,9 +7,11 @@
 #endif
 
 #include "jstd/basic/stddef.h"
-#include "jstd/iterator.h"
 
+#include <assert.h>
 #include <memory>
+
+#include "jstd/iterator.h"
 
 #ifndef MUST_BE_A_DERIVED_CLASS_OF
 #if 0
@@ -72,7 +74,7 @@ ForwardIter2 swap_ranges(ForwardIter1 first1, ForwardIter1 last1, ForwardIter2 f
     while (first1 != last1) {
         std::iter_swap(first1++, first2++);
     }
-    assert(first2 == std::next(first2_save, jstd::distance(first1, last1)))
+    assert(first2 == std::next(first2_save, jstd::distance(first1, last1)));
     return first2;
 }
 

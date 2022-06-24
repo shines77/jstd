@@ -174,7 +174,7 @@
     #define JSTD_IS_CXX_98  1
     #endif
   #endif
-#else defined(__GNUC__) || defined(__clang__)
+#elif defined(__GNUC__) || defined(__clang__)
   #if (__cplusplus >= 202002L)
     #ifndef JSTD_IS_CXX_20
     #define JSTD_IS_CXX_20  1

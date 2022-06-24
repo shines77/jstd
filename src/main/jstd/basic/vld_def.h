@@ -16,7 +16,9 @@
 // Enable os disable the Visual Leak Detector (For Visual Studio Only).
 // Note: 0 is disable VLD and 1 is enable VLD, default value is 0.
 //
+#ifndef JSTD_ENABLE_VLD
 #define JSTD_ENABLE_VLD     0
+#endif
 
 //
 // If you want to modify the file on local machine and don't update/upload to remote repsotory.
