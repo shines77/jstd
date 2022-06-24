@@ -7,6 +7,7 @@
 #endif
 
 #include "jstd/basic/stddef.h"
+#include "jstd/iterator.h"
 
 #include <memory>
 
@@ -43,19 +44,42 @@ struct delete_helper<T, true> {
     }
 };
 
-
-template <typename T>
-void swap(T & a, T & b, typename std::enable_if<!std::is_pointer<T>::value>::type * p = nullptr) {
+template <typename T, typename std::enable_if<!std::is_pointer<T>::value>::type * p = nullptr>
+void swap(T & a, T & b) noexcept(std::is_nothrow_move_constructible<T>::value &&
+                                 std::is_nothrow_move_assignable<T>::value)
+{
     T tmp = std::move(a);
     a = std::move(b);
     b = std::move(tmp);
 }
 
-template <typename T>
-void swap(T* & a, T* & b, typename std::enable_if<std::is_pointer<T>::value>::type * p = nullptr) {
-    T* tmp = a;
+template <typename T, typename std::enable_if<std::is_pointer<T>::value>::type * p = nullptr>
+void swap(T * & a, T * & b) noexcept(std::is_nothrow_move_constructible<T>::value &&
+                                     std::is_nothrow_move_assignable<T>::value)
+{
+    T * tmp = a;
     a = b;
     b = tmp;
+}
+
+//
+// See: https://en.cppreference.com/w/cpp/algorithm/swap
+//
+template <typename ForwardIter1, typename ForwardIter2>
+ForwardIter2 swap_ranges(ForwardIter1 first1, ForwardIter1 last1, ForwardIter2 first2)
+{
+    ForwardIter2 first2_save = first2;
+    while (first1 != last1) {
+        std::iter_swap(first1++, first2++);
+    }
+    assert(first2 == std::next(first2_save, jstd::distance(first1, last1)))
+    return first2;
+}
+
+template <typename T, std::size_t N>
+void swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(swap(*a, *b)))
+{
+    swap_ranges(a, a + N, b);
 }
 
 } // namespace jstd

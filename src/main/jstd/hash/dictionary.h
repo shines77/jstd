@@ -351,10 +351,8 @@ public:
         }
 
         void swap(free_list & other) {
-            if (&other != this) {
-                std::swap(this->next_, other.next_);
-                std::swap(this->size_, other.size_);
-            }
+            std::swap(this->next_, other.next_);
+            std::swap(this->size_, other.size_);
         }
     };
 
@@ -851,18 +849,19 @@ public:
 
     void swap(this_type & other) {
         if (&other != this) {
-            std::swap(this->buckets_,           other.buckets_);
-            std::swap(this->entries_,           other.entries_);
-            std::swap(this->bucket_mask_,       other.bucket_mask_);
-            std::swap(this->bucket_capacity_,   other.bucket_capacity_);
+            using std::swap;
+            swap(this->buckets_,           other.buckets_);
+            swap(this->entries_,           other.entries_);
+            swap(this->bucket_mask_,       other.bucket_mask_);
+            swap(this->bucket_capacity_,   other.bucket_capacity_);
 
-            std::swap(this->entry_size_,        other.entry_size_);
-            std::swap(this->entry_capacity_,    other.entry_capacity_);
-            std::swap(this->entry_threshold_,   other.entry_threshold_);
+            swap(this->entry_size_,        other.entry_size_);
+            swap(this->entry_capacity_,    other.entry_capacity_);
+            swap(this->entry_threshold_,   other.entry_threshold_);
 #if DICTIONARY_SUPPORT_VERSION
-            std::swap(this->version_,           other.version_);
+            swap(this->version_,           other.version_);
 #endif
-            std::swap(this->load_factor_, other.load_factor_);
+            swap(this->load_factor_, other.load_factor_);
 
             this->freelist_.swap(other.freelist_);
             this->chunk_list_.swap(other.chunk_list_);

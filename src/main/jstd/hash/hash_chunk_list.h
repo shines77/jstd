@@ -128,6 +128,11 @@ struct hash_entry_chunk {
     }
 };
 
+template <typename T>
+inline void swap(hash_entry_chunk<T> & lhs, hash_entry_chunk<T> & rhs) {
+    lhs.swap(rhs);
+}
+
 template <typename T, typename Allocator, typename EntryAllocator>
 class hash_entry_chunk_list {
 public:
@@ -382,9 +387,13 @@ public:
     void swap(this_type & other) {
         if (&other != this) {
             this->last_chunk_.swap(other.last_chunk_);
-            std::swap(this->chunk_list_,      other.chunk_list_);
-            std::swap(this->allocator_,       other.allocator_);
-            std::swap(this->entry_allocator_, other.entry_allocator_);
+            std::swap(this->chunk_list_, other.chunk_list_);
+            if (std::allocator_traits<allocator_type>::propagate_on_container_swap::value) {
+                std::swap(this->allocator_, other.allocator_);
+            }
+            if (std::allocator_traits<entry_allocator_type>::propagate_on_container_swap::value) {
+                std::swap(this->entry_allocator_, other.entry_allocator_);
+            }
         }
     }
 
@@ -392,12 +401,22 @@ public:
     void swap(hash_entry_chunk_list<T, OtherAllocator, OtherEntryAllocator> & other) {
         if (&other != this) {
             this->last_chunk_.swap(other.last_chunk_);
-            std::swap(this->chunk_list_,      other.chunk_list_);
-            std::swap(this->allocator_,       other.allocator_);
-            std::swap(this->entry_allocator_, other.entry_allocator_);
+            std::swap(this->chunk_list_, other.chunk_list_);
+            if (std::allocator_traits<OtherAllocator>::propagate_on_container_swap::value) {
+                std::swap(this->allocator_, other.allocator_);
+            }
+            if (std::allocator_traits<OtherEntryAllocator>::propagate_on_container_swap::value) {
+                std::swap(this->entry_allocator_, other.entry_allocator_);
+            }
         }
     }
 };
+
+template <typename T, typename Allocator, typename EntryAllocator>
+inline void swap(hash_entry_chunk_list<T, Allocator, EntryAllocator> & lhs,
+                 hash_entry_chunk_list<T, Allocator, EntryAllocator> & rhs) {
+    lhs.swap(rhs);
+}
 
 } // namespace jstd
 

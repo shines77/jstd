@@ -8,11 +8,10 @@
 
 #include "jstd/config/config_pre.h"
 #include "jstd/config/config_arch.h"
-//#include "jstd/config/config_hw.h"
 
-#if defined(__linux__) || defined(__LINUX__) || defined(__apple__)
+#if defined(__linux__) || defined(__unix__) || defined(__LINUX__)
 #include "jstd/config/linux/config.h"
-#elif defined(_WIN32) || defined(_MSC_VER) || defined(__ICL) || defined(__INTEL_COMPILER)
+#elif defined(_WIN32) || defined(_MSC_VER)
 #include "jstd/config/win32/config.h"
 #elif defined(__apple__)
 #include "jstd/config/macos/config.h"
