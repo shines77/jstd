@@ -697,7 +697,7 @@ public:
 
     bool contains(const key_type & key) const {
         entry_type * entry = this->find_entry(key);
-        return (iter != nullptr);
+        return (entry != nullptr);
     }
 
     //
@@ -862,9 +862,10 @@ public:
 #if DICTIONARY_SUPPORT_VERSION
             std::swap(this->version_,           other.version_);
 #endif
+            std::swap(this->load_factor_, other.load_factor_);
+
             this->freelist_.swap(other.freelist_);
             this->chunk_list_.swap(other.chunk_list_);
-            this->load_factor_.swap(other.load_factor_);
         }
     }
 
