@@ -1508,15 +1508,13 @@ private:
         {
             // Here, we do not need to initialize the bucket list.
             if (likely(this->entry_size_ != 0)) {
-                if (likely(new_bucket_capacity >= this->entry_size_ * 2 ||
+                if (likely(new_bucket_capacity == this->bucket_capacity_ * 2)) {
+                    rehash_all_entries_2x(new_buckets, new_bucket_capacity);
+                } else if (likely(new_bucket_capacity >= this->entry_size_ * 2 ||
                            this->entry_size_ >= kMaxEntryChunkSize)) {
                     rehash_all_entries_sparse(new_buckets, new_bucket_capacity);
-                }
-                else {
-                    if (likely(new_bucket_capacity == this->bucket_capacity_ * 2))
-                        rehash_all_entries_2x(new_buckets, new_bucket_capacity);
-                    else
-                        rehash_all_entries(new_buckets, new_bucket_capacity);
+                } else {
+                    rehash_all_entries(new_buckets, new_bucket_capacity);
                 }
             }
             else {
@@ -1572,7 +1570,7 @@ private:
 
         // Most of the time, we don't need to reallocate the buckets list.
         size_type new_bucket_capacity = new_entry_capacity * 1;
-        if (unlikely(new_bucket_capacity > this->bucket_capacity_)) {
+        if (new_bucket_capacity > this->bucket_capacity_) {
             rehash_buckets(new_bucket_capacity);
         }
     }
@@ -1869,8 +1867,8 @@ private:
 
     JSTD_FORCED_INLINE
     entry_type * got_a_prepare_entry() {
-        if (likely(this->freelist_.is_empty())) {
-            if (unlikely(this->chunk_list_.lastChunk().is_full())) {
+        if (unlikely(this->freelist_.is_empty())) {
+            if (likely(this->chunk_list_.lastChunk().is_full())) {
 #ifdef _DEBUG
                 size_type old_size = size();
 #endif
@@ -1902,8 +1900,8 @@ private:
 
     JSTD_FORCED_INLINE
     entry_type * got_a_free_entry(hash_code_t hash_code, index_type & index) {
-        if (likely(this->freelist_.is_empty())) {
-            if (unlikely(this->chunk_list_.lastChunk().is_full())) {
+        if (unlikely(this->freelist_.is_empty())) {
+            if (likely(this->chunk_list_.lastChunk().is_full())) {
 #ifdef _DEBUG
                 size_type old_size = size();
 #endif

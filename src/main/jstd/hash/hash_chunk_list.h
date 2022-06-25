@@ -58,13 +58,6 @@ struct hash_entry_chunk {
     size_type is_empty() const { return (this->size == 0); }
     size_type is_full() const { return (this->size >= this->capacity); }
 
-    void set_chunk(entry_type * entries, size_type capacity, size_type chunk_id) {
-        this->entries = entries;
-        this->size = 0;
-        this->capacity = capacity;
-        this->chunk_id = chunk_id;
-    }
-
     void set_chunk(entry_type * entries, size_type size,
                    size_type capacity, size_type chunk_id) {
         this->entries = entries;
@@ -119,12 +112,10 @@ struct hash_entry_chunk {
     }
 
     void swap(hash_entry_chunk<T> & other) {
-        if (&other != this) {
-            std::swap(this->entries,  other.entries);
-            std::swap(this->size,     other.size);
-            std::swap(this->capacity, other.capacity);
-            std::swap(this->chunk_id, other.chunk_id);
-        }
+        std::swap(this->entries,  other.entries);
+        std::swap(this->size,     other.size);
+        std::swap(this->capacity, other.capacity);
+        std::swap(this->chunk_id, other.chunk_id);
     }
 };
 
@@ -156,10 +147,10 @@ public:
                                                     this_type;
 
 protected:
-    entry_chunk_t           last_chunk_;
-    vector_type             chunk_list_;
-    allocator_type          allocator_;
-    entry_allocator_type    entry_allocator_;
+    entry_chunk_t               last_chunk_;
+    std::vector<element_type>   chunk_list_;
+    allocator_type              allocator_;
+    entry_allocator_type        entry_allocator_;
 
 public:
     hash_entry_chunk_list() {}
@@ -293,25 +284,16 @@ public:
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->last_chunk_.set_chunk(chunk_id, chunk.entries, chunk.size, chunk.capacity);
+        this->last_chunk_.set_chunk(chunk.entries, chunk.size, chunk.capacity, chunk_id);
 
         this->chunk_list_.emplace_back(chunk);
-    }
-
-    void addChunk(entry_chunk_t && chunk) {
-        assert(this->lastChunk().is_full());
-
-        size_type chunk_id = this->chunk_list_.size();
-        this->last_chunk_.set_chunk(chunk_id, chunk.entries, chunk.size, chunk.capacity);
-
-        this->chunk_list_.emplace_back(std::forward<entry_chunk_t>(chunk));
     }
 
     void addChunk(entry_type * entries, size_type entry_capacity) {
         assert(this->lastChunk().is_full());
 
         size_type chunk_id = this->chunk_list_.size();
-        this->last_chunk_.set_chunk(entries, entry_capacity, chunk_id);
+        this->last_chunk_.set_chunk(entries, 0, entry_capacity, chunk_id);
 
         this->chunk_list_.emplace_back(entries, entry_capacity, chunk_id);
     }
