@@ -397,7 +397,7 @@ public:
     typedef HashObject<std::size_t, sizeof(std::size_t), sizeof(std::size_t)>
                             this_type;
 private:
-    std::size_t key_;   // the key used for hashing
+    std::uint64_t key_;   // the key used for hashing
 
 public:
     HashObject() : key_(0) {
@@ -508,13 +508,13 @@ template <std::size_t Size, std::size_t HashSize>
 struct is_trivially_copyable< HashObject<std::uint32_t, Size, HashSize> > : true_type { };
 
 template <std::size_t Size, std::size_t HashSize>
-struct is_trivially_copyable< HashObject<std::size_t, Size, HashSize> > : true_type { };
+struct is_trivially_copyable< HashObject<std::uint64_t, Size, HashSize> > : true_type { };
 
 template <>
 struct is_trivially_copyable< HashObject<std::uint32_t, 4, 4> > : true_type { };
 
 template <>
-struct is_trivially_copyable< HashObject<std::size_t, 8, 8> > : true_type { };
+struct is_trivially_copyable< HashObject<std::uint64_t, 8, 8> > : true_type { };
 
 template <>
 struct is_trivially_copyable< HashObject<std::size_t, 16, 16> > : true_type { };
@@ -528,13 +528,13 @@ template <std::size_t Size, std::size_t HashSize>
 struct is_trivially_destructible< HashObject<std::uint32_t, Size, HashSize> > : true_type { };
 
 template <std::size_t Size, std::size_t HashSize>
-struct is_trivially_destructible< HashObject<std::size_t, Size, HashSize> > : true_type { };
+struct is_trivially_destructible< HashObject<std::uint64_t, Size, HashSize> > : true_type { };
 
 template <>
 struct is_trivially_destructible< HashObject<std::uint32_t, 4, 4> > : true_type { };
 
 template <>
-struct is_trivially_destructible< HashObject<std::size_t, 8, 8> > : true_type { };
+struct is_trivially_destructible< HashObject<std::uint64_t, 8, 8> > : true_type { };
 
 template <>
 struct is_trivially_destructible< HashObject<std::size_t, 16, 16> > : true_type { };
@@ -1290,20 +1290,19 @@ void benchmark_all_hashmaps(std::size_t iters)
     }
 }
 
-
 void std_hash_test()
 {
     printf("std::hash<std::uint32_t>\n\n");
     for(std::uint32_t i = 0; i < 8; i++) {
         std::size_t hash_code = HASH_MAP_FUNCTION<std::uint32_t>()(i);
-        printf("key = %3u, hash_code = %" PRIu64 "\n", i, hash_code);
+        printf("key = %3u, hash_code = %" PRIuPTR "\n", i, hash_code);
     }
     printf("\n");
 
     printf("std::hash<std::uint64_t>\n\n");
     for(std::size_t i = 0; i < 8; i++) {
         std::size_t hash_code = HASH_MAP_FUNCTION<std::uint64_t>()(i);
-        printf("key = %3" PRIu64 ", hash_code = %" PRIu64 "\n", i, hash_code);
+        printf("key = %3" PRIuPTR ", hash_code = %" PRIuPTR "\n", i, hash_code);
     }
     printf("\n");
 }

@@ -16,7 +16,7 @@
 #include <memory>
 #include <type_traits>
 
-#include "jstd/memory/defines.h"
+#include "jstd/memory/swap.h"
 
 namespace jstd {
 

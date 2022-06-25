@@ -1,6 +1,6 @@
 
-#ifndef JSTD_MEMORY_DEFINE_H
-#define JSTD_MEMORY_DEFINE_H
+#ifndef JSTD_MEMORY_SWAP_H
+#define JSTD_MEMORY_SWAP_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -86,4 +86,4 @@ void swap(T (&a)[N], T (&b)[N]) noexcept(noexcept(swap(*a, *b)))
 
 } // namespace jstd
 
-#endif // JSTD_MEMORY_DEFINE_H
+#endif // JSTD_MEMORY_SWAP_H

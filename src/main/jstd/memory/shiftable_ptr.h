@@ -21,7 +21,7 @@
 #include <type_traits>
 #include <functional>
 
-#include "jstd/memory/defines.h"
+#include "jstd/memory/swap.h"
 #include "jstd/allocator.h"
 #include "jstd/type_traits.h"
 
