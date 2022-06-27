@@ -715,22 +715,22 @@ public:
     // operator []
     //
     mapped_type & operator [] (const key_type & key) {
-        entry_type * entry = this->find_or_insert(key);
+        entry_type * entry = this->try_emplace_impl(key);
         return entry->value.second;
     }
 
     const mapped_type & operator [] (const key_type & key) const {
-        entry_type * entry = this->find_or_insert(key);
+        entry_type * entry = this->try_emplace_impl(key);
         return entry->value.second;
     }
 
     mapped_type & operator [] (key_type && key) {
-        entry_type * entry = this->find_or_insert(std::move(key));
+        entry_type * entry = this->try_emplace_impl(std::move(key));
         return entry->value.second;
     }
 
     const mapped_type & operator [] (key_type && key) const {
-        entry_type * entry = this->find_or_insert(std::move(key));
+        entry_type * entry = this->try_emplace_impl(std::move(key));
         return entry->value.second;
     }
 
@@ -1619,7 +1619,7 @@ private:
     }
 
     JSTD_FORCED_INLINE
-    void move_or_swap_value(nc_value_type * old_value, nc_value_type && new_value) {
+    void move_assign_or_swap_value(nc_value_type * old_value, nc_value_type && new_value) {
         bool has_noexcept_move_assignment = is_noexcept_move_assignable<nc_value_type>::value;
         // Is noexcept move assignment operator ?
         if (has_noexcept_move_assignment) {
@@ -1636,7 +1636,7 @@ private:
     }
 
     JSTD_FORCED_INLINE
-    void move_or_swap_key(key_type * old_key, key_type && new_key) {
+    void move_assign_or_swap_key(key_type * old_key, key_type && new_key) {
         bool has_noexcept_move_assignment = is_noexcept_move_assignable<key_type>::value;
         // Is noexcept move assignment operator ?
         if (has_noexcept_move_assignment) {
@@ -1648,7 +1648,7 @@ private:
     }
 
     JSTD_FORCED_INLINE
-    void move_or_swap_mapped_value(mapped_type * old_value, mapped_type && new_value) {
+    void move_assign_or_swap_mapped_value(mapped_type * old_value, mapped_type && new_value) {
         bool has_noexcept_move_assignment = is_noexcept_move_assignable<mapped_type>::value;
         // Is noexcept move assignment operator ?
         if (has_noexcept_move_assignment) {
@@ -1690,7 +1690,7 @@ private:
             new_entry->attrib.setInUseEntry();
             nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&new_entry->value);
             n_value->first = key;
-            move_or_swap_mapped_value(&n_value->second, std::forward<mapped_type>(value));
+            move_assign_or_swap_mapped_value(&n_value->second, std::forward<mapped_type>(value));
         }
     }
 
@@ -1701,15 +1701,15 @@ private:
             new_entry->attrib.setInUseEntry();
             // Use placement new method to construct value_type.
             this->n_allocator_.construct(reinterpret_cast<nc_value_type *>(&new_entry->value),
-                                           std::forward<key_type>(key),
-                                           std::forward<mapped_type>(value));
+                                         std::forward<key_type>(key),
+                                         std::forward<mapped_type>(value));
         }
         else {
             assert(new_entry->attrib.isReusableEntry());
             new_entry->attrib.setInUseEntry();
             nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&new_entry->value);
-            move_or_swap_key(&n_value->first, std::forward<key_type>(key));
-            move_or_swap_mapped_value(&n_value->second, std::forward<mapped_type>(value));
+            move_assign_or_swap_key(&n_value->first, std::forward<key_type>(key));
+            move_assign_or_swap_mapped_value(&n_value->second, std::forward<mapped_type>(value));
         }
     }
 
@@ -1726,7 +1726,7 @@ private:
             new_entry->attrib.setInUseEntry();
             nc_value_type * old_value = reinterpret_cast<nc_value_type *>(&new_entry->value);
             nc_value_type * new_value = reinterpret_cast<nc_value_type *>(&value);
-            move_or_swap_value(old_value, std::forward<nc_value_type>(*new_value));
+            move_assign_or_swap_value(old_value, std::forward<nc_value_type>(*new_value));
         }
     }
 
@@ -1742,7 +1742,7 @@ private:
             assert(new_entry->attrib.isReusableEntry());
             new_entry->attrib.setInUseEntry();
             nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&new_entry->value);
-            move_or_swap_value(n_value, std::forward<nc_value_type>(value));
+            move_assign_or_swap_value(n_value, std::forward<nc_value_type>(value));
         }
     }
 
@@ -1761,7 +1761,7 @@ private:
             nc_value_type value_tmp(std::forward<Args>(args)...);
 
             nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&new_entry->value);
-            move_or_swap_value(n_value, std::forward<nc_value_type>(value_tmp));
+            move_assign_or_swap_value(n_value, std::forward<nc_value_type>(value_tmp));
         }
     }
 
@@ -1769,7 +1769,7 @@ private:
     JSTD_FORCED_INLINE
     void update_value_args_impl(entry_type * old_entry, const key_type & key, Args && ... args) {
         mapped_type second(std::forward<Args>(args)...);
-        move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
+        move_assign_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
     }
 
     template <typename ...Args>
@@ -1777,7 +1777,7 @@ private:
     void update_value_args_impl(entry_type * old_entry, key_type && key, Args && ... args) {
         //key_type key_tmp = std::move_if_noexcept(key);
         mapped_type second(std::forward<Args>(args)...);
-        move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
+        move_assign_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(second));
     }
 
 #if 1
@@ -1791,7 +1791,7 @@ private:
     JSTD_FORCED_INLINE
     void update_value_args(entry_type * old_entry, Args && ... args) {
         nc_value_type value_tmp(std::forward<Args>(args)...);
-        move_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(value_tmp.second));
+        move_assign_or_swap_mapped_value(&old_entry->value.second, std::forward<mapped_type>(value_tmp.second));
     }
 #endif
 
@@ -1802,7 +1802,7 @@ private:
 
     JSTD_FORCED_INLINE
     void update_mapped_value(entry_type * entry, value_type && value) {
-        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
+        move_assign_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
     }
 
     JSTD_FORCED_INLINE
@@ -1813,7 +1813,7 @@ private:
     JSTD_FORCED_INLINE
     void update_mapped_value(entry_type * entry, nc_value_type && value) {
         //key_type key_tmp = std::move_if_noexcept(value.first);
-        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
+        move_assign_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value.second));
     }
 
     JSTD_FORCED_INLINE
@@ -1824,7 +1824,7 @@ private:
     // Update the existed key's value, maybe by move assignment operator.
     JSTD_FORCED_INLINE
     void update_mapped_value(entry_type * entry, mapped_type && value) {
-        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
+        move_assign_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
     }
 
     template <typename ...Args>
@@ -1842,7 +1842,7 @@ private:
 #endif
 #if 1
         mapped_type second(std::forward<Args>(args)...);
-        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(second));
+        move_assign_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(second));
 #else
         value_allocator_.destroy(&entry->value.second);
         value_allocator_.construct(&entry->value.second, std::forward<Args>(args)...);
@@ -1856,7 +1856,7 @@ private:
 
     JSTD_FORCED_INLINE
     void update_mapped_value_args(entry_type * entry, mapped_type && value) {
-        move_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
+        move_assign_or_swap_mapped_value(&entry->value.second, std::forward<mapped_type>(value));
     }
 
     template <typename ...Args>
@@ -1866,18 +1866,11 @@ private:
     }
 
     JSTD_FORCED_INLINE
-    entry_type * got_a_prepare_entry() {
+    entry_type * got_prepare_entry() {
         if (unlikely(this->freelist_.is_empty())) {
             if (likely(this->chunk_list_.lastChunk().is_full())) {
-#ifdef _DEBUG
-                size_type old_size = size();
-#endif
                 // Inflate the entry size for 1.
                 this->inflate_entries(1);
-#ifdef _DEBUG
-                size_type new_size = count_entries_size();
-                assert(new_size == old_size);
-#endif
             }
 
             // Get a unused entry.
@@ -1899,18 +1892,12 @@ private:
     }
 
     JSTD_FORCED_INLINE
-    entry_type * got_a_free_entry(hash_code_t hash_code, index_type & index) {
+    entry_type * got_free_entry(hash_code_t hash_code, index_type & index) {
         if (unlikely(this->freelist_.is_empty())) {
             if (likely(this->chunk_list_.lastChunk().is_full())) {
-#ifdef _DEBUG
-                size_type old_size = size();
-#endif
                 // Inflate the entry size for 1.
                 this->inflate_entries(1);
-#ifdef _DEBUG
-                size_type new_size = count_entries_size();
-                assert(new_size == old_size);
-#endif
+
                 // Recalculate the bucket index.
                 index = this->index_for(hash_code);
             }
@@ -1986,7 +1973,7 @@ private:
     JSTD_FORCED_INLINE
     entry_type * insert_new_entry(const key_type & key, const mapped_type & value,
                                   hash_code_t hash_code, index_type index) {
-        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        entry_type * new_entry = this->got_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, key, value);
         this->entry_size_++;
@@ -1996,7 +1983,7 @@ private:
     JSTD_FORCED_INLINE
     entry_type * insert_new_entry(const key_type & key, mapped_type && value,
                                   hash_code_t hash_code, index_type index) {
-        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        entry_type * new_entry = this->got_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, key, std::forward<mapped_type>(value));
         this->entry_size_++;
@@ -2006,7 +1993,7 @@ private:
     JSTD_FORCED_INLINE
     entry_type * insert_new_entry(key_type && key, mapped_type && value,
                                   hash_code_t hash_code, index_type index) {
-        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        entry_type * new_entry = this->got_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, std::forward<key_type>(key),
                                          std::forward<mapped_type>(value));
@@ -2017,7 +2004,7 @@ private:
     JSTD_FORCED_INLINE
     entry_type * insert_new_entry(hash_code_t hash_code, index_type index,
                                   nc_value_type && value) {
-        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        entry_type * new_entry = this->got_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, std::forward<nc_value_type>(value));
         this->entry_size_++;
@@ -2090,7 +2077,7 @@ private:
         index_type index = this->index_for(hash_code);
 
         entry_type * entry = this->buckets_[index];
-        while (likely(entry != nullptr)) {
+        while (entry != nullptr) {
             if (likely(entry->hash_code != hash_code)) {
                 entry = entry->next;
             }
@@ -2109,7 +2096,7 @@ private:
     entry_type * find_entry(const key_type & key, hash_code_t hash_code, index_type index) {
         assert(this->buckets() != nullptr);
         entry_type * entry = this->buckets_[index];
-        while (likely(entry != nullptr)) {
+        while (entry != nullptr) {
             if (likely(entry->hash_code != hash_code)) {
                 entry = entry->next;
             }
@@ -2134,55 +2121,22 @@ private:
         assert(this->buckets() != nullptr);
         entry_type * prev = nullptr;
         entry_type * entry = buckets_[index];
-        while (likely(entry != nullptr)) {
+        while (entry != nullptr) {
             if (likely(entry->hash_code != hash_code)) {
                 prev = entry;
                 entry = entry->next;
             }
             else {
-                if (likely(this->key_equal_(key, entry->value.first))) {
+                if (likely(!this->key_equal_(key, entry->value.first))) {
+                    entry = entry->next;
+                } else {
                     before = prev;
                     return entry;
                 }
-                entry = entry->next;
             }
         }
 
         return nullptr;  // Not found
-    }
-
-    JSTD_FORCED_INLINE
-    entry_type * find_or_insert(const key_type & key) {
-        assert(this->buckets() != nullptr);
-
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_for(hash_code);
-
-        entry_type * entry = this->find_entry(key, hash_code, index);
-        if (likely(entry == nullptr)) {
-            entry = this->insert_new_entry(key, mapped_type(),
-                                           hash_code, index);
-            this->update_version();
-        }
-
-        return entry;
-    }
-
-    JSTD_FORCED_INLINE
-    entry_type * find_or_insert(key_type && key) {
-        assert(this->buckets() != nullptr);
-
-        hash_code_t hash_code = this->get_hash(key);
-        index_type index = this->index_for(hash_code);
-
-        entry_type * entry = this->find_entry(key, hash_code, index);
-        if (likely(entry == nullptr)) {
-            entry = this->insert_new_entry(std::forward<key_type>(key), mapped_type(),
-                                           hash_code, index);
-            this->update_version();
-        }
-
-        return entry;
     }
 
     template <bool AlwaysUpdate, typename ReturnType>
@@ -2302,7 +2256,7 @@ private:
     template <typename ...Args>
     JSTD_FORCED_INLINE
     entry_type * emplace_new_entry_args(hash_code_t hash_code, index_type index, Args && ... args) {
-        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        entry_type * new_entry = this->got_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value_args(new_entry, std::forward<Args>(args)...);
         this->entry_size_++;
@@ -2312,7 +2266,7 @@ private:
     JSTD_FORCED_INLINE
     entry_type * emplace_new_entry(hash_code_t hash_code,
                                    index_type index, nc_value_type && value) {
-        entry_type * new_entry = this->got_a_free_entry(hash_code, index);
+        entry_type * new_entry = this->got_free_entry(hash_code, index);
         this->insert_to_bucket(new_entry, hash_code, index);
         this->construct_value(new_entry, std::forward<nc_value_type>(value));
         this->entry_size_++;
@@ -2362,7 +2316,7 @@ private:
         assert(this->buckets() != nullptr);
         bool inserted;
 
-        entry_type * pre_entry = this->got_a_prepare_entry();
+        entry_type * pre_entry = this->got_prepare_entry();
         nc_value_type * n_value = reinterpret_cast<nc_value_type *>(&pre_entry->value);
         n_allocator_.construct(n_value, std::forward<Args>(args)...);
 
@@ -2417,6 +2371,40 @@ private:
         this->update_version();
 
         return ReturnType(iterator(this, entry), inserted);
+    }
+
+    JSTD_FORCED_INLINE
+    entry_type * try_emplace_impl(const key_type & key) {
+        assert(this->buckets() != nullptr);
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            entry = this->insert_new_entry(key, mapped_type(),
+                                           hash_code, index);
+            this->update_version();
+        }
+
+        return entry;
+    }
+
+    JSTD_FORCED_INLINE
+    entry_type * try_emplace_impl(key_type && key) {
+        assert(this->buckets() != nullptr);
+
+        hash_code_t hash_code = this->get_hash(key);
+        index_type index = this->index_for(hash_code);
+
+        entry_type * entry = this->find_entry(key, hash_code, index);
+        if (likely(entry == nullptr)) {
+            entry = this->insert_new_entry(std::forward<key_type>(key), mapped_type(),
+                                           hash_code, index);
+            this->update_version();
+        }
+
+        return entry;
     }
 
     JSTD_FORCED_INLINE
