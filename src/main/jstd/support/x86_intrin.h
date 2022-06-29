@@ -24,27 +24,41 @@
 #ifndef JSTD_SUPPORT_X86_INTRIN_H
 #define JSTD_SUPPORT_X86_INTRIN_H
 
+#if defined(_MSC_VER) && (_MSC_VER >= 1020)
+#pragma once
+#endif
+
+#if defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__) \
+ || defined (_M_IX86) || defined(__i386__)
+
 //
 // See: https://sites.uclouvain.be/SystInfo/usr/include/x86intrin.h.html
 //
 
-#ifdef __MMX__
+//
+// Intel Intrinsics Guide (SIMD)
+//
+// https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.htm
+//
+
+#if defined(__MMX__)
 #include <mmintrin.h>
 #endif
 
-#ifdef __SSE__
+#if defined(__SSE__)
 #include <xmmintrin.h>
 #endif
 
-#ifdef __SSE2__
+#if defined(__SSE2__)
 #include <emmintrin.h>
 #endif
 
-#ifdef __SSE3__
+#if defined(__SSE3__)
 #include <pmmintrin.h>
 #endif
 
-#ifdef __SSSE3__
+#if defined(__SSSE3__)
 #include <tmmintrin.h>
 #endif
 
@@ -52,142 +66,64 @@
 #include <ammintrin.h>
 #endif
 
-#ifdef __SSE4_1__
+#if defined(__SSE4_1__)
 #include <smmintrin.h>
 #endif
 
-#ifdef __SSE4_2__
+#if defined(__SSE4_2__) || defined(__CRC32__)
 #include <nmmintrin.h>
 #endif
 
-#ifdef __SSE5__
+#if defined(__SSE5__)
+#if defined(_MSC_VER)
+#include <ammintrin.h>
+#else
 //#include <bmmintrin.h>
 #endif
+#endif // __SSE5__
 
-#if defined(__AES__) || defined(__PCLMUL__)
-/* For AES && PCLMULQDQ */
+#if defined(__AES__) || defined(__VAES__) || defined(__PCLMUL__)  || defined(__PCLMULQDQ__)
+/* For AES, VAES && PCLMULQDQ */
 #include <wmmintrin.h>
 #endif
 
 #if defined(__AVX__) || defined(__AVX2__)
 /* For including AVX instructions */
 #include <immintrin.h>
+#if defined(__GNUC__) || defined(__clang__)
+#include <avxintrin.h>
+#endif
+#endif // __AVX__ || __AVX2__
+
+#if defined(__POPCNT__)
+#if defined(_MSC_VER)
+#include <nmmintrin.h>
+#else
+#include <nmmintrin.h>
+#include <immintrin.h>
+#if defined(__GNUC__) || defined(__clang__)
+#include <popcntintrin.h>
+#endif
+#endif // _MSC_VER
+#endif // __POPCNT__
+
+#if defined(__LZCNT__) || defined(__BMI__) || defined(__BMI1__) || defined(__BMI2__) \
+ || defined(__SHA__) || defined(__FMA__)
+#include <immintrin.h>
 #endif
 
-#ifdef __3dNOW__
+#if defined(__3dNOW__)
 #include <mm3dnow.h>
-#endif
+#endif // __3dNOW__
 
-#ifdef __FMA4__
+#if defined(__FMA4__)
 //#include <fma4intrin.h>
 #endif
 
-#if defined(__GNUC__) || defined(__llvm__)
-
-#ifdef __F16C__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
+#if defined(__GNUC__) || defined(__clang__)
+#include <x86gprintrin.h>
 #endif
 
-#ifdef __FMA__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __FMA4__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __XOP__
-#include <xopintrin.h>
-#endif
-
-#ifdef __LWP__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __RDRND__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __FSGSBASE__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __POPCNT__
-    #include <popcntintrin.h>
-#endif
-
-#ifdef __LZCNT__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __TBM__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __BMI__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#ifdef __BMI2__
-  #ifndef INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #elif (INCLUDE_X86INTRIN == 0)
-    #undef  INCLUDE_X86INTRIN
-    #define INCLUDE_X86INTRIN     1
-  #endif
-#endif
-
-#if defined(INCLUDE_X86INTRIN) && (INCLUDE_X86INTRIN != 0)
-    #include <x86intrin.h>
-#endif
-
-#endif // __GNUC__ || __llvm__
-
-#undef INCLUDE_X86INTRIN
+#endif // _M_IX86 || _M_X64 || __amd64__ || __i386__
 
 #endif // JSTD_SUPPORT_X86_INTRIN_H
