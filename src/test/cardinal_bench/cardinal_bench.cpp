@@ -470,7 +470,7 @@ int main(int argc, char * argv[])
         iters = ::atoi(argv[1]);
     }
 
-    jtest::CPU::warmup(1000);
+    jtest::CPU::warm_up(1000);
 
     printf("#define HASH_MAP_FUNCTION = %s\n\n", PRINT_MACRO(HASH_MAP_FUNCTION));
 

@@ -171,13 +171,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld_def.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\config\config.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_arch.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_post.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_pre.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\default\config.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\linux\config.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\macos\config.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\win32\config.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\dll.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hasher\hash_crc32c.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hasher\fnv1a.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hasher\sha1.h" />
@@ -222,6 +216,7 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_stl.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\string\string_view_array.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\BitUtils.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\BitVec.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\Power2.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\SSEHelper.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\support\x86_intrin.h" />
@@ -234,19 +229,21 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\system\MT19937_64.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\RandomGen.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\system\sleep.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\Assert.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\CPUWarmUp.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\Expert.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\FloatEpsinon.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\ProcessMemInfo.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\test\StopWatch_v1.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\Test.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits\has_member.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\utility.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\main\jstd\basic\assert-c.c" />
-    <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c" />
-    <ClCompile Include="..\..\..\..\src\main\jstd\system\getchar.c" />
-    <ClCompile Include="..\..\..\..\src\main\jstd\system\sleep.c" />
+    <ClCompile Include="..\..\..\..\src\main\jstd\dll_main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

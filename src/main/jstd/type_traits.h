@@ -14,7 +14,7 @@
 #include <type_traits>
 #include <utility>      // For std::pair<T1, T2>
 
-#include "jstd/type_traits/has_member.h"
+#include "jstd/traits/has_member.h"
 
 namespace jstd {
 

@@ -26,6 +26,6 @@
 #include "jstd/test/StopWatch.h"
 #include "jstd/test/CPUWarmUp.h"
 #include "jstd/test/ProcessMemInfo.h"
-#include "jstd/lib.h"
+#include "jstd/dll.h"
 
 #endif // JSTD_ALL_H

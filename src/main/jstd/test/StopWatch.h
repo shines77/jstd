@@ -6,7 +6,7 @@
 #pragma once
 #endif
 
-#include <time.h>   // For ::clock()
+#include <time.h>       // For ::clock()
 
 #if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -20,7 +20,7 @@
 #include <sys/time.h>   // For ::gettimeofday(...)
 #endif // _WIN32
 
-#if (defined(__cplusplus) && (__cplusplus >= 201103L)) || (defined(_MSC_VER) && (_MSC_VER >= 1800))
+#if (__cplusplus >= 201103L) || (defined(_MSC_VER) && (_MSC_VER >= 1800))
   #define HAVE_STD_CHRONO_H     1
 #else
   #define HAVE_STD_CHRONO_H     0
@@ -31,7 +31,7 @@
 #endif
 
 #ifndef __COMPILER_BARRIER
-#if defined(_MSC_VER) || defined(__ICL) || defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) || defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) || defined(_WINDOWS_)
 #include <intrin.h>
 #pragma intrinsic(_ReadWriteBarrier)
 #define __COMPILER_BARRIER()        _ReadWriteBarrier()

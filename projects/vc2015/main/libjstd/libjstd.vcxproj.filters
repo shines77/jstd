@@ -11,9 +11,6 @@
     <Filter Include="src\basic\msvc">
       <UniqueIdentifier>{0b8f7dce-f7be-4cd5-9eb1-cb552a1a9c16}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\type_traits">
-      <UniqueIdentifier>{d115fdbc-9451-47af-9cbe-7725110cec72}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\test">
       <UniqueIdentifier>{bbd348c4-eba0-444e-9587-81da89c3d8af}</UniqueIdentifier>
     </Filter>
@@ -38,23 +35,14 @@
     <Filter Include="src\config">
       <UniqueIdentifier>{e2c3ae77-c9ad-4573-8ce8-80200ce3153e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\config\win32">
-      <UniqueIdentifier>{3e2006da-1ba5-4086-8d39-a0db2595eabd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\config\linux">
-      <UniqueIdentifier>{46ba2aa8-e407-4625-89d4-fa68f04cd9a4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\config\macos">
-      <UniqueIdentifier>{80ffec52-d30d-4a50-9de7-235da995b983}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\config\default">
-      <UniqueIdentifier>{b6752136-5c14-4067-933d-c7799dc11006}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\hasher">
       <UniqueIdentifier>{5c925ff2-7b6e-4fd8-82f4-dd3387eb1f96}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\math">
       <UniqueIdentifier>{8923e1fb-8977-4853-a9dd-920bad282318}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\traits">
+      <UniqueIdentifier>{d115fdbc-9451-47af-9cbe-7725110cec72}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -202,27 +190,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld.h">
       <Filter>src\basic</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_arch.h">
-      <Filter>src\config</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_pre.h">
-      <Filter>src\config</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\win32\config.h">
-      <Filter>src\config\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\default\config.h">
-      <Filter>src\config\default</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\linux\config.h">
-      <Filter>src\config\linux</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\macos\config.h">
-      <Filter>src\config\macos</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\config\config_post.h">
-      <Filter>src\config</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\assert.h">
       <Filter>src\basic</Filter>
     </ClInclude>
@@ -299,7 +266,7 @@
       <Filter>src\memory</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\type_traits\has_member.h">
-      <Filter>src\type_traits</Filter>
+      <Filter>src\traits</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\utility.h">
       <Filter>src</Filter>
@@ -322,19 +289,31 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\memory\swap.h">
       <Filter>src\memory</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\support\BitVec.h">
+      <Filter>src\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\Assert.h">
+      <Filter>src\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\Expert.h">
+      <Filter>src\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\FloatEpsinon.h">
+      <Filter>src\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\test\Test.h">
+      <Filter>src\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\dll.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\src\main\jstd\system\crtdbg_env.c">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\src\main\jstd\system\getchar.c">
-      <Filter>src\system</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\src\main\jstd\system\sleep.c">
-      <Filter>src\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\src\main\jstd\basic\assert-c.c">
       <Filter>src\basic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\main\jstd\dll_main.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

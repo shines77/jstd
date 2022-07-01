@@ -21,19 +21,23 @@
 #include <chrono>
 #endif
 
+#include <atomic>
+
 namespace jtest {
 namespace CPU {
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1800)
 
-void warmup(int delayMillsecs)
+static
+void warm_up(int delayMillsecs)
 {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     double delayTimeLimit = (double)delayMillsecs / 1.0;
     volatile int sum = 0;
 
+    printf("------------------------------------------\n\n");
     printf("CPU warm-up begin ...\n");
-    ::fflush(stdout);
+    //::fflush(stdout);
     std::chrono::high_resolution_clock::time_point startTime, endTime;
     std::chrono::duration<double, std::ratio<1, 1000>> elapsedTime;
     startTime = std::chrono::high_resolution_clock::now();
@@ -50,19 +54,21 @@ void warmup(int delayMillsecs)
 
     printf("sum = %d, time: %0.3f ms\n", sum, elapsedTime.count());
     printf("CPU warm-up end   ... \n\n");
-    ::fflush(stdout);
+    printf("------------------------------------------\n\n");
+    //::fflush(stdout);
 #endif // !_DEBUG
 }
 
 #else
 
-void warmup(DWORD delayMillsecs)
+static
+void warm_up(DWORD delayMillsecs)
 {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     volatile int sum = 0;
 
     printf("CPU warm-up begin ...\n");
-    ::fflush(stdout);
+    //::fflush(stdout);
     DWORD startTime, endTime;
     DWORD elapsedTime;
     startTime = ::timeGetTime();
@@ -79,11 +85,22 @@ void warmup(DWORD delayMillsecs)
 
     printf("sum = %d, time: %u ms\n", sum, elapsedTime);
     printf("CPU warm-up end   ... \n\n");
-    ::fflush(stdout);
+    //::fflush(stdout);
 #endif // !_DEBUG
 }
 
 #endif // _MSC_VER
+
+struct WarmUp {
+    WarmUp(unsigned int delayMillsecs = 1000) {
+        //
+        // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
+        //
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+        jtest::CPU::warm_up(delayMillsecs);
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+    }
+};
 
 } // namespace CPU
 } // namespace jtest

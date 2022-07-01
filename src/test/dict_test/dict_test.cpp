@@ -2386,7 +2386,7 @@ int main(int argc, char * argv[])
     }
 
     if (!dict_words_is_ready) {
-        jtest::CPU::warmup(1000);
+        jtest::CPU::warm_up(1000);
     }
 
     if (1) string_view_test();

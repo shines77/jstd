@@ -186,9 +186,7 @@ include_directories(src)
 include_directories(src/main)
 
 set(JSTD_SOURCE_FILES
-    src/main/jstd/system/getchar.c
-    src/main/jstd/system/sleep.c
-    src/main/jstd/system/crtdbg_env.c
+    src/main/jstd/dll_main.cpp
     src/main/jstd/basic/assert-c.c
     )
 

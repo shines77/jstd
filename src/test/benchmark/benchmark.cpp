@@ -1420,7 +1420,7 @@ int main(int argc, char * argv[])
         dict_filename = filename;
     }
 
-    jtest::CPU::warmup(1000);
+    jtest::CPU::warm_up(1000);
 
     if (1) hashmap_benchmark_all();
     if (1) hashmap_benchmark_same_hash_all();
