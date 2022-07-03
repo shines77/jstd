@@ -6,14 +6,17 @@
 #pragma once
 #endif
 
-#include "jstd/basic/stddef.h"
-#include "jstd/basic/stdint.h"
-#include "jstd/basic/stdsize.h"
+#include <stddef.h>     // For offsetof
+
+#include <cstdint>
+#include <cstddef>
+#include <cstdbool>
+#include <cassert>
 
 #include <string>
-#include <type_traits>
 #include <utility>      // For std::pair<T1, T2>
-
+#include <type_traits>
+#include "jstd/basic/stddef.h"
 #include "jstd/traits/has_member.h"
 
 namespace jstd {
@@ -53,14 +56,14 @@ struct integral_traits {
         "Error: jstd::integral_traits<T> -- T must be a integral type.");
 
     // Bits
-    static const size_t bytes = sizeof(T);
-    static const size_t bits = bytes * 8;
-    static const size_t max_shift = bits - 1;
+    static constexpr size_t bytes = sizeof(T);
+    static constexpr size_t bits = bytes * 8;
+    static constexpr size_t max_shift = bits - 1;
 
     // 0xFFFFFFFFUL;
-    static const unsigned_type max_num = static_cast<unsigned_type>(-1);
+    static constexpr unsigned_type max_num = static_cast<unsigned_type>(-1);
     // 0x80000000UL;
-    static const unsigned_type max_power2 = static_cast<unsigned_type>(1) << max_shift;
+    static constexpr unsigned_type max_power2 = static_cast<unsigned_type>(1) << max_shift;
 };
 
 template <typename T>
@@ -79,8 +82,8 @@ constexpr T cmin(const T & a, const T & b) {
 // Trait which can be added to user types to enable use of memcpy.
 //
 // Example:
-// template <>
-// struct is_relocatable<MyType> : std::true_type {};
+//   template <>
+//   struct is_relocatable<MyType> : std::true_type {};
 //
 
 template <typename T>
@@ -97,10 +100,9 @@ struct is_relocatable<std::pair<T, U>>
 template <typename T>
 struct is_relocatable<const T> : is_relocatable<T> {};
 
-// Template struct param_tester
-
-struct void_warpper {
-    void_warpper() {}
+// Struct void_wrapper
+struct void_wrapper {
+    void_wrapper() {}
 
     template <typename ... Args>
     void operator () (Args && ... args) const {
@@ -108,19 +110,27 @@ struct void_warpper {
     }
 };
 
-// test if parameters are valid
-template <typename ... Args>
-struct param_tester
-{
+template <typename... Ts>
+struct make_void {
     typedef void type;
 };
 
 // Alias template void_t
-template <class... Types>
-using void_t = typename param_tester<Types...>::type;
+template <typename... Ts>
+using void_t = typename make_void<Ts...>::type;
+
+//
+// std::remove_xxxx<T> enhance
+//
+template <typename T>
+struct remove_cvref {
+    typedef typename std::remove_cv<
+                typename std::remove_reference<T>::type
+            >::type type;
+};
 
 template <typename T>
-struct remove_cv_rp {
+struct remove_cvp_ref {
     typedef typename std::remove_cv<
                 typename std::remove_reference<
                     typename std::remove_pointer<T>::type
@@ -129,7 +139,7 @@ struct remove_cv_rp {
 };
 
 template <typename T>
-struct remove_cv_rp_ext {
+struct remove_cvrp_ext {
     typedef typename std::remove_extent<
                 typename std::remove_cv<
                     typename std::remove_reference<
@@ -137,6 +147,22 @@ struct remove_cv_rp_ext {
                     >::type
                 >::type
             >::type type;
+};
+
+template <typename T>
+struct remove_all {
+    typedef typename std::remove_all_extents<
+                typename std::remove_cv<
+                    typename std::remove_reference<
+                        typename std::remove_pointer<T>::type
+                    >::type
+                >::type
+            >::type type;
+};
+
+template <typename T1, typename T2>
+struct is_same_ex : public std::is_same<typename remove_cvref<T1>::type,
+                                        typename remove_cvref<T2>::type> {
 };
 
 template <typename T>
@@ -151,17 +177,6 @@ struct is_noexcept_move_assignable {
     static constexpr bool value =
         !(!std::is_nothrow_move_assignable<T>::value &&
 		   std::is_copy_assignable<T>::value);
-};
-
-template <typename T>
-struct remove_all {
-    typedef typename std::remove_all_extents<
-                typename std::remove_cv<
-                    typename std::remove_reference<
-                        typename std::remove_pointer<T>::type
-                    >::type
-                >::type
-            >::type type;
 };
 
 template <typename Caller, typename Function, typename = void>
@@ -477,6 +492,77 @@ struct has_mapped_type {
 
     static constexpr bool value = std::is_same<decltype(check<T>(nullptr)), std::true_type>::value;
 };
+
+//////////////////////////////////////////////////////////////////////////////////
+
+template <typename Pair, typename = std::true_type>
+struct OffsetOf {
+    static constexpr std::size_t kFirst  = static_cast<std::size_t>(-1);
+    static constexpr std::size_t kSecond = static_cast<std::size_t>(-1);
+};
+
+template <typename Pair>
+struct OffsetOf<Pair, typename std::is_standard_layout<Pair>::type> {
+    static constexpr std::size_t kFirst  = offsetof(Pair, first);
+    static constexpr std::size_t kSecond = offsetof(Pair, second);
+};
+
+template <typename Key, typename Value>
+struct is_absl_compatible_layout {
+private:
+    struct Pair {
+        Key     first;
+        Value   second;
+    };
+
+    // Is PairT layout-compatible with Pair ?
+    template <typename PairT>
+    static constexpr bool isLayoutCompatible() {
+        return (std::is_standard_layout<PairT>() &&
+               (sizeof(PairT) == sizeof(Pair)) &&
+               (alignof(PairT) == alignof(Pair)) &&
+               (OffsetOf<PairT>::kFirst == OffsetOf<Pair>::kFirst) &&
+               (OffsetOf<PairT>::kSecond == OffsetOf<Pair>::kSecond));
+    }
+
+public:
+    // Whether std::pair<const K, V> and std::pair<K, V> are layout-compatible.
+    // If they are, then it is safe to store them in a union and read from either.
+    static constexpr bool value = (std::is_standard_layout<Key>() &&
+                                   std::is_standard_layout<Pair>() &&
+                                   (OffsetOf<Pair>::kFirst == 0) &&
+                                   isLayoutCompatible<std::pair<Key, Value>>() &&
+                                   isLayoutCompatible<std::pair<const Key, Value>>());
+};
+
+//
+// Pair        = std::pair<const Key, Value>
+// MutablePair = std::pair<Key, Value>
+//
+template <typename Pair, typename MutablePair>
+struct is_compatible_layout {
+public:
+    typedef typename Pair::first_type           First;
+    typedef typename Pair::second_type          Second;
+    typedef typename MutablePair::first_type    MutableFirst;
+    typedef typename MutablePair::second_type   MutableSecond;
+
+public:
+    // Whether std::pair<const Key, Value> and std::pair<Key, Value> are layout-compatible.
+    // If they are, then it is safe to store them in a union and read from either.
+    static constexpr bool value = (std::is_standard_layout<First>() &&
+                                   std::is_standard_layout<MutableFirst>() &&
+                                   std::is_standard_layout<Second>() &&
+                                   std::is_standard_layout<MutableSecond>() &&
+                                   std::is_standard_layout<Pair>() &&
+                                   std::is_standard_layout<MutablePair>() &&
+                                   (sizeof(Pair)  == sizeof(MutablePair)) &&
+                                   (alignof(Pair) == alignof(MutablePair)) &&
+                                   (OffsetOf<Pair>::kFirst  == OffsetOf<MutablePair>::kFirst) &&
+                                   (OffsetOf<Pair>::kSecond == OffsetOf<MutablePair>::kSecond));
+};
+
+//////////////////////////////////////////////////////////////////////////////////
 
 } // namespace jstd
 

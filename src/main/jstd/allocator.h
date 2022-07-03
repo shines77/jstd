@@ -130,16 +130,6 @@ struct align_to {
 
 } // namespace compile_time
 
-static inline
-std::size_t align_to(std::size_t size, std::size_t alignment)
-{
-    assert(alignment > 0);
-    assert((alignment & (alignment - 1)) == 0);
-    size = (size + alignment - 1) & ~(alignment - 1);
-    assert((size / alignment * alignment) == size);
-    return size;
-}
-
 template <typename Derive, typename T, std::size_t Alignment = std::alignment_of<T>::value,
                                        std::size_t ObjectSize = sizeof(T)>
 struct allocator_base {
