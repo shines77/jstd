@@ -791,15 +791,15 @@ public:
     // insert_no_return(key, value)
     //
     void insert_no_return(const key_type & key, const mapped_type & value) {
-        this->insert_impl<false, void_warpper>(key, value);
+        this->insert_impl<false, void_wrapper>(key, value);
     }
 
     void insert_no_return(const key_type & key, mapped_type && value) {
-        this->insert_impl<false, void_warpper>(key, std::forward<mapped_type>(value));
+        this->insert_impl<false, void_wrapper>(key, std::forward<mapped_type>(value));
     }
 
     void insert_no_return(key_type && key, mapped_type && value) {
-        this->insert_impl<false, void_warpper>(std::forward<key_type>(key),
+        this->insert_impl<false, void_wrapper>(std::forward<key_type>(key),
                                                std::forward<mapped_type>(value));
     }
 
@@ -836,7 +836,7 @@ public:
 
     template <typename ...Args>
     void emplace_no_return(Args && ... args) {
-        this->emplace_impl<false, void_warpper>(
+        this->emplace_impl<false, void_wrapper>(
             key_extractor<value_type>::extract(std::forward<Args>(args)...),
             std::forward<Args>(args)...);
     }
