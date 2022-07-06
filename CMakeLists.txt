@@ -29,12 +29,16 @@ include("${PROJECT_SOURCE_DIR}/cmake/utils.cmake")
 include("${PROJECT_SOURCE_DIR}/cmake/system.cmake")
 include("${PROJECT_SOURCE_DIR}/cmake/detect_cpu_architectures.cmake")
 
+if (0)
+
 enable_language(ASM_NASM)
 
 if (CMAKE_CL_64)
     set(CMAKE_CL_ARCH x64)
 else()
     set(CMAKE_CL_ARCH x86)
+endif()
+
 endif()
 
 ##
