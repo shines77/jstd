@@ -92,10 +92,6 @@
 
 #include "BenchmarkResult.h"
 
-#define PRINT_MACRO_HELPER(x)   #x
-#define PRINT_MACRO(x)          PRINT_MACRO_HELPER(x)
-#define PRINT_MACRO_VAR(x)      #x " = " PRINT_MACRO_HELPER(x)
-
 #define USE_STAT_COUNTER        1
 
 #if USE_STAT_COUNTER
@@ -126,6 +122,18 @@
 #else
   #define HASH_MAP_FUNCTION     std::hash
 #endif // HASH_FUNCTION_MODE
+
+#define MACRO_TO_STRING(x)      #x
+#define PRINT_MACRO(x)          MACRO_TO_STRING(x)
+#define PRINT_MACRO_VAR(x)      #x " = " MACRO_TO_STRING(x)
+
+#ifndef UINT64_High
+#define UINT64_High(u64)        ((uint32_t)(u64 >> 32))
+#endif
+
+#ifndef UINT64_Low
+#define UINT64_Low(u64)         ((uint32_t)(u64 & 0x00000000FFFFFFFFull))
+#endif
 
 #pragma message(PRINT_MACRO_VAR(HASH_MAP_FUNCTION))
 
@@ -219,7 +227,7 @@ struct IntegalHash
                                 (std::is_integral<UInt32>::value &&
                                 (sizeof(UInt32) <= 4))>::type * = nullptr>
     result_type operator () (UInt32 value) const noexcept {
-        result_type hash = (result_type)((std::uint32_t)value * 2654435761ul + 16777619ul);
+        result_type hash = (result_type)(((std::uint64_t)value * 2654435769ul) >> 12);
         return hash;
     }
 
@@ -227,7 +235,7 @@ struct IntegalHash
                                 (std::is_integral<UInt64>::value &&
                                 (sizeof(UInt64) > 4 && sizeof(UInt64) <= 8))>::type * = nullptr>
     result_type operator () (UInt64 value) const noexcept {
-        result_type hash = (result_type)((std::uint64_t)value * 14695981039346656037ull + 1099511628211ull);
+        result_type hash = (result_type)(((std::uint64_t)value * 11400714819323198485ull) >> 28);
         return hash;
     }
 
@@ -1292,24 +1300,46 @@ void benchmark_all_hashmaps(std::size_t iters)
 
 void std_hash_test()
 {
+    printf("#define HASH_MAP_FUNCTION = %s\n\n", PRINT_MACRO(HASH_MAP_FUNCTION));
+
     printf("std::hash<std::uint32_t>\n\n");
-    for(std::uint32_t i = 0; i < 8; i++) {
-        std::size_t hash_code = HASH_MAP_FUNCTION<std::uint32_t>()(i);
-        printf("key = %3u, hash_code = %" PRIuPTR "\n", i, hash_code);
+    for (std::uint32_t i = 0; i < 8; i++) {
+        std::size_t hash_code = std::hash<std::uint32_t>()(i);
+        printf("key = %3u, hash_code = 0x%08X%08X\n",
+               i, UINT64_High(hash_code), UINT64_Low(hash_code));
     }
     printf("\n");
 
     printf("std::hash<std::uint64_t>\n\n");
-    for(std::size_t i = 0; i < 8; i++) {
-        std::size_t hash_code = HASH_MAP_FUNCTION<std::uint64_t>()(i);
-        printf("key = %3" PRIuPTR ", hash_code = %" PRIuPTR "\n", i, hash_code);
+    for (std::uint64_t i = 0; i < 8; i++) {
+        std::size_t hash_code = std::hash<std::uint64_t>()(i);
+        printf("key = %3" PRIu64 ", hash_code = 0x%08X%08X\n",
+               i, UINT64_High(hash_code), UINT64_Low(hash_code));
     }
     printf("\n");
+
+#if (HASH_FUNCTION_ID != ID_STD_HASH)
+    printf("%s<std::uint32_t>\n\n", PRINT_MACRO(HASH_MAP_FUNCTION));
+    for (std::uint32_t i = 0; i < 8; i++) {
+        std::size_t hash_code = HASH_MAP_FUNCTION<std::uint32_t>()(i);
+        printf("key = %3u, hash_code = 0x%08X%08X\n",
+               i, UINT64_High(hash_code), UINT64_Low(hash_code));
+    }
+    printf("\n");
+
+    printf("%s<std::uint64_t>\n\n", PRINT_MACRO(HASH_MAP_FUNCTION));
+    for (std::uint64_t i = 0; i < 8; i++) {
+        std::size_t hash_code = HASH_MAP_FUNCTION<std::uint64_t>()(i);
+        printf("key = %3" PRIu64 ", hash_code = 0x%08X%08X\n",
+               i, UINT64_High(hash_code), UINT64_Low(hash_code));
+    }
+    printf("\n");
+#endif
 }
 
 int main(int argc, char * argv[])
 {
-	jstd::RandomGen   RandomGen(20200831);
+    jstd::RandomGen   RandomGen(20200831);
     jstd::MtRandomGen mtRandomGen(20200831);
 
     std::size_t iters = kDefaultIters;
@@ -1322,9 +1352,10 @@ int main(int argc, char * argv[])
 
     printf("#define HASH_MAP_FUNCTION = %s\n\n", PRINT_MACRO(HASH_MAP_FUNCTION));
 
-	if (1) std_hash_test();
+    if (1) { std_hash_test(); }
 
-    if (1) {
+    if (1)
+    {
         printf("-------------------------- benchmark_all_hashmaps(iters) ---------------------------\n\n");
         benchmark_all_hashmaps(iters);
     }
