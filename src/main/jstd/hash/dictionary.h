@@ -27,7 +27,7 @@
 
 #include "jstd/allocator.h"
 #include "jstd/iterator.h"
-#include "jstd/hash/hash_helper.h"
+#include "jstd/hasher/hash_helper.h"
 #include "jstd/hash/equal_to.h"
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/hash/hash_chunk_list.h"

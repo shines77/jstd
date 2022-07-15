@@ -10,25 +10,35 @@
 #include "jstd/basic/stdint.h"
 #include "jstd/basic/stdsize.h"
 
+#include "jstd/hasher/hashes.h"
+
 #include <assert.h>
 
+// Just for coding in msvc or test, please comment it in the release version.
 #ifdef _MSC_VER
 #ifndef __SSE4_2__
-// Just for coding in msvc or test, please comment it in the release version.
 #define __SSE4_2__
 #endif
+#endif // _MSC_VER
+
+#if (defined(_MSC_VER) && (_MSC_VER >= 1500)) && !defined(__clang__)
+#include <intrin.h>
 #endif
 
-#ifdef __SSE4_2__
-#include <nmmintrin.h>  // For SSE 4.2
+// defined(__GNUC__) && (__GNUC__ * 1000 + __GNUC_MINOR__ >= 4005)
+#if defined(__GNUC__) || (defined(__clang__) && !defined(_MSC_VER))
+#include <x86intrin.h>
 #endif
+
+//#include <nmmintrin.h>  // For SSE 4.2, _mm_popcnt_u32(), _mm_popcnt_u64()
+#include "jstd/support/x86_intrin.h"
 
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
 #include <arm_acle.h>
 #include <arm_neon.h>
 #endif
 
-#include "jstd/hash/hash.h"
+#include "jstd/hasher/hashes.h"
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(__amd64__) || defined(__x86_64__) || defined(__LP64__)
@@ -48,11 +58,44 @@
 //
 
 namespace jstd {
-namespace hasher {
+namespace hashes {
 
 static const uint32_t kInitPrime32 = 0x165667C5UL;
 
 #ifdef __SSE4_2__
+
+static size_t intel_simple_int_hash_crc32c(size_t value)
+{
+#if JSTD_IS_X86_64
+    uint64_t crc32 = ~uint64_t(0);
+    crc32 = _mm_crc32_u64(crc32, static_cast<uint64_t>(value));
+    return static_cast<size_t>(crc32);
+#else
+    uint32_t crc32 = ~uint32_t(0);
+    crc32 = _mm_crc32_u32(crc32, static_cast<uint32_t>(value));
+    return static_cast<size_t>(crc32);
+#endif
+}
+
+static uint32_t intel_int_hash_crc32c_x86(uint32_t value)
+{
+    uint32_t crc32 = ~uint32_t(0);
+    crc32 = _mm_crc32_u32(crc32, value);
+    return crc32;
+}
+
+#if JSTD_IS_X86_64
+
+static uint64_t intel_int_hash_crc32c_x64(uint64_t value)
+{
+    uint64_t crc32  = ~uint64_t(0);
+    uint64_t crc32r =  uint64_t(0);
+    crc32  = _mm_crc32_u64(crc32,  value);
+    crc32r = _mm_crc32_u64(crc32r, value);
+    return ((crc32 & 0x00000000FFFFFFFFull) | (crc32r << 32));
+}
+
+#endif // JSTD_IS_X86_64
 
 static uint32_t intel_hash_crc32c_x86(const char * data, size_t length)
 {
@@ -62,7 +105,7 @@ static uint32_t intel_hash_crc32c_x86(const char * data, size_t length)
     static const uint32_t kMaskOne = 0xFFFFFFFFUL;
     const char * data_end = data + length;
 
-    uint32_t crc32 = 0;
+    uint32_t crc32 = ~uint32_t(0);
     ssize_t remain = static_cast<ssize_t>(length);
 
     do {
@@ -102,7 +145,7 @@ static uint32_t intel_hash_crc32c_x64(const char * data, size_t length)
     static const uint64_t kMaskOne = 0xFFFFFFFFFFFFFFFFULL;
     const char * data_end = data + length;
 
-    uint64_t crc64 = 0;
+    uint64_t crc64 = ~uint64_t(0);
     ssize_t remain = static_cast<ssize_t>(length);
 
     do {
@@ -137,7 +180,7 @@ static uint32_t intel_hash_crc32c_x64(const char * data, size_t length)
 static uint32_t intel_hash_crc32c_simple_x86(const char * data, size_t length)
 {
     assert(data != nullptr);
-    uint32_t crc32 = ~0;
+    uint32_t crc32 = ~uint32_t(0);
 
     static const size_t kStepSize = sizeof(uint32_t);
     uint32_t * src = (uint32_t *)data;
@@ -164,7 +207,7 @@ static uint32_t intel_hash_crc32c_simple_x86(const char * data, size_t length)
 static uint32_t intel_hash_crc32c_simple_x64(const char * data, size_t length)
 {
     assert(data != nullptr);
-    uint64_t crc64 = ~0;
+    uint64_t crc64 = ~uint64_t(0);
 
     static const size_t kStepSize = sizeof(uint64_t);
     uint64_t * src = (uint64_t *)data;
@@ -204,9 +247,29 @@ static uint32_t hash_crc32c(const char * data, size_t length)
 #endif
 }
 
-} // namespace hasher
-} // namespace jstd
+static size_t int_hash_crc32c(size_t value)
+{
+#ifdef __SSE4_2__
+  #if JSTD_IS_X86_64
+    return intel_int_hash_crc32c_x64(value);
+  #else
+    return intel_int_hash_crc32c_x86(value);
+  #endif
+#else
+    return hashes::Times31(value, sizeof(value));
+#endif
+}
 
-//#undef JSTD_IS_X86_64
+static size_t simple_int_hash_crc32c(size_t value)
+{
+#ifdef __SSE4_2__
+    return intel_simple_int_hash_crc32c(value);
+#else
+    return hashes::Times31(value, sizeof(value));
+#endif
+}
+
+} // namespace hashes
+} // namespace jstd
 
 #endif // JSTD_HASHER_HASH_CRC32C_H

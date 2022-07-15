@@ -172,8 +172,10 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\basic\vld_def.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\config\config.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\dll.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\hasher\hashes.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hasher\hash_crc32c.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hasher\fnv1a.h" />
+    <ClInclude Include="..\..\..\..\src\main\jstd\hasher\hash_helper.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hasher\sha1.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_traits.h" />
@@ -181,10 +183,8 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_v2.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_v3.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\equal_to.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hashmap_analyzer.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_chunk_list.h" />
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_helper.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_iterator_inc.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_table.h" />
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\key_extractor.h" />

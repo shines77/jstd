@@ -2102,9 +2102,9 @@ void fnv1a_hash_test()
 {
     const char * test_str = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
         "abcdefghijklmnopqrstuvwxyz";
-    uint32_t fnv1a_1 = jstd::hasher::FNV1A_Yoshimura(test_str, jstd::libc::StrLen(test_str));
-    uint32_t fnv1a_2 = jstd::hasher::FNV1A_Yoshimitsu_TRIADii_xmm(test_str, jstd::libc::StrLen(test_str));
-    uint32_t fnv1a_3 = jstd::hasher::FNV1A_penumbra(test_str, jstd::libc::StrLen(test_str));
+    uint32_t fnv1a_1 = jstd::hashes::FNV1A_Yoshimura(test_str, jstd::libc::StrLen(test_str));
+    uint32_t fnv1a_2 = jstd::hashes::FNV1A_Yoshimitsu_TRIADii_xmm(test_str, jstd::libc::StrLen(test_str));
+    uint32_t fnv1a_3 = jstd::hashes::FNV1A_penumbra(test_str, jstd::libc::StrLen(test_str));
 }
 
 #define PTR2HEX16(ptr) (uint32_t)((uint64_t)(ptr) >> 32), (uint32_t)((uint64_t)(ptr) & 0xFFFFFFFFULL)

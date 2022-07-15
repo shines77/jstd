@@ -13,7 +13,7 @@
 #include <string.h>
 #include <string>
 
-#include "jstd/hash/hash_helper.h"
+#include "jstd/hasher/hash_helper.h"
 #include "jstd/string/string_stl.h"
 #include "jstd/string/string_utils.h"
 

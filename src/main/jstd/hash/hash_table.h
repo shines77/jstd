@@ -17,7 +17,7 @@
 #include <memory>
 #include <type_traits>
 
-#include "jstd/hash/hash_helper.h"
+#include "jstd/hasher/hash_helper.h"
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/string/string_utils.h"
 #include "jstd/support/Power2.h"

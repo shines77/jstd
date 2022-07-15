@@ -1,6 +1,6 @@
 
-#ifndef JSTD_HASH_HASH_H
-#define JSTD_HASH_HASH_H
+#ifndef JSTD_HASHER_HASH_H
+#define JSTD_HASHER_HASH_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -19,6 +19,14 @@
 #include <string>
 
 #include "jstd/string/char_traits.h"
+#include "jstd/type_traits.h"
+#include "jstd/support/BitUtils.h"
+#include "jstd/support/Power2.h"
+
+#if defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX64) || defined(_M_AMD64))
+  #include <intrin.h>
+  #pragma intrinsic(_umul128)
+#endif
 
 //
 // See: https://sourceforge.net/p/predef/wiki/Architectures/
@@ -230,6 +238,34 @@ See:
 
 namespace hashes {
 
+//
+// Fibonacci hash
+//
+// See: http://www.javashuo.com/article/p-tklmqgvw-hx.html
+// See: https://zhuanlan.zhihu.com/p/141797134
+// See: https://www.jianshu.com/p/421aa9480e42
+//
+// 2^32 * 0.6180339887 = 2654435769.2829335552
+//
+static inline
+std::size_t fibonacci_hash32(std::size_t value)
+{
+    std::size_t hash_code = static_cast<std::size_t>(
+        (static_cast<std::uint64_t>(value) * 2654435769ul) >> 28);
+    return hash_code;
+}
+
+//
+// 2^64 * 0.6180339887 = 11400714818402800990.5250107392
+//
+static inline
+std::size_t fibonacci_hash(std::size_t value)
+{
+    std::size_t hash_code = static_cast<std::size_t>(
+        (static_cast<std::uint64_t>(value) * 11400714819323198485ull) >> 28);
+    return hash_code;
+}
+
 // This string hash function is from OpenSSL.
 template <typename CharTy>
 static std::uint32_t OpenSSL_Hash(const CharTy * key, std::size_t len)
@@ -238,7 +274,7 @@ static std::uint32_t OpenSSL_Hash(const CharTy * key, std::size_t len)
 
     const UCharTy * src = (const UCharTy *)key;
     const UCharTy * end = src + len;
-    
+
     const UCharTy * limit = src + (len & std::size_t(~(std::size_t)1U));
 
     std::uint32_t hash = 0;
@@ -437,6 +473,158 @@ static std::uint32_t DJBHash(const CharTy * key, std::size_t len)
     }
 
     return hash;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+struct _uint128_t
+{
+    uint64_t low;
+    uint64_t high;
+
+    _uint128_t() noexcept : low(0), high(0) {
+    }
+    _uint128_t(uint64_t low, uint64_t high) noexcept : low(low), high(high) {
+    }
+    _uint128_t(const _uint128_t & src) noexcept : low(src.low), high(src.high) {
+    }
+
+    _uint128_t & operator = (const _uint128_t & rhs) {
+        this->low  = rhs.low;
+        this->high = rhs.high;
+        return *this;
+    }
+
+    ~_uint128_t() {}
+};
+
+//
+// product (128) = a (64) * b (64)
+//
+// From: https://stackoverflow.com/questions/25095741/how-can-i-multiply-64-bit-operands-and-get-128-bit-result-portably
+//
+static inline
+_uint128_t uint128_mul(uint64_t multiplicand, uint64_t multiplier)
+{
+    /*
+     * GCC and Clang usually provide __uint128_t on 64-bit targets,
+     * although Clang also defines it on WASM despite having to use
+     * builtins for most purposes - including multiplication.
+     */
+#if defined(__SIZEOF_INT128__) && !defined(__wasm__)
+
+    _uint128_t product128;
+    __uint128_t product = (__uint128_t)multiplicand * multiplier;
+    product128.low  = (uint64_t)(product & 0xFFFFFFFFFFFFFFFFull);
+    product128.high = (uint64_t)(product >> 64);
+    return product128;
+
+#elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX64) || defined(_M_AMD64))
+
+    /* Use the _umul128 intrinsic on MSVC x64 to hint for mulq. */
+    _uint128_t product128;
+    product128.low = _umul128(multiplicand, multiplier, &product128.high);
+    return product128;
+
+#elif defined(__ARM__) || defined(__ARM64__)
+    /*
+     * Fast yet simple grade school multiply that avoids
+     * 64-bit carries with the properties of multiplying by 11
+     * and takes advantage of UMAAL on ARMv6 to only need 4
+     * calculations.
+     */
+    /*******************************************************************
+
+        multiplicand (64) = low0, high0
+        multiplier (64)   = low1, high1
+
+        multiplicand (64) * multiplier (64) =
+
+        |           |             |            |           |
+        |           |             |      high0 * high1     |  product_03
+        |           |       low0  * high1      |           |  product_02
+        |           |       high0 * low1       |           |  product_01
+        |      low0 * low1        |            |           |  product_00
+        |           |             |            |           |
+        0          32            64           96          128
+
+    *******************************************************************/
+    uint32_t low0  = (multiplicand & 0xFFFFFFFF);
+    uint32_t high0 = (multiplicand >> 32);
+    uint32_t low1  = (multiplier & 0xFFFFFFFF);
+    uint32_t high1 = (multiplier >> 32);
+
+    /* First calculate all of the cross products. */
+    uint64_t product_00 = (uint64_t)low0  * low1;
+    uint64_t product_01 = (uint64_t)high0 * low1;
+    uint64_t product_02 = (uint64_t)low0  * high1;
+    uint64_t product_03 = (uint64_t)high0 * high1;
+
+    /* Now add the products together. These will never overflow. */
+    uint64_t middle = product_02 + (uint32_t)(product_00 >> 32) + (uint32_t)(product_01 & 0xFFFFFFFFul);
+    uint64_t low64  = (uint32_t)(product_00 & 0xFFFFFFFFul) | (middle << 32);
+    uint64_t high64 = product_03 + (uint32_t)(product_01 >> 32) + (uint32_t)(middle >> 32);
+    return _uint128_t(low64, high64);
+
+#else // __i386__ or other
+
+    /*******************************************************************
+
+        multiplicand (64) = low0, high0
+        multiplier (64)   = low1, high1
+
+        multiplicand (64) * multiplier (64) =
+
+        |           |             |            |           |
+        |           |             |      high0 * high1     |  product_03
+        |           |       low0  * high1      |           |  product_02
+        |           |       high0 * low1       |           |  product_01
+        |      low0 * low1        |            |           |  product_00
+        |           |             |            |           |
+        0          32            64           96          128
+
+    *******************************************************************/
+    uint32_t low0  = (multiplicand & 0xFFFFFFFF);
+    uint32_t high0 = (multiplicand >> 32);
+    uint32_t low1  = (multiplier & 0xFFFFFFFF);
+    uint32_t high1 = (multiplier >> 32);
+
+    /* First calculate all of the cross products. */
+    uint64_t product_00 = (uint64_t)low0  * low1;
+    uint64_t product_01 = (uint64_t)high0 * low1;
+    uint64_t product_02 = (uint64_t)low0  * high1;
+    uint64_t product_03 = (uint64_t)high0 * high1;
+
+    /* Now add the products together. These will never overflow. */
+    uint64_t middle = product_01 + product_02 + (uint32_t)(product_00 >> 32);
+    uint64_t low64  = (uint32_t)(product_00 & 0xFFFFFFFFul) | (middle << 32);
+    uint64_t high64 = product_03 + (uint32_t)(middle >> 32);
+    return _uint128_t(low64, high64);
+#endif // __i386__
+}
+
+static inline
+std::uint32_t mum_hash32(std::uint32_t multiplicand, std::uint32_t multiplier)
+{
+    std::uint64_t product = std::uint64_t(multiplicand) * multiplier;
+    return (std::uint32_t)(std::uint32_t(product & 0x00000000FFFFFFFFull) ^ std::uint32_t(product >> 32));
+}
+
+static inline
+std::uint64_t mum_hash64(std::uint64_t multiplicand, std::uint64_t multiplier)
+{
+    _uint128_t product = uint128_mul(multiplicand, multiplier);
+    return (product.low ^ product.high);
+}
+
+static inline
+std::size_t mum_hash(std::size_t multiplicand, std::size_t multiplier)
+{
+#if (JSTD_WORD_LEN == 64)
+    return mum_hash64(multiplicand, multiplier);
+#else
+    return mum_hash32(multiplicand, multiplier);
+#endif
 }
 
 } // namespace hashes
@@ -1069,6 +1257,71 @@ HashUtils<std::uint64_t>::decodeValue<8U>(const char * data, std::uint32_t missa
     return value;
 }
 
-} // namespace kvdb
+//////////////////////////////////////////////////////////////////////////////////////
 
-#endif // JSTD_HASH_HASH_H
+class fibonacci_hash_policy;
+
+template <typename T, typename = void>
+struct hash_policy_selector
+{
+    typedef fibonacci_hash_policy type;
+};
+
+template <typename T>
+struct hash_policy_selector<T, void_t<typename T::hash_policy>>
+{
+    typedef typename T::hash_policy type;
+};
+
+class fibonacci_hash_policy
+{
+public:
+    typedef std::size_t size_type;
+
+private:
+    std::uint8_t shift_;
+
+public:
+    fibonacci_hash_policy() noexcept : shift_(28u) {
+    }
+
+    fibonacci_hash_policy(const fibonacci_hash_policy & src) noexcept
+        : shift_(src.shift_) {
+    }
+
+    ~fibonacci_hash_policy() = default;
+
+    size_type index_for_hash(size_type hash, size_type /* mask */) const {
+        return (size_type)((std::uint64_t)hash * 11400714819323198485ull) >> this->shift_;
+    }
+
+    size_type round_index(size_type index, size_type mask) const {
+        return (index & mask);
+    }
+
+    std::uint8_t calc_next_capacity(size_type & new_capacity) const {
+        assert(new_capacity > 1);
+        assert(pow2::is_pow2(new_capacity));
+#if 1
+        // Fast to get log2_int, if the new_size is power of 2.
+        // Use bsf(n) has the same effect.
+        return std::uint8_t(64u - BitUtils::bsr(new_capacity));
+#else
+        return std::uint8_t(64u - pow2::log2_int<size_type, size_type(2)>(new_capacity));
+#endif
+    }
+
+    void commit(std::uint8_t shift) {
+        this->shift_ = shift;
+    }
+
+    void reset() {
+        this->shift_ = 28u;
+    }
+};
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+} // namespace jstd
+
+#endif // JSTD_HASHER_HASH_H

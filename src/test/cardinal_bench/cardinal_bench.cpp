@@ -119,7 +119,7 @@
 
 #include <jstd/hash/dictionary.h>
 #include <jstd/hash/hashmap_analyzer.h>
-#include <jstd/hash/hash_helper.h>
+#include <jstd/hasher/hash_helper.h>
 #include <jstd/string/string_view.h>
 #include <jstd/string/string_view_array.h>
 #include <jstd/system/Console.h>

@@ -94,12 +94,6 @@
     <ClInclude Include="..\..\..\..\src\main\jstd\nothrow_new.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash.h">
-      <Filter>src\hash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\main\jstd\hash\hash_helper.h">
-      <Filter>src\hash</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\hash\dictionary_traits.h">
       <Filter>src\hash</Filter>
     </ClInclude>
@@ -306,6 +300,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\jstd\dll.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hasher\hash_helper.h">
+      <Filter>src\hasher</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\jstd\hasher\hashes.h">
+      <Filter>src\hasher</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

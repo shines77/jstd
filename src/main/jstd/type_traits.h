@@ -16,6 +16,7 @@
 #include <string>
 #include <utility>      // For std::pair<T1, T2>
 #include <type_traits>
+
 #include "jstd/basic/stddef.h"
 #include "jstd/traits/has_member.h"
 
@@ -75,30 +76,6 @@ template <typename T>
 constexpr T cmin(const T & a, const T & b) {
   return ((a < b) ? a : b);
 }
-
-//
-// is_relocatable<T>
-//
-// Trait which can be added to user types to enable use of memcpy.
-//
-// Example:
-//   template <>
-//   struct is_relocatable<MyType> : std::true_type {};
-//
-
-template <typename T>
-struct is_relocatable
-    : std::integral_constant<bool,
-                             (std::is_trivially_copy_constructible<T>::value &&
-                              std::is_trivially_destructible<T>::value)> {};
-
-template <typename T, typename U>
-struct is_relocatable<std::pair<T, U>>
-    : std::integral_constant<bool, (is_relocatable<T>::value &&
-                                    is_relocatable<U>::value)> {};
-
-template <typename T>
-struct is_relocatable<const T> : is_relocatable<T> {};
 
 // Struct void_wrapper
 struct void_wrapper {
@@ -178,6 +155,30 @@ struct is_noexcept_move_assignable {
         !(!std::is_nothrow_move_assignable<T>::value &&
 		   std::is_copy_assignable<T>::value);
 };
+
+//
+// is_relocatable<T>
+//
+// Trait which can be added to user types to enable use of memcpy.
+//
+// Example:
+//   template <>
+//   struct is_relocatable<MyType> : std::true_type {};
+//
+
+template <typename T>
+struct is_relocatable
+    : std::integral_constant<bool,
+                             (std::is_trivially_copy_constructible<T>::value &&
+                              std::is_trivially_destructible<T>::value)> {};
+
+template <typename T, typename U>
+struct is_relocatable<std::pair<T, U>>
+    : std::integral_constant<bool, (is_relocatable<T>::value &&
+                                    is_relocatable<U>::value)> {};
+
+template <typename T>
+struct is_relocatable<const T> : is_relocatable<T> {};
 
 template <typename Caller, typename Function, typename = void>
 struct is_call_possible : public std::false_type {};

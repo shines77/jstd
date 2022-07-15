@@ -32,7 +32,7 @@
 #undef  JSTD_USE_NOTHROW_NEW
 #define JSTD_USE_NOTHROW_NEW        1
 
-#include "jstd/hash/hash_helper.h"
+#include "jstd/hasher/hash_helper.h"
 #include "jstd/hash/dictionary_traits.h"
 #include "jstd/nothrow_new.h"
 #include "jstd/support/Power2.h"
