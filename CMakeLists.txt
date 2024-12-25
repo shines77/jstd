@@ -17,7 +17,7 @@ endif()
 include(CMakePackageConfigHelpers)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     option(NO_AFFINITY "Disable support for CPU affinity masks to avoid binding processes from e.g. R or numpy/scipy to a single core" ON)
@@ -194,7 +194,7 @@ set(JSTD_SOURCE_FILES
     src/main/jstd/basic/assert-c.c
     )
 
-# add_subdirectory(main EXCLUDE_FROM_ALL src/main/asm)
+# add_subdirectory(main EXCLUDE_FROM_ALL src/main/jstd/asm)
 
 # add objects to the jstd lib
 add_library(${JSTD_LIBNAME} ${JSTD_SOURCE_FILES} ${TARGET_OBJS} ${JSTD_DEF_FILE})
@@ -216,7 +216,7 @@ set_target_properties(${JSTD_LIBNAME} PROPERTIES
     SOVERSION ${JSTD_MAJOR_VERSION}
 )
 
-# Set output for libopenblas
+# Set output for libjstd
 set_target_properties( ${JSTD_LIBNAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set_target_properties( ${JSTD_LIBNAME} PROPERTIES LIBRARY_OUTPUT_NAME_DEBUG "${JSTD_LIBNAME}_debug")
 set_target_properties( ${JSTD_LIBNAME} PROPERTIES EXPORT_NAME "jstd")
